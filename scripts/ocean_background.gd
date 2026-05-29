@@ -4,6 +4,10 @@ var viewport_size := Vector2(1280.0, 720.0)
 var swim_speed := 155.0
 var offsets := [0.0, 0.0, 0.0]
 var textures: Array[Texture2D] = []
+var water_time := 0.0
+var bubble_scroll_offset := 0.0
+
+@export var bubble_effect_strength := 0.75
 
 const IMAGE_PATHS := [
 	"res://assets/backgrounds/layer_1.png",
@@ -11,6 +15,7 @@ const IMAGE_PATHS := [
 	"res://assets/backgrounds/layer_3.png"
 ]
 const LAYER_SPEEDS := [0.12, 0.37, 0.78]
+const BUBBLE_COUNT := 12
 
 
 func _ready() -> void:
@@ -25,6 +30,8 @@ func set_viewport_size(new_size: Vector2) -> void:
 
 
 func _process(delta: float) -> void:
+	water_time += delta
+	bubble_scroll_offset += swim_speed * delta
 	for index in offsets.size():
 		offsets[index] += swim_speed * LAYER_SPEEDS[index] * delta
 	queue_redraw()
@@ -43,6 +50,7 @@ func _draw() -> void:
 			_draw_middle_layer(offsets[index])
 		else:
 			_draw_front_layer(offsets[index])
+	_draw_bubbles()
 
 
 func _draw_light_rays() -> void:
@@ -59,6 +67,18 @@ func _draw_light_rays() -> void:
 		Vector2(viewport_size.x * 0.89, viewport_size.y),
 		Vector2(viewport_size.x * 0.79, viewport_size.y)
 	]), ray_color)
+
+
+func _draw_bubbles() -> void:
+	for index in BUBBLE_COUNT:
+		var seed := float(index)
+		var bubble_speed := 10.0 + fmod(seed * 11.0, 16.0)
+		var x := fposmod(seed * 97.0 + sin(water_time * 0.65 + seed) * 18.0 - bubble_scroll_offset, viewport_size.x + 80.0) - 40.0
+		var y := fposmod(viewport_size.y - water_time * bubble_speed + seed * 97.0, viewport_size.y + 220.0) - 100.0
+		var size := 2.0 + fmod(seed * 5.0, 4.0)
+		var alpha := (0.055 + fmod(seed * 0.011, 0.055)) * bubble_effect_strength
+		draw_circle(Vector2(x, y), size, Color(0.65, 0.95, 1.0, alpha))
+		draw_circle(Vector2(x - size * 0.25, y - size * 0.25), maxf(1.0, size * 0.35), Color(0.86, 1.0, 1.0, alpha * 0.75))
 
 
 func _draw_image_layer(texture: Texture2D, offset: float) -> void:

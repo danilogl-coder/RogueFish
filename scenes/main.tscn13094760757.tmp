@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bedn7jnxw8hdy" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://c1wnkf6ffsffj" path="res://scripts/ocean_background.gd" id="2_ocean"]
-[ext_resource type="AudioStream" uid="uid://3e8yh7kua5xa" path="res://assets/audio/background_music.mp3" id="3_85g3d"]
+[ext_resource type="AudioStream" path="res://assets/audio/background_music.wav" id="3_85g3d"]
 [ext_resource type="Script" uid="uid://bhoroyn6xlyu0" path="res://scripts/platform.gd" id="3_platform"]
 [ext_resource type="Script" uid="uid://bg5wrvplojmps" path="res://scripts/fish.gd" id="4_fish"]
 [ext_resource type="Script" uid="uid://1ilrrvcwd45a" path="res://scripts/virtual_joystick.gd" id="5_joystick"]

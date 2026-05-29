@@ -14,6 +14,7 @@ com estes nomes:
 - `fish_tail.png`: cauda separada, animada pelo script do peixe.
 - `seaweed/seaweed_1.png`, `seaweed_2.png`, `seaweed_3.png`: animacao da
   entidade alga, gerada com chance de 20% e mantida no percurso ao voltar.
+- `fonts/PressStart2P-Regular.ttf`: fonte pixel art usada no HUD.
 
 Os backgrounds devem ter a mesma proporcao entre si para o loop ficar suave.
 PNG em 1280 x 720 ou maior funciona bem para orientacao horizontal.
