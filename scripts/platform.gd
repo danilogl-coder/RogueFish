@@ -6,6 +6,8 @@ var platform_size := Vector2.ZERO
 var platform_texture: Texture2D
 var scroll_speed := 0.0
 var scroll_offset := 0.0
+var base_position := Vector2.ZERO
+var vertical_offset := 0.0
 
 const SPRITE_VISIBLE_REGION := Rect2(0.0, 107.0, 320.0, 13.0)
 const SPRITE_SCALE := 3.0
@@ -18,7 +20,8 @@ func _ready() -> void:
 
 
 func configure(rect: Rect2) -> void:
-	position = rect.position
+	base_position = rect.position
+	position = base_position + Vector2(0.0, vertical_offset)
 	platform_size = rect.size
 	var shape := RectangleShape2D.new()
 	shape.size = platform_size
@@ -30,6 +33,16 @@ func configure(rect: Rect2) -> void:
 func _process(delta: float) -> void:
 	scroll_offset += scroll_speed * SCROLL_FACTOR * delta
 	queue_redraw()
+
+
+func set_vertical_world_offset(world_offset: float) -> void:
+	vertical_offset = maxf(world_offset, 0.0)
+	position = base_position + Vector2(0.0, vertical_offset)
+	queue_redraw()
+
+
+func get_vertical_scroll_offset() -> float:
+	return vertical_offset
 
 
 func get_visual_scroll_offset() -> float:

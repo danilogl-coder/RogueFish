@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1jd6q7acchvo"]
+
+[ext_resource type="Script" uid="uid://cfcb0erk4kgci" path="res://scripts/enemy_fish.gd" id="1_enemy_fish"]
+
+[node name="EnemyFish" type="Node2D"]
+texture_filter = 1
+script = ExtResource("1_enemy_fish")

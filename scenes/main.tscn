@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://dqt7u1ekfhpft"]
+[gd_scene load_steps=12 format=3 uid="uid://dqt7u1ekfhpft"]
 
 [ext_resource type="Script" uid="uid://bedn7jnxw8hdy" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" uid="uid://c1wnkf6ffsffj" path="res://scripts/ocean_background.gd" id="2_ocean"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://dks4fxhgitnel" path="res://scripts/seaweed_field.gd" id="6_seaweed_field"]
 [ext_resource type="PackedScene" path="res://scenes/level_bar.tscn" id="7_level_bar"]
 [ext_resource type="PackedScene" path="res://scenes/status_panel.tscn" id="8_status_panel"]
+[ext_resource type="Script" uid="uid://bm5qwsugihn5g" path="res://scripts/enemy_spawn.gd" id="9_enemy_spawn"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_fish"]
 radius = 25.0
@@ -32,6 +33,10 @@ script = ExtResource("3_platform")
 [node name="SeaweedField" type="Node2D" parent="."]
 z_index = 6
 script = ExtResource("6_seaweed_field")
+
+[node name="EnemySpawn" type="Node2D" parent="."]
+z_index = 7
+script = ExtResource("9_enemy_spawn")
 
 [node name="Player" type="CharacterBody2D" parent="."]
 z_index = 5

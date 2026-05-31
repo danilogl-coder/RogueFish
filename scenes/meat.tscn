@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://7gaf74nngp21"]
+
+[ext_resource type="Script" uid="uid://4s37y0mlwqtu" path="res://scripts/meat.gd" id="1_meat"]
+
+[node name="Meat" type="Node2D"]
+z_index = 2
+script = ExtResource("1_meat")
