@@ -1,0 +1,556 @@
+class_name Game
+extends Node2D
+## Run orchestrator: builds the world, owns entity layers, resolves combat,
+## experience, level-ups, the director timeline and end of run.
+
+signal xp_changed
+signal level_changed
+signal kills_changed
+signal pearls_changed
+signal boss_changed(boss)
+
+const CreatureScripts := {
+	"shrimp": preload("res://scripts/game/creatures/shrimp.gd"),
+	"sardine": preload("res://scripts/game/creatures/sardine.gd"),
+	"snail": preload("res://scripts/game/creatures/snail.gd"),
+	"puffer": preload("res://scripts/game/creatures/puffer.gd"),
+	"turtle": preload("res://scripts/game/creatures/turtle.gd"),
+	"piranha": preload("res://scripts/game/creatures/piranha.gd"),
+	"barracuda": preload("res://scripts/game/creatures/barracuda.gd"),
+	"jellyfish": preload("res://scripts/game/creatures/jellyfish.gd"),
+	"moray": preload("res://scripts/game/creatures/moray.gd"),
+	"shark": preload("res://scripts/game/creatures/shark.gd"),
+	"angler": preload("res://scripts/game/creatures/angler.gd"),
+	"crab": preload("res://scripts/game/creatures/crab.gd"),
+	"squid": preload("res://scripts/game/creatures/squid.gd"),
+	"boss_shark": preload("res://scripts/game/bosses/boss_shark.gd"),
+	"boss_kraken": preload("res://scripts/game/bosses/boss_kraken.gd"),
+	"boss_angler": preload("res://scripts/game/bosses/boss_angler.gd"),
+	"boss_leviathan": preload("res://scripts/game/bosses/boss_leviathan.gd"),
+}
+const MAX_CREATURES := 190
+const MAX_PICKUPS := 260
+
+var world: World
+var player: Player
+var director: Director
+var camera: GameCamera
+var hud: Hud
+var menus: CanvasLayer
+var darkness: Darkness
+
+var layer_back: Node2D
+var layer_pickups: Node2D
+var layer_creatures: Node2D
+var layer_player: Node2D
+var layer_fx: Node2D
+var layer_front: Node2D
+var layer_text: Node2D
+
+var grid := SpatialGrid.new()
+var creatures: Array = []
+var pickups: Array = []
+var plankton: Array = []
+var boss: Creature = null
+
+var time := 0.0
+var level := 1
+var xp := 0
+var xp_next := 7
+var kills := 0
+var pearls_run := 0
+var bosses_killed := 0
+var rerolls := 0
+var status_points := 0
+var pending_levels := 0
+var pending_mutation := false
+var run_over := false
+var won := false
+var _menu_open := false
+var _hitstop_busy := false
+var _dn_budget := 0
+
+
+func _ready() -> void:
+	randomize()
+	process_mode = Node.PROCESS_MODE_PAUSABLE
+	_build_layers()
+	world = World.new()
+	world.game = self
+	add_child(world)
+	move_child(world, 0)
+	world.build()
+
+	player = Player.new()
+	player.game = self
+	player.position = Vector2(DB.WORLD_W * 0.5, DB.FLOOR_Y * 0.45)
+	layer_player.add_child(player)
+	player.setup(Profile.selected_species)
+
+	camera = GameCamera.new()
+	camera.target = player
+	add_child(camera)
+	camera.global_position = player.position
+
+	darkness = Darkness.new()
+	darkness.game = self
+	add_child(darkness)
+
+	hud = Hud.new()
+	hud.game = self
+	add_child(hud)
+
+	menus = CanvasLayer.new()
+	menus.layer = 20
+	menus.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(menus)
+
+	director = Director.new()
+	director.game = self
+	add_child(director)
+
+	rerolls = Profile.upgrade_level("reroll")
+	xp_next = DB.xp_to_next(level)
+	Sfx.play_music("game")
+	director.start()
+	if OS.get_cmdline_user_args().has("--autotest"):
+		var bot: Node = load("res://scripts/debug/autopilot.gd").new()
+		bot.set("game", self)
+		add_child(bot)
+
+
+func _build_layers() -> void:
+	var defs := [["Back", -8], ["Pickups", -2], ["Creatures", 0], ["PlayerLayer", 4], ["Fx", 8], ["Front", 14], ["Text", 30]]
+	var made := []
+	for d in defs:
+		var n := Node2D.new()
+		n.name = d[0]
+		n.z_index = d[1]
+		add_child(n)
+		made.append(n)
+	layer_back = made[0]
+	layer_pickups = made[1]
+	layer_creatures = made[2]
+	layer_player = made[3]
+	layer_fx = made[4]
+	layer_front = made[5]
+	layer_text = made[6]
+
+
+func _physics_process(delta: float) -> void:
+	_dn_budget = 6
+	grid.clear()
+	var alive := []
+	for c in creatures:
+		if is_instance_valid(c) and not c.dead:
+			grid.insert(c)
+			alive.append(c)
+	creatures = alive
+	if not run_over:
+		time += delta
+		player.input_dir = hud.move_vector()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if run_over:
+		return
+	if event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_P):
+		open_pause()
+	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_SPACE or event.keycode == KEY_J):
+		player.try_bite()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		open_pause()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		if not run_over and not get_tree().paused:
+			open_pause()
+
+
+# ----------------------------------------------------------------- spawning
+func spawn_creature(id: String, pos: Vector2, opts := {}) -> Creature:
+	if creatures.size() >= MAX_CREATURES and not opts.get("force", false):
+		return null
+	var def: Dictionary = DB.CREATURES[id]
+	var script: GDScript = CreatureScripts[def.script]
+	var c: Creature = script.new()
+	c.game = self
+	c.position = pos
+	c.configure(id, def, opts)
+	layer_creatures.add_child(c)
+	creatures.append(c)
+	return c
+
+
+func spawn_boss(id: String, pos: Vector2) -> Creature:
+	var def: Dictionary = DB.BOSSES[id]
+	var script: GDScript = CreatureScripts[def.script]
+	var b: Creature = script.new()
+	b.game = self
+	b.position = pos
+	b.configure_boss(id, def, director.difficulty())
+	layer_creatures.add_child(b)
+	creatures.append(b)
+	boss = b
+	boss_changed.emit(b)
+	return b
+
+
+func spawn_pickup(kind: String, pos: Vector2, value := 1) -> Pickup:
+	if kind == "xp" and pickups.size() >= MAX_PICKUPS:
+		# merge into an existing orb far from the player instead
+		for p in pickups:
+			if is_instance_valid(p) and p.kind == "xp" and not p.attracted:
+				p.set_value(p.value + value)
+				return p
+	var p := Pickup.new()
+	p.game = self
+	p.position = pos
+	p.setup(kind, value)
+	layer_pickups.add_child(p)
+	if kind == "plankton":
+		plankton.append(p)
+	else:
+		pickups.append(p)
+	return p
+
+
+func spawn_projectile(p: Projectile) -> Projectile:
+	p.game = self
+	layer_fx.add_child(p)
+	return p
+
+
+func spawn_area(a: AreaEffect) -> AreaEffect:
+	a.game = self
+	layer_fx.add_child(a)
+	return a
+
+
+func fx(sheet: String, pos: Vector2, fps := 16.0, scale_f := 1.0, tint := Color.WHITE, z := 0) -> void:
+	var e := OneShotFx.new()
+	e.setup(sheet, fps)
+	e.position = pos
+	e.scale = Vector2(scale_f, scale_f)
+	e.modulate = tint
+	e.z_index = z
+	layer_fx.add_child(e)
+
+
+func burst(pos: Vector2, kinds: Array, amount := 8, speed := 60.0, life := 0.6) -> void:
+	var b := Burst.new()
+	b.position = pos
+	layer_fx.add_child(b)
+	b.emit(kinds, amount, speed, life)
+
+
+func damage_number(pos: Vector2, amount: float, crit := false, color := Color.WHITE) -> void:
+	if not Profile.settings.get("damage_numbers", true):
+		return
+	if _dn_budget <= 0 and not crit:
+		return
+	_dn_budget -= 1
+	var d := DamageNumber.new()
+	d.setup(amount, crit, color)
+	d.position = pos + Vector2(randf_range(-4, 4), 0)
+	layer_text.add_child(d)
+
+
+func float_text(pos: Vector2, text: String, color := Color.WHITE, size := 8) -> void:
+	var d := DamageNumber.new()
+	d.setup_text(text, color, size)
+	d.position = pos
+	layer_text.add_child(d)
+
+
+func zap(from: Vector2, to: Vector2, color := Color("fff060")) -> void:
+	var z := ZapFx.new()
+	z.setup(from, to, color)
+	layer_fx.add_child(z)
+
+
+func shake(amount: float) -> void:
+	if Profile.settings.get("shake", true):
+		camera.add_shake(amount)
+
+
+func hitstop(duration := 0.04) -> void:
+	if _hitstop_busy:
+		return
+	_hitstop_busy = true
+	var prev := Engine.time_scale
+	Engine.time_scale = prev * 0.08
+	await get_tree().create_timer(duration, true, false, true).timeout
+	Engine.time_scale = prev
+	_hitstop_busy = false
+
+
+# ------------------------------------------------------------------ queries
+func creatures_in_radius(pos: Vector2, r: float, include_herb := true) -> Array:
+	var res := grid.query(pos, r)
+	if include_herb:
+		return res
+	return res.filter(func(c): return c.faction != "herb" or c.provoked)
+
+
+func nearest_creature(pos: Vector2, max_r: float, prefer_hostile := true) -> Creature:
+	var best: Creature = null
+	var best_d := INF
+	for c in grid.query(pos, max_r):
+		if c.dead:
+			continue
+		var d: float = c.position.distance_squared_to(pos)
+		if prefer_hostile and (c.faction == "herb" or c.faction == "gold") and not c.provoked:
+			d *= 3.0
+		if d < best_d:
+			best_d = d
+			best = c
+	return best
+
+
+func nearest_n(pos: Vector2, n: int, max_r: float) -> Array:
+	var list := grid.query(pos, max_r).filter(func(c): return not c.dead)
+	list.sort_custom(func(a, b): return a.position.distance_squared_to(pos) < b.position.distance_squared_to(pos))
+	return list.slice(0, n)
+
+
+func visible_rect() -> Rect2:
+	var vs := get_viewport_rect().size / camera.zoom
+	return Rect2(camera.get_screen_center_position() - vs * 0.5, vs)
+
+
+func roll_damage(base: float) -> Array:
+	var st: Dictionary = player.st
+	var dmg: float = base * st.damage_mult
+	var crit: bool = randf() < st.crit_chance
+	if crit:
+		dmg *= st.crit_mult
+	return [dmg * randf_range(0.92, 1.08), crit]
+
+
+# ------------------------------------------------------------------- events
+func on_creature_killed(c: Creature, info: Dictionary) -> void:
+	if info.get("eaten", false):
+		burst(c.position, [2, 0], 4, 30.0, 0.4)
+		return
+	kills += 1
+	kills_changed.emit()
+	var pos := c.position
+	var xp_value: int = c.xp
+	if info.get("swallow", false):
+		xp_value = int(ceil(xp_value * 1.5))
+	if xp_value > 0:
+		_drop_xp(pos, xp_value)
+	var pearl_chance: float = c.pearl_chance * (1.0 + player.st.luck)
+	if randf() < pearl_chance:
+		spawn_pickup("pearl", pos, 1 + (1 if c.elite else 0))
+	if c.faction == "pred" and randf() < 0.035 + (0.1 if c.elite else 0.0):
+		spawn_pickup("food", pos, 18)
+	if c.elite and randf() < 0.25:
+		spawn_pickup("magnet", pos, 1)
+	# synergy hooks
+	player.on_kill(c, info)
+	if player.flags.get("toxic_explode", false) and c.poison_t > 0.0:
+		var a := AreaEffect.new()
+		a.setup_cloud("fx/poison_cloud", pos, 24.0 * player.st.area_mult, 1.8, 6.0 * player.st.poison_mult, 0.0, true)
+		spawn_area(a)
+		fx("fx/explosion_toxic", pos, 18.0)
+	# visuals
+	var kinds := [2, 2, 0, 1] if c.faction != "hazard" else [6, 0, 1]
+	burst(pos, kinds, 6 + int(c.radius * 0.6), 50.0 + c.radius * 3.0)
+	if c.is_boss:
+		_on_boss_killed(c)
+
+
+func _drop_xp(pos: Vector2, value: int) -> void:
+	var remaining := value
+	var pieces := 0
+	while remaining > 0 and pieces < 4:
+		var v := remaining
+		if remaining > 40 and pieces < 3:
+			v = int(remaining / 2.0)
+		spawn_pickup("xp", pos + Vector2(randf_range(-6, 6), randf_range(-6, 6)), v)
+		remaining -= v
+		pieces += 1
+
+
+func _on_boss_killed(b: Creature) -> void:
+	bosses_killed += 1
+	boss = null
+	boss_changed.emit(null)
+	Sfx.play("boss_die")
+	shake(10.0)
+	hitstop(0.25)
+	var def: Dictionary = DB.BOSSES[b.boss_id]
+	for i in 8:
+		var p := b.position + Vector2(randf_range(-40, 40), randf_range(-30, 30))
+		fx("fx/explosion", p, 14.0, randf_range(1.0, 2.0))
+	var pearls: int = int(def.pearls)
+	for i in mini(pearls, 12):
+		spawn_pickup("pearl", b.position + Vector2(randf_range(-30, 30), randf_range(-20, 20)), maxi(1, pearls / 12))
+	spawn_pickup("magnet", b.position, 1)
+	player.heal(player.st.max_hp * 0.3)
+	director.on_boss_killed()
+	world.spawn_boss_chest(b.position)
+
+
+func add_xp(amount: int) -> void:
+	if run_over:
+		return
+	xp += int(ceil(amount * player.st.xp_mult))
+	while xp >= xp_next:
+		xp -= xp_next
+		level += 1
+		xp_next = DB.xp_to_next(level)
+		pending_levels += 1
+		status_points += 1
+		var new_stage := DB.stage_for_level(level)
+		if new_stage > player.stage:
+			pending_mutation = true
+	xp_changed.emit()
+	if pending_levels > 0 and not _menu_open:
+		_process_pending()
+
+
+func add_pearls(n: int) -> void:
+	var gained := int(round(n * player.st.pearl_mult))
+	pearls_run += maxi(1, gained)
+	pearls_changed.emit()
+
+
+func _process_pending() -> void:
+	if run_over:
+		return
+	if pending_levels > 0:
+		pending_levels -= 1
+		level_changed.emit()
+		Sfx.play("level_up")
+		fx("fx/hit_spark", player.position, 12.0, 3.0, Color("5ee0ff"))
+		_open_cards("level")
+	elif pending_mutation:
+		pending_mutation = false
+		var new_stage := DB.stage_for_level(level)
+		player.grow_to(new_stage)
+		if player.free_mutation_slots().size() > 0:
+			_open_cards("mutation")
+
+
+func _open_cards(mode: String, extra := {}) -> void:
+	_menu_open = true
+	hud.visible = false
+	get_tree().paused = true
+	var p := CardPanel.new()
+	p.game = self
+	menus.add_child(p)
+	p.open(mode, extra)
+	p.closed.connect(_on_menu_closed)
+
+
+func open_treasure(guarantee_evolution := false) -> void:
+	if _menu_open:
+		return
+	_open_cards("treasure", {"evolution": guarantee_evolution})
+
+
+func _on_menu_closed() -> void:
+	_menu_open = false
+	hud.visible = true
+	get_tree().paused = false
+	if pending_levels > 0 or pending_mutation:
+		_process_pending()
+
+
+func open_pause() -> void:
+	if _menu_open or run_over:
+		return
+	_menu_open = true
+	hud.visible = false
+	get_tree().paused = true
+	var p := PauseMenu.new()
+	p.game = self
+	menus.add_child(p)
+	p.closed.connect(_on_menu_closed)
+
+
+func on_player_died() -> void:
+	if run_over:
+		return
+	run_over = true
+	Sfx.play("death")
+	Engine.time_scale = 0.35
+	await get_tree().create_timer(0.9, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_end_run(false)
+
+
+func on_victory() -> void:
+	if run_over:
+		return
+	won = true
+	run_over = true
+	await get_tree().create_timer(1.6, true, false, true).timeout
+	_end_run(true)
+
+
+func _end_run(victory: bool) -> void:
+	get_tree().paused = true
+	_menu_open = true
+	hud.visible = false
+	hud.controls.release_all()
+	var g := GameOverMenu.new()
+	g.game = self
+	menus.add_child(g)
+	if victory and not director.endless:
+		g.show_victory_choice()
+	else:
+		g.show_result(finalize_run(won))
+
+
+var _finalized := false
+
+
+## Converts the run into pearls/records. Safe to call once.
+func finalize_run(victory: bool) -> Dictionary:
+	var bonus := int(time / 30.0) + level + bosses_killed * 10 + (50 if victory else 0)
+	var result := {
+		"won": victory, "time": time, "level": level, "kills": kills, "bosses": bosses_killed,
+		"cycle": director.cycle, "pearls": pearls_run, "bonus": bonus, "stage": player.stage,
+	}
+	if not _finalized:
+		_finalized = true
+		Profile.add_pearls(pearls_run + bonus)
+		Profile.record_run(result)
+	return result
+
+
+func continue_endless() -> void:
+	hud.visible = true
+	director.endless = true
+	run_over = false
+	_menu_open = false
+	get_tree().paused = false
+	director.next_cycle()
+
+
+func revive_player() -> void:
+	run_over = false
+	_menu_open = false
+	get_tree().paused = false
+	player.revive()
+	for c in creatures_in_radius(player.position, 140.0):
+		if not c.is_boss:
+			c.take_damage(9999.0, {"source": "revive"})
+	fx("fx/explosion", player.position, 12.0, 3.0, Color("5ee0ff"))
+
+
+func quit_to_menu() -> void:
+	Engine.time_scale = 1.0
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func restart() -> void:
+	Engine.time_scale = 1.0
+	get_tree().paused = false
+	get_tree().reload_current_scene()

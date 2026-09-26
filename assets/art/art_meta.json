@@ -1,0 +1,1157 @@
+{
+ "icons": {
+  "arrow": 41,
+  "back": 29,
+  "bolt": 45,
+  "check": 24,
+  "chest": 48,
+  "clock": 20,
+  "coral": 37,
+  "crown": 32,
+  "dna": 39,
+  "eye": 43,
+  "fang": 35,
+  "fish": 38,
+  "gear": 28,
+  "heart": 44,
+  "hidden": 33,
+  "lock": 23,
+  "music": 25,
+  "numbers": 40,
+  "p_battery": 12,
+  "p_brain": 17,
+  "p_eyes": 13,
+  "p_fins": 9,
+  "p_gills": 7,
+  "p_heart": 8,
+  "p_luck": 16,
+  "p_magnet": 15,
+  "p_shell": 14,
+  "p_teeth": 10,
+  "p_venom": 11,
+  "pause": 21,
+  "pearl": 47,
+  "play": 30,
+  "plus": 34,
+  "reroll": 22,
+  "skull": 19,
+  "sound": 26,
+  "star": 42,
+  "torpedo": 18,
+  "trophy": 31,
+  "venom": 46,
+  "vibrate": 27,
+  "w_bubble": 0,
+  "w_ink": 1,
+  "w_pilot": 4,
+  "w_pulse": 2,
+  "w_sonar": 5,
+  "w_spines": 3,
+  "w_whirl": 6,
+  "wave": 36
+ },
+ "player": {
+  "dourado_0": {
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 6,
+   "height": 11.6,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 20,
+   "lure": [
+    38.2,
+    8.1
+   ],
+   "mouth": [
+    35.4,
+    17.0
+   ]
+  },
+  "dourado_1": {
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 6,
+   "height": 16.2,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 28,
+   "lure": [
+    52.3,
+    9.6
+   ],
+   "mouth": [
+    48.4,
+    22.3
+   ]
+  },
+  "dourado_2": {
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 6,
+   "height": 20.9,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 36,
+   "lure": [
+    66.4,
+    11.3
+   ],
+   "mouth": [
+    61.3,
+    27.7
+   ]
+  },
+  "dourado_3": {
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 6,
+   "height": 26.7,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 46,
+   "lure": [
+    84.0,
+    13.2
+   ],
+   "mouth": [
+    77.5,
+    34.1
+   ]
+  },
+  "dourado_4": {
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 6,
+   "height": 33.6,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 58,
+   "lure": [
+    105.1,
+    15.3
+   ],
+   "mouth": [
+    97.0,
+    41.6
+   ]
+  },
+  "garoupa_0": {
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 6,
+   "height": 11.2,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 20,
+   "lure": [
+    38.2,
+    8.5
+   ],
+   "mouth": [
+    35.4,
+    17.3
+   ]
+  },
+  "garoupa_1": {
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 6,
+   "height": 15.7,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 28,
+   "lure": [
+    52.3,
+    10.2
+   ],
+   "mouth": [
+    48.4,
+    22.7
+   ]
+  },
+  "garoupa_2": {
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 6,
+   "height": 20.2,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 36,
+   "lure": [
+    66.4,
+    12.1
+   ],
+   "mouth": [
+    61.3,
+    28.1
+   ]
+  },
+  "garoupa_3": {
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 6,
+   "height": 25.8,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 46,
+   "lure": [
+    84.0,
+    14.1
+   ],
+   "mouth": [
+    77.5,
+    34.7
+   ]
+  },
+  "garoupa_4": {
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 6,
+   "height": 32.5,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 58,
+   "lure": [
+    105.1,
+    16.4
+   ],
+   "mouth": [
+    97.0,
+    42.3
+   ]
+  },
+  "neon_0": {
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 6,
+   "height": 8.0,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 20,
+   "lure": [
+    38.2,
+    11.0
+   ],
+   "mouth": [
+    35.4,
+    16.9
+   ]
+  },
+  "neon_1": {
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 6,
+   "height": 11.2,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 28,
+   "lure": [
+    52.3,
+    13.6
+   ],
+   "mouth": [
+    48.4,
+    22.2
+   ]
+  },
+  "neon_2": {
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 6,
+   "height": 14.4,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 36,
+   "lure": [
+    66.4,
+    16.5
+   ],
+   "mouth": [
+    61.3,
+    27.5
+   ]
+  },
+  "neon_3": {
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 6,
+   "height": 18.4,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 46,
+   "lure": [
+    84.0,
+    19.8
+   ],
+   "mouth": [
+    77.5,
+    33.8
+   ]
+  },
+  "neon_4": {
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 6,
+   "height": 23.2,
+   "layers": [
+    "body",
+    "tail",
+    "fins_back",
+    "fins_front",
+    "head_piranha",
+    "head_sword",
+    "head_lure",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front",
+    "skin_armor",
+    "skin_toxic",
+    "skin_glow",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel"
+   ],
+   "length": 58,
+   "lure": [
+    105.1,
+    23.6
+   ],
+   "mouth": [
+    97.0,
+    41.3
+   ]
+  }
+ },
+ "sheets": {
+  "creatures/angler": {
+   "frames": 6,
+   "h": 36,
+   "w": 44
+  },
+  "creatures/barracuda": {
+   "frames": 6,
+   "h": 14,
+   "w": 50
+  },
+  "creatures/boss_angler": {
+   "frames": 6,
+   "h": 100,
+   "w": 130
+  },
+  "creatures/boss_shark": {
+   "frames": 6,
+   "h": 64,
+   "w": 150
+  },
+  "creatures/crab": {
+   "frames": 6,
+   "h": 20,
+   "w": 28
+  },
+  "creatures/golden": {
+   "frames": 6,
+   "h": 12,
+   "w": 20
+  },
+  "creatures/jellyfish": {
+   "frames": 6,
+   "h": 30,
+   "w": 22
+  },
+  "creatures/kraken_head": {
+   "frames": 6,
+   "h": 84,
+   "w": 80
+  },
+  "creatures/kraken_segment": {
+   "frames": 4,
+   "h": 14,
+   "w": 14
+  },
+  "creatures/leviathan_head": {
+   "frames": 6,
+   "h": 44,
+   "w": 60
+  },
+  "creatures/leviathan_segment": {
+   "frames": 4,
+   "h": 30,
+   "w": 30
+  },
+  "creatures/moray": {
+   "frames": 6,
+   "h": 20,
+   "w": 58
+  },
+  "creatures/pilot": {
+   "frames": 6,
+   "h": 9,
+   "w": 14
+  },
+  "creatures/piranha": {
+   "frames": 6,
+   "h": 18,
+   "w": 24
+  },
+  "creatures/puffer": {
+   "frames": 6,
+   "h": 20,
+   "w": 24
+  },
+  "creatures/puffer_big": {
+   "frames": 4,
+   "h": 30,
+   "w": 30
+  },
+  "creatures/sardine": {
+   "frames": 6,
+   "h": 11,
+   "w": 18
+  },
+  "creatures/shark": {
+   "frames": 6,
+   "h": 36,
+   "w": 80
+  },
+  "creatures/shrimp": {
+   "frames": 6,
+   "h": 13,
+   "w": 18
+  },
+  "creatures/snail": {
+   "frames": 6,
+   "h": 15,
+   "w": 18
+  },
+  "creatures/squid": {
+   "frames": 6,
+   "h": 18,
+   "w": 34
+  },
+  "creatures/turtle": {
+   "frames": 6,
+   "h": 32,
+   "w": 48
+  },
+  "env/anemone": {
+   "frames": 4,
+   "h": 20,
+   "w": 20
+  },
+  "env/bg_backdrop": {
+   "frames": 1,
+   "h": 360,
+   "w": 640
+  },
+  "env/bg_far": {
+   "frames": 1,
+   "h": 200,
+   "w": 640
+  },
+  "env/bg_mid": {
+   "frames": 1,
+   "h": 220,
+   "w": 640
+  },
+  "env/bg_near": {
+   "frames": 1,
+   "h": 140,
+   "w": 640
+  },
+  "env/cave_back": {
+   "frames": 1,
+   "h": 72,
+   "w": 128
+  },
+  "env/cave_front": {
+   "frames": 1,
+   "h": 72,
+   "w": 128
+  },
+  "env/chest": {
+   "frames": 2,
+   "h": 24,
+   "w": 28
+  },
+  "env/clam": {
+   "frames": 3,
+   "h": 28,
+   "w": 36
+  },
+  "env/coral_brain": {
+   "frames": 1,
+   "h": 14,
+   "w": 24
+  },
+  "env/coral_branch": {
+   "frames": 1,
+   "h": 34,
+   "w": 30
+  },
+  "env/coral_branch2": {
+   "frames": 1,
+   "h": 34,
+   "w": 30
+  },
+  "env/coral_fan": {
+   "frames": 1,
+   "h": 28,
+   "w": 34
+  },
+  "env/eel_rock": {
+   "frames": 1,
+   "h": 36,
+   "w": 52
+  },
+  "env/kelp": {
+   "frames": 4,
+   "h": 10,
+   "w": 12
+  },
+  "env/plankton": {
+   "frames": 4,
+   "h": 6,
+   "w": 6
+  },
+  "env/rock_big": {
+   "frames": 1,
+   "h": 24,
+   "w": 44
+  },
+  "env/rock_mid": {
+   "frames": 1,
+   "h": 18,
+   "w": 32
+  },
+  "env/rock_small": {
+   "frames": 1,
+   "h": 13,
+   "w": 22
+  },
+  "env/seabed": {
+   "frames": 1,
+   "h": 96,
+   "w": 320
+  },
+  "env/seagrass": {
+   "frames": 4,
+   "h": 18,
+   "w": 18
+  },
+  "env/shell": {
+   "frames": 1,
+   "h": 8,
+   "w": 10
+  },
+  "env/starfish": {
+   "frames": 1,
+   "h": 12,
+   "w": 12
+  },
+  "env/surface": {
+   "frames": 4,
+   "h": 20,
+   "w": 64
+  },
+  "env/thicket": {
+   "frames": 2,
+   "h": 64,
+   "w": 84
+  },
+  "env/vent": {
+   "frames": 1,
+   "h": 26,
+   "w": 32
+  },
+  "fx/bubble": {
+   "frames": 2,
+   "h": 9,
+   "w": 9
+  },
+  "fx/bubble_big": {
+   "frames": 2,
+   "h": 14,
+   "w": 14
+  },
+  "fx/explosion": {
+   "frames": 6,
+   "h": 32,
+   "w": 32
+  },
+  "fx/explosion_toxic": {
+   "frames": 6,
+   "h": 32,
+   "w": 32
+  },
+  "fx/food": {
+   "frames": 1,
+   "h": 10,
+   "w": 12
+  },
+  "fx/glow": {
+   "frames": 1,
+   "h": 64,
+   "w": 64
+  },
+  "fx/heart": {
+   "frames": 1,
+   "h": 9,
+   "w": 9
+  },
+  "fx/hit_spark": {
+   "frames": 4,
+   "h": 14,
+   "w": 14
+  },
+  "fx/ink_ball": {
+   "frames": 1,
+   "h": 9,
+   "w": 9
+  },
+  "fx/ink_cloud": {
+   "frames": 4,
+   "h": 32,
+   "w": 32
+  },
+  "fx/light_orb": {
+   "frames": 2,
+   "h": 10,
+   "w": 10
+  },
+  "fx/magnet": {
+   "frames": 4,
+   "h": 14,
+   "w": 14
+  },
+  "fx/particles": {
+   "frames": 8,
+   "h": 6,
+   "w": 6
+  },
+  "fx/pearl": {
+   "frames": 4,
+   "h": 9,
+   "w": 9
+  },
+  "fx/poison_cloud": {
+   "frames": 4,
+   "h": 32,
+   "w": 32
+  },
+  "fx/shadow": {
+   "frames": 1,
+   "h": 8,
+   "w": 24
+  },
+  "fx/spine": {
+   "frames": 1,
+   "h": 4,
+   "w": 10
+  },
+  "fx/spine_coral": {
+   "frames": 1,
+   "h": 5,
+   "w": 12
+  },
+  "fx/torpedo": {
+   "frames": 2,
+   "h": 12,
+   "w": 16
+  },
+  "fx/volt_ball": {
+   "frames": 2,
+   "h": 12,
+   "w": 12
+  },
+  "fx/whirlpool": {
+   "frames": 4,
+   "h": 48,
+   "w": 48
+  },
+  "fx/xp_big": {
+   "frames": 4,
+   "h": 10,
+   "w": 10
+  },
+  "fx/xp_huge": {
+   "frames": 4,
+   "h": 12,
+   "w": 12
+  },
+  "fx/xp_mid": {
+   "frames": 4,
+   "h": 8,
+   "w": 8
+  },
+  "fx/xp_small": {
+   "frames": 4,
+   "h": 6,
+   "w": 6
+  },
+  "ui/bar_boss": {
+   "frames": 1,
+   "h": 6,
+   "w": 4
+  },
+  "ui/bar_frame": {
+   "frames": 1,
+   "h": 10,
+   "w": 12
+  },
+  "ui/bar_hp": {
+   "frames": 1,
+   "h": 6,
+   "w": 4
+  },
+  "ui/bar_stealth": {
+   "frames": 1,
+   "h": 6,
+   "w": 4
+  },
+  "ui/bar_wave": {
+   "frames": 1,
+   "h": 6,
+   "w": 4
+  },
+  "ui/bar_xp": {
+   "frames": 1,
+   "h": 6,
+   "w": 4
+  },
+  "ui/btn_attack": {
+   "frames": 1,
+   "h": 56,
+   "w": 56
+  },
+  "ui/btn_attack_pressed": {
+   "frames": 1,
+   "h": 56,
+   "w": 56
+  },
+  "ui/btn_disabled": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_gold": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_gold_pressed": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_hover": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_normal": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_pressed": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_red": {
+   "frames": 1,
+   "h": 20,
+   "w": 24
+  },
+  "ui/btn_round": {
+   "frames": 1,
+   "h": 24,
+   "w": 24
+  },
+  "ui/btn_round_pressed": {
+   "frames": 1,
+   "h": 24,
+   "w": 24
+  },
+  "ui/card_common": {
+   "frames": 1,
+   "h": 32,
+   "w": 32
+  },
+  "ui/card_epic": {
+   "frames": 1,
+   "h": 32,
+   "w": 32
+  },
+  "ui/card_legend": {
+   "frames": 1,
+   "h": 32,
+   "w": 32
+  },
+  "ui/card_mutation": {
+   "frames": 1,
+   "h": 32,
+   "w": 32
+  },
+  "ui/card_rare": {
+   "frames": 1,
+   "h": 32,
+   "w": 32
+  },
+  "ui/joy_base": {
+   "frames": 1,
+   "h": 64,
+   "w": 64
+  },
+  "ui/joy_knob": {
+   "frames": 1,
+   "h": 26,
+   "w": 26
+  },
+  "ui/logo": {
+   "frames": 1,
+   "h": 67,
+   "w": 179
+  },
+  "ui/panel": {
+   "frames": 1,
+   "h": 24,
+   "w": 24
+  },
+  "ui/panel_light": {
+   "frames": 1,
+   "h": 24,
+   "w": 24
+  }
+ }
+}

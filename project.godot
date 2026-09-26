@@ -10,22 +10,52 @@ config_version=5
 
 [application]
 
-config/name="RogueFish"
-run/main_scene="res://scenes/main.tscn"
+config/name="Rogue Fish"
+config/description="Roguelike de sobrevivência subaquático em pixel art."
+config/version="1.0.0"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
-config/icon="res://icon.svg"
+config/quit_on_go_back=false
+boot_splash/bg_color=Color(0.027, 0.063, 0.118, 1)
+boot_splash/show_image=false
+config/icon="res://assets/icon/icon_192.png"
+
+[autoload]
+
+DB="*res://scripts/autoload/db.gd"
+Art="*res://scripts/autoload/art.gd"
+Profile="*res://scripts/autoload/profile.gd"
+Sfx="*res://scripts/autoload/audio.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
-window/size/window_width_override=960
-window/size/window_height_override=540
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=4
+window/energy_saving/keep_screen_on=true
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[gui]
+
+common/snap_controls_to_pixels=true
+theme/default_font_antialiasing=0
+
+[physics]
+
+common/physics_ticks_per_second=60
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.027, 0.063, 0.118, 1)
+2d/snap/snap_2d_vertices_to_pixel=false
