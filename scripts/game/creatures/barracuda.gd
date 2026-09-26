@@ -57,8 +57,8 @@ func think(delta: float) -> void:
 		"dash":
 			vel = _dash_dir * 400.0
 			for prey2 in game.grid.query(position, radius):
-				if prey2 != self and prey2.faction == "herb" and prey2.tier < tier and not prey2.dead:
-					prey2.die({"eaten": true})
+				if can_eat(prey2):
+					eat_prey(prey2)
 			if state_t > 0.55:
 				_go("recover")
 		"recover":

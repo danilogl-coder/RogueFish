@@ -23,12 +23,16 @@ const CreatureScripts := {
 	"angler": preload("res://scripts/game/creatures/angler.gd"),
 	"crab": preload("res://scripts/game/creatures/crab.gd"),
 	"squid": preload("res://scripts/game/creatures/squid.gd"),
+	"detritivore": preload("res://scripts/game/creatures/detritivore.gd"),
+	"urchin": preload("res://scripts/game/creatures/urchin.gd"),
+	"otter": preload("res://scripts/game/creatures/otter.gd"),
+	"orca": preload("res://scripts/game/creatures/orca.gd"),
 	"boss_shark": preload("res://scripts/game/bosses/boss_shark.gd"),
 	"boss_kraken": preload("res://scripts/game/bosses/boss_kraken.gd"),
 	"boss_angler": preload("res://scripts/game/bosses/boss_angler.gd"),
 	"boss_leviathan": preload("res://scripts/game/bosses/boss_leviathan.gd"),
 }
-const MAX_CREATURES := 190
+const MAX_CREATURES := 240
 const MAX_PICKUPS := 260
 
 var world: World
@@ -51,6 +55,9 @@ var grid := SpatialGrid.new()
 var creatures: Array = []
 var pickups: Array = []
 var plankton: Array = []
+var detritus: Array = []
+var carcasses: Array = []
+var ecosystem: Ecosystem
 var boss: Creature = null
 
 var time := 0.0
@@ -69,6 +76,14 @@ var won := false
 var _menu_open := false
 var _hitstop_busy := false
 var _dn_budget := 0
+# engagement: kill combo, xp chime streak, bestiary discovery
+var combo := 0
+var best_combo := 0
+var _combo_t := 0.0
+var _chime_chain := 0
+var _chime_t := 0.0
+var _seen_t := 0.0
+var _boss_evade := 0.0
 
 
 func _ready() -> void:
@@ -80,10 +95,13 @@ func _ready() -> void:
 	add_child(world)
 	move_child(world, 0)
 	world.build()
+	ecosystem = Ecosystem.new()
+	ecosystem.game = self
+	add_child(ecosystem)
 
 	player = Player.new()
 	player.game = self
-	player.position = Vector2(DB.WORLD_W * 0.5, DB.FLOOR_Y * 0.45)
+	player.position = Vector2(2350.0, 420.0)
 	layer_player.add_child(player)
 	player.setup(Profile.selected_species)
 
@@ -111,6 +129,8 @@ func _ready() -> void:
 
 	rerolls = Profile.upgrade_level("reroll")
 	xp_next = DB.xp_to_next(level)
+	world.biome_entered.connect(_on_biome_entered)
+	Profile.bump("runs_started")
 	Sfx.play_music("game")
 	director.start()
 	if OS.get_cmdline_user_args().has("--autotest"):
@@ -149,6 +169,7 @@ func _physics_process(delta: float) -> void:
 	if not run_over:
 		time += delta
 		player.input_dir = hud.move_vector()
+		_tick_engagement(delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -158,6 +179,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		open_pause()
 	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_SPACE or event.keycode == KEY_J):
 		player.try_bite()
+	elif event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_SHIFT or event.keycode == KEY_K):
+		player.try_dash()
 
 
 func _notification(what: int) -> void:
@@ -209,8 +232,10 @@ func spawn_pickup(kind: String, pos: Vector2, value := 1) -> Pickup:
 	p.position = pos
 	p.setup(kind, value)
 	layer_pickups.add_child(p)
-	if kind == "plankton":
+	if p.kind == "plankton":
 		plankton.append(p)
+	elif kind == "detritus":
+		detritus.append(p)
 	else:
 		pickups.append(p)
 	return p
@@ -331,11 +356,30 @@ func roll_damage(base: float) -> Array:
 
 # ------------------------------------------------------------------- events
 func on_creature_killed(c: Creature, info: Dictionary) -> void:
+	# --- deaths inside the food web (no rewards, but they feed the cycle)
 	if info.get("eaten", false):
 		burst(c.position, [2, 0], 4, 30.0, 0.4)
+		ecosystem.stats.eaten += 1
+		if c.tier >= 2:
+			ecosystem.spawn_carcass(c.position, c.tier * 2 - 1)
+		else:
+			ecosystem.spawn_detritus(c.position)
+		return
+	if info.get("starved", false):
+		ecosystem.spawn_carcass(c.position, maxi(1, (c.tier + 1) * 2))
 		return
 	kills += 1
 	kills_changed.emit()
+	Profile.bump("kills")
+	Profile.bestiary_kill(c.id)
+	_add_combo()
+	if not info.get("swallow", false) and c.tier >= 2 and not c.is_boss and (not c.is_wave or randf() < 0.3):
+		ecosystem.spawn_carcass(c.position, c.tier * 2)
+	if c.elite and not c.is_boss:
+		spawn_pickup("scale", c.position, 1)
+		Profile.bump("alphas")
+		float_text(c.position + Vector2(0, -20), "ALFA ABATIDO!", Color("ffbf45"), 16)
+		shake(3.0)
 	var pos := c.position
 	var xp_value: int = c.xp
 	if info.get("swallow", false):
@@ -377,6 +421,7 @@ func _drop_xp(pos: Vector2, value: int) -> void:
 
 func _on_boss_killed(b: Creature) -> void:
 	bosses_killed += 1
+	Profile.bump("boss_" + b.boss_id)
 	boss = null
 	boss_changed.emit(null)
 	Sfx.play("boss_die")
@@ -398,7 +443,7 @@ func _on_boss_killed(b: Creature) -> void:
 func add_xp(amount: int) -> void:
 	if run_over:
 		return
-	xp += int(ceil(amount * player.st.xp_mult))
+	xp += int(ceil(amount * player.st.xp_mult * combo_mult()))
 	while xp >= xp_next:
 		xp -= xp_next
 		level += 1
@@ -411,6 +456,18 @@ func add_xp(amount: int) -> void:
 	xp_changed.emit()
 	if pending_levels > 0 and not _menu_open:
 		_process_pending()
+
+
+var _xp_frac := 0.0
+
+
+## Small foods (plankton, kelp, carrion) give fractional XP.
+func add_xp_f(amount: float) -> void:
+	_xp_frac += amount
+	if _xp_frac >= 1.0:
+		var whole := int(_xp_frac)
+		_xp_frac -= whole
+		add_xp(whole)
 
 
 func add_pearls(n: int) -> void:
@@ -427,11 +484,13 @@ func _process_pending() -> void:
 		level_changed.emit()
 		Sfx.play("level_up")
 		fx("fx/hit_spark", player.position, 12.0, 3.0, Color("5ee0ff"))
+		_level_shockwave()
 		_open_cards("level")
 	elif pending_mutation:
 		pending_mutation = false
 		var new_stage := DB.stage_for_level(level)
 		player.grow_to(new_stage)
+		Profile.set_max("max_stage", new_stage)
 		if player.free_mutation_slots().size() > 0:
 			_open_cards("mutation")
 
@@ -450,7 +509,14 @@ func _open_cards(mode: String, extra := {}) -> void:
 func open_treasure(guarantee_evolution := false) -> void:
 	if _menu_open:
 		return
-	_open_cards("treasure", {"evolution": guarantee_evolution})
+	_menu_open = true
+	hud.visible = false
+	get_tree().paused = true
+	var c := ChestPanel.new()
+	c.game = self
+	menus.add_child(c)
+	c.closed.connect(_on_menu_closed)
+	c.open(guarantee_evolution)
 
 
 func _on_menu_closed() -> void:
@@ -519,6 +585,8 @@ func finalize_run(victory: bool) -> Dictionary:
 	}
 	if not _finalized:
 		_finalized = true
+		Profile.set_max("max_time", int(time))
+		Profile.set_max("max_combo", best_combo)
 		Profile.add_pearls(pearls_run + bonus)
 		Profile.record_run(result)
 	return result
@@ -554,3 +622,100 @@ func restart() -> void:
 	Engine.time_scale = 1.0
 	get_tree().paused = false
 	get_tree().reload_current_scene()
+
+
+# ------------------------------------------------------------- engagement
+func _tick_engagement(delta: float) -> void:
+	if combo > 0:
+		_combo_t -= delta
+		if _combo_t <= 0.0:
+			combo = 0
+	_chime_t -= delta
+	if _chime_t <= 0.0:
+		_chime_chain = 0
+	_seen_t -= delta
+	if _seen_t <= 0.0:
+		_seen_t = 0.5
+		_discover_species()
+	_boss_evasion(delta)
+
+
+## XP chime whose pitch climbs while you keep collecting (Vampire-Survivors feel).
+func pickup_chime(vol := -8.0) -> void:
+	_chime_chain = mini(_chime_chain + 1, 30)
+	_chime_t = 0.45
+	Sfx.play_pitched("pickup", 0.9 + _chime_chain * 0.035, vol)
+
+
+func _add_combo() -> void:
+	combo += 1
+	_combo_t = 2.6
+	if combo > best_combo:
+		best_combo = combo
+	if DB.COMBO_MILESTONES.has(combo):
+		var label: String = DB.COMBO_MILESTONES[combo]
+		hud.combo_milestone(combo, label)
+		Sfx.play("level_up", -4.0)
+		add_pearls(1 + combo / 25)
+		Profile.set_max("max_combo", combo)
+		if combo >= 50:
+			player.add_buff("frenzy", 8.0)
+			player.heal(player.st.max_hp * 0.1)
+
+
+func combo_mult() -> float:
+	return 1.0 + minf(combo, 100) * 0.003
+
+
+func _level_shockwave() -> void:
+	var ring := RingFx.new().setup(120.0, 0.4, Color("5ee0ff"), 4.0)
+	ring.position = player.position
+	layer_fx.add_child(ring)
+	for c in creatures_in_radius(player.position, 120.0, false):
+		if not c.is_boss:
+			c.knock += (c.position - player.position).normalized() * 260.0
+			c.take_damage(8.0 + level, {"source": "levelup"})
+	player.grant_invuln(0.4)
+
+
+func _discover_species() -> void:
+	var rect := visible_rect()
+	for c in creatures:
+		if is_instance_valid(c) and not c.is_boss and c.id != "" and rect.has_point(c.position):
+			if Profile.bestiary_see(c.id):
+				hud.toast("Nova espécie: %s!" % DB.CREATURES[c.id].name, Color("a4dc4c"))
+				Sfx.play("pearl", -4.0)
+
+
+func _on_biome_entered(b: Dictionary) -> void:
+	hud.biome_label(b.name)
+	if b.id == "abyss":
+		Profile.set_max("reach_abyss", 1)
+
+
+## Everything-is-Crab style: stay hidden long enough and the boss gives up,
+## leaving its food behind (mutation reward) but no meat/XP.
+func _boss_evasion(delta: float) -> void:
+	if boss == null or not is_instance_valid(boss) or boss.dead:
+		_boss_evade = 0.0
+		return
+	if player.is_hidden:
+		_boss_evade += delta
+		if _boss_evade >= 12.0 and boss.has_method("give_up"):
+			boss.give_up()
+			_boss_evade = 0.0
+	else:
+		_boss_evade = maxf(0.0, _boss_evade - delta * 0.25)
+
+
+func boss_evade_ratio() -> float:
+	return clampf(_boss_evade / 12.0, 0.0, 1.0)
+
+
+func on_boss_gave_up(b: Creature) -> void:
+	boss = null
+	boss_changed.emit(null)
+	Profile.bump("boss_evaded")
+	hud.banner("O CHEFE DESISTIU!", "Você sobreviveu escondido", Color("a4dc4c"))
+	spawn_pickup("boss_food", Vector2(b.position.x, clampf(b.position.y, 60, DB.floor_at(b.position.x) - 30)), 1)
+	director.on_boss_killed()

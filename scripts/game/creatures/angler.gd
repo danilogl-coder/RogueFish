@@ -34,10 +34,10 @@ func think(delta: float) -> void:
 		seek(p.position, speed * 1.8, 100.0, delta)
 	var lure := light_pos()
 	for c in game.grid.query(lure, 120.0, 10.0):
-		if c != self and c.faction == "herb" and c.tier < tier and not c.dead:
+		if can_eat(c) and (hungry() or is_wave):
 			c.knock += (lure - c.position).normalized() * 30.0 * delta * 10.0
 			if c.position.distance_to(position) < radius + c.radius + 4.0:
-				c.die({"eaten": true})
+				eat_prey(c)
 				attack_anim = 0.3
 	if _snap_cd <= 0.0 and player_visible(56.0 + p.radius):
 		_snap_dir = (p.position - position).normalized()

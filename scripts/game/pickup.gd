@@ -35,6 +35,21 @@ func setup(p_kind: String, p_value: int) -> void:
 			_set_sheet("env/plankton")
 			vel = Vector2(randf_range(-6, 6), randf_range(-8, -2))
 			_life = 40.0
+		"phyto":
+			kind = "plankton"
+			_set_sheet("fx/phyto")
+			vel = Vector2(randf_range(-4, 4), randf_range(-2, 2))
+			_life = 45.0
+		"detritus":
+			_set_sheet("fx/detritus")
+			vel = Vector2(randf_range(-3, 3), randf_range(4, 9))
+			_life = randf_range(35.0, 55.0)
+		"scale":
+			_set_sheet("fx/alpha_scale")
+			_life = 60.0
+		"boss_food":
+			_set_sheet("fx/boss_food")
+			_life = 999.0
 
 
 func set_value(v: int) -> void:
@@ -62,6 +77,9 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	if sprite.hframes > 1:
 		sprite.frame = int(_t * 6.0) % sprite.hframes
+	if kind == "detritus":
+		_detritus_step(delta)
+		return
 	var p: Player = game.player
 	var to := p.position - position
 	var d := to.length()
@@ -88,19 +106,46 @@ func _physics_process(delta: float) -> void:
 			vel.y = lerpf(vel.y, -4.0, delta)
 		else:
 			vel *= pow(0.05, delta)
-			vel.y += (6.0 if position.y < DB.FLOOR_Y - 8 else -20.0) * delta
+			vel.y += (6.0 if position.y < DB.floor_at(position.x) - 8 else -20.0) * delta
 	position += vel * delta
-	position.y = clampf(position.y, DB.SURFACE_Y, DB.FLOOR_Y - 4)
+	position.y = clampf(position.y, DB.SURFACE_Y, DB.floor_at(position.x) - 4)
+
+
+## Marine snow: sinks slowly, rests on the floor, rots into nutrients.
+func _detritus_step(delta: float) -> void:
+	_life -= delta
+	var floor_y := DB.floor_at(position.x) - 2.0
+	if position.y < floor_y:
+		vel.x = sin(_t * 0.9) * 3.0
+		position += vel * delta
+	else:
+		position.y = floor_y
+	if _life <= 0.0:
+		game.ecosystem.add_nutrients(position.x, 1.0)
+		_remove()
 
 
 func _collect() -> void:
 	match kind:
 		"xp":
 			game.add_xp(value)
-			Sfx.play("pickup", -8.0, 0.15, 0.03)
+			game.pickup_chime()
 		"plankton":
-			game.add_xp(1)
-			Sfx.play("pickup", -12.0, 0.2, 0.05)
+			game.add_xp_f(0.35)
+			game.player.eat_diet("plant", 1)
+			Profile.bump("plankton")
+			game.pickup_chime(-6.0)
+		"scale":
+			game.rerolls += 1
+			Sfx.play("pearl")
+			game.float_text(position + Vector2(0, -8), "+1 REROLAGEM", Color("5ee0ff"))
+		"boss_food":
+			Sfx.play("evolve")
+			game.float_text(position + Vector2(0, -8), "ALIMENTO DO CHEFE!", Color("ffbf45"), 16)
+			if game.player.free_mutation_slots().size() > 0:
+				game._open_cards("mutation", {"boss_food": true})
+			else:
+				game.open_treasure(true)
 		"pearl":
 			game.add_pearls(value)
 			Sfx.play("pearl", -3.0)
@@ -124,6 +169,8 @@ func consume() -> void:
 func _remove() -> void:
 	if kind == "plankton":
 		game.plankton.erase(self)
+	elif kind == "detritus":
+		game.detritus.erase(self)
 	else:
 		game.pickups.erase(self)
 	queue_free()

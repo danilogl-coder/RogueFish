@@ -36,6 +36,7 @@ func think(delta: float) -> void:
 		seek(food.position, speed, 60.0, delta)
 		if position.distance_to(food.position) < radius + 3.0:
 			food.consume()
+			feed(0.15)
 	else:
 		wander(delta, speed * 0.5)
 

@@ -20,6 +20,8 @@ func _ready() -> void:
 	_build_background()
 	_build_main()
 	Sfx.play_music("menu")
+	if Profile.daily_available() > 0 and not Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--menu=")):
+		_show_daily.call_deferred()
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--menu="):
 			match a.substr(7):
@@ -28,6 +30,8 @@ func _ready() -> void:
 				"guide": _show_guide()
 				"options": _show_options()
 				"credits": _show_credits()
+				"missions": _show_missions()
+				"bestiary": _show_bestiary()
 
 
 # ------------------------------------------------------------- background
@@ -150,6 +154,16 @@ func _build_main() -> void:
 	var shop := UIKit.button("EVOLUÇÃO", "", 170, "dna")
 	shop.pressed.connect(_show_shop)
 	buttons.add_child(shop)
+	var row2 := UIKit.hbox(5)
+	buttons.add_child(row2)
+	var mis := UIKit.button("MISSÕES", "", 0, "target")
+	mis.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mis.pressed.connect(_show_missions)
+	row2.add_child(mis)
+	var bes := UIKit.button("BESTIÁRIO", "", 0, "book")
+	bes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bes.pressed.connect(_show_bestiary)
+	row2.add_child(bes)
 	var row := UIKit.hbox(5)
 	buttons.add_child(row)
 	var how := UIKit.button("GUIA", "", 0, "eye")
@@ -363,14 +377,19 @@ func _show_guide(start_after := false) -> void:
 	scroll.add_child(list)
 	var tips := [
 		["wave", "MOVER", "Arraste o polegar no lado esquerdo da tela (ou WASD)."],
-		["fang", "MORDER", "Botão à direita (ou ESPAÇO). Segure para morder sem parar. Criaturas menores que você são engolidas inteiras!"],
+		["fang", "MORDER", "Botão vermelho (ou ESPAÇO). Segure para morder sem parar. Criaturas menores que você são engolidas inteiras!"],
+		["dash", "INVESTIDA", "Botão azul (ou SHIFT): arrancada rápida com cargas, ideal para fugir de predadores."],
 		["star", "CRESCER", "Coma para ganhar XP. A cada nível escolha uma carta; em certos níveis você CRESCE e ganha uma MUTAÇÃO que muda sua aparência."],
+		["cycle", "CADEIA ALIMENTAR", "Nutrientes fazem o kelp e o plâncton crescerem; herbívoros comem plantas, carnívoros comem herbívoros, a orca come todos. Carcaças viram detritos que os pequenos recicladores transformam em nutrientes."],
+		["leaf", "DIETA", "Morda kelp e plâncton (herbívoro), cace (carnívoro) ou coma carcaças (necrófago). Sua dieta dá bônus próprios."],
 		["dna", "SINERGIAS", "Cada arma, passiva e mutação tem uma afinidade. Junte 2 ou 4 da mesma para bônus poderosos."],
 		["torpedo", "EVOLUÇÕES", "Arma no nível 5 + sua passiva parceira = carta de EVOLUÇÃO lendária."],
-		["hidden", "ESCONDERIJOS", "Cavernas e moitas de algas escondem você dos predadores e regeneram vida."],
+		["skull", "COMBO", "Abates seguidos aumentam o combo e o XP. Com combo 50 você entra em FRENESI."],
+		["crown", "ALFAS", "Inimigos com coroa são Alfas: derrote-os para ganhar Escamas (rerrolagens)."],
+		["hidden", "ESCONDERIJOS", "Cavernas e moitas escondem você e regeneram vida. Fique escondido tempo suficiente e até um CHEFE desiste, deixando seu alimento."],
 		["clock", "CICLOS", "Explore -> a ONDA chega -> o CHEFE aparece. Vença 4 chefes para dominar o oceano."],
-		["chest", "EVENTOS", "Baús, ostras gigantes, fendas térmicas e cardumes dourados surgem por tempo limitado. Siga as setas!"],
-		["pearl", "PÉROLAS", "Guarde pérolas entre partidas para comprar evoluções ancestrais e novas espécies."],
+		["chest", "EVENTOS", "Baús (1, 3 ou 5 prêmios!), ostras gigantes, fendas térmicas e cardumes dourados surgem por tempo limitado."],
+		["pearl", "PÉROLAS", "Guarde pérolas entre partidas: evoluções ancestrais, novas espécies, missões e recompensa diária."],
 	]
 	for t in tips:
 		var h := UIKit.hbox(8)
@@ -426,3 +445,128 @@ func _show_credits() -> void:
 	var fp := FishPreview.new().setup(Profile.selected_species, 4, {"head": "head_lure", "skin": "skin_glow", "tail": "tail_eel", "fins": "fins_volt"}, 1.0)
 	fp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(fp)
+
+
+# --------------------------------------------------------------- missions
+func _show_missions() -> void:
+	var v := _open_screen("MISSÕES")
+	var done := Profile.missions_done.size()
+	v.add_child(UIKit.label("Concluídas %d/%d  -  recompensas entregues automaticamente" % [done, DB.MISSIONS.size()], 8, UIKit.DIM))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(584, 262)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	var list := UIKit.vbox(4)
+	scroll.add_child(list)
+	var sorted := DB.MISSIONS.duplicate()
+	sorted.sort_custom(func(a, b): return int(Profile.missions_done.has(a.id)) < int(Profile.missions_done.has(b.id)))
+	for m in sorted:
+		var is_done: bool = Profile.missions_done.has(m.id)
+		var p := PanelContainer.new()
+		p.theme_type_variation = "LightPanel"
+		p.custom_minimum_size = Vector2(570, 0)
+		var h := UIKit.hbox(8)
+		p.add_child(h)
+		h.add_child(UIKit.icon_rect("check" if is_done else "target", 16))
+		var col := UIKit.vbox(1)
+		col.custom_minimum_size.x = 300
+		col.add_child(UIKit.label(m.name, 8, UIKit.GREEN if is_done else UIKit.WHITE))
+		var unlock: String = ("  -  desbloqueia " + DB.WEAPONS[m.unlock].name) if m.has("unlock") else ""
+		col.add_child(UIKit.label(m.desc + unlock, 8, UIKit.DIM))
+		h.add_child(col)
+		var prog := clampf(Profile.stat(m.stat) / float(m.target), 0.0, 1.0)
+		var bar := UIKit.bar("bar_xp", Vector2(120, 8))
+		bar.value = 1.0 if is_done else prog
+		h.add_child(bar)
+		var r := UIKit.hbox(2)
+		r.add_child(UIKit.icon_rect("pearl", 12))
+		r.add_child(UIKit.label(str(m.pearls), 8, UIKit.GOLD))
+		h.add_child(r)
+		if is_done:
+			p.modulate = Color(0.75, 0.9, 0.75)
+		list.add_child(p)
+
+
+# --------------------------------------------------------------- bestiary
+func _show_bestiary() -> void:
+	var v := _open_screen("BESTIÁRIO")
+	var seen := 0
+	for id in DB.CREATURES:
+		if id != "golden" and Profile.bestiary.get(id, {}).get("seen", false):
+			seen += 1
+	v.add_child(UIKit.label("Espécies descobertas: %d/%d" % [seen, DB.CREATURES.size() - 1], 8, UIKit.DIM))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(584, 262)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(grid)
+	var order := ["producer", "detritivore", "herbivore", "carnivore", "predator", "mega"]
+	var ids := DB.CREATURES.keys().filter(func(i): return i != "golden")
+	ids.sort_custom(func(a, b): return order.find(DB.CREATURES[a].trophic) < order.find(DB.CREATURES[b].trophic))
+	for id in ids:
+		grid.add_child(_bestiary_card(id))
+
+
+func _bestiary_card(id: String) -> Control:
+	var d: Dictionary = DB.CREATURES[id]
+	var e: Dictionary = Profile.bestiary.get(id, {})
+	var known: bool = e.get("seen", false)
+	var p := PanelContainer.new()
+	p.theme_type_variation = "LightPanel"
+	p.custom_minimum_size = Vector2(186, 96)
+	var v := UIKit.vbox(2)
+	p.add_child(v)
+	var path: String = "creatures/" + d.sheet
+	var info := Art.sheet_info(path)
+	var at := AtlasTexture.new()
+	at.atlas = Art.tex(path)
+	at.region = Rect2(0, 0, info.w, info.h)
+	var sc := clampf(floorf(48.0 / maxf(info.w, info.h * 1.5)), 1.0, 3.0) if info.w < 100 else 0.5
+	var pic := UIKit.tex_rect(at, Vector2(info.w, info.h) * sc)
+	pic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if not known:
+		pic.modulate = Color(0.05, 0.07, 0.12)
+	v.add_child(pic)
+	v.add_child(UIKit.label(d.name if known else "???", 8, UIKit.GOLD if known else UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label(DB.TROPHIC_NAMES[d.trophic], 8, UIKit.CYAN, HORIZONTAL_ALIGNMENT_CENTER))
+	if known:
+		v.add_child(UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 170))
+		v.add_child(UIKit.label("Abatidos: %d" % int(e.get("kills", 0)), 8, UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	return p
+
+
+# ------------------------------------------------------------ daily reward
+func _show_daily() -> void:
+	var amount := Profile.daily_available()
+	if amount <= 0:
+		return
+	var v := _open_screen("RECOMPENSA DIÁRIA", Vector2(440, 0))
+	var next := Profile._next_streak()
+	v.add_child(UIKit.label("Volte todo dia para aumentar o prêmio!", 8, UIKit.DIM))
+	var row := UIKit.hbox(4)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	for i in Profile.DAILY_REWARDS.size():
+		var box := PanelContainer.new()
+		box.theme_type_variation = "Card_legend" if i + 1 == next else ("Card_rare" if i + 1 < next else "Card_common")
+		box.custom_minimum_size = Vector2(56, 64)
+		var bv := UIKit.vbox(2)
+		box.add_child(bv)
+		bv.add_child(UIKit.label("DIA %d" % (i + 1), 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		var ic := UIKit.icon_rect("gift" if i == 6 else "pearl", 16)
+		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		bv.add_child(ic)
+		bv.add_child(UIKit.label(str(Profile.DAILY_REWARDS[i]), 8, UIKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+		row.add_child(box)
+	v.add_child(row)
+	var b := UIKit.button("RESGATAR +%d" % amount, "GoldButton", 200, "gift")
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(func():
+		Profile.claim_daily()
+		Sfx.play("level_up")
+		_close_screen()
+		_main.visible = true)
+	v.add_child(b)

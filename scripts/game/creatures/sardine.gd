@@ -31,15 +31,16 @@ func think(delta: float) -> void:
 		if wander_t <= 0.0:
 			wander_t = randf_range(2.0, 4.0)
 			wander_dir = Vector2.from_angle(randf_range(-0.4, 0.4) + (0.0 if randf() < 0.5 else PI))
-		var food := HerbUtil.nearest_plankton(self, 90.0)
+		var food: Pickup = HerbUtil.nearest_small_food(self, 90.0) if energy < 1.15 else null
 		if food:
 			desired = (food.position - position).normalized() * speed * 0.8
 			if position.distance_to(food.position) < radius + 3.0:
 				food.consume()
+				feed(0.14)
 	if n > 0:
 		desired += (ali / n) * 0.5 + ((coh / n) - position) * 0.8 + sep * 6.0
-	if position.y < y_min:
+	if position.y < band_min():
 		desired.y += 40.0
-	elif position.y > y_max:
+	elif position.y > band_max():
 		desired.y -= 40.0
 	steer(desired.limit_length(speed * 1.9), 260.0, delta)

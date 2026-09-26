@@ -24,6 +24,10 @@ func light_pos() -> Vector2:
 
 
 func think(delta: float) -> void:
+	if lost_player():
+		search(delta)
+		sprite.modulate.a = 1.0
+		return
 	var p: Player = game.player
 	_orb_t -= delta
 	_summon_t -= delta
@@ -44,7 +48,7 @@ func think(delta: float) -> void:
 			if state_t > 0.7:
 				var side := -1.0 if randf() < 0.5 else 1.0
 				position = p.position + Vector2(side * 130.0, randf_range(-40, 40))
-				position.y = clampf(position.y, 80.0, DB.FLOOR_Y - 60.0)
+				position.y = clampf(position.y, 80.0, DB.floor_at(position.x) - 60.0)
 				_lunge_dir = (p.position - position).normalized()
 				facing = signf(_lunge_dir.x)
 				telegraph_line(position, _lunge_dir, 260.0, 50.0, 0.65)

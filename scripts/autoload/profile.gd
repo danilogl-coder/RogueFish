@@ -2,6 +2,7 @@ extends Node
 ## Persistent player profile: meta currency, upgrades, unlocks, settings, records.
 
 signal changed
+signal mission_completed(mission: Dictionary)
 
 const SAVE_PATH := "user://roguefish_save.json"
 const VERSION := 1
@@ -18,6 +19,11 @@ var records := {
 	"kills": 0, "bosses": 0, "pearls_total": 0,
 }
 var seen_tutorial := false
+var stats: Dictionary = {}          # lifetime counters / maxima used by missions
+var missions_done: Array = []
+var bestiary: Dictionary = {}       # id -> {"seen": bool, "kills": int}
+var unlocked_weapons: Array = []
+var daily := {"last": "", "streak": 0}
 
 
 func _ready() -> void:
@@ -45,6 +51,13 @@ func load_game() -> void:
 	var r: Dictionary = data.get("records", {})
 	for k in r:
 		records[k] = r[k]
+	stats = data.get("stats", {})
+	missions_done = data.get("missions_done", [])
+	bestiary = data.get("bestiary", {})
+	unlocked_weapons = data.get("unlocked_weapons", [])
+	var d: Dictionary = data.get("daily", {})
+	if not d.is_empty():
+		daily = d
 	if not unlocked.has(selected_species):
 		selected_species = "dourado"
 
@@ -53,7 +66,8 @@ func save_game() -> void:
 	var data := {
 		"version": VERSION, "pearls": pearls, "upgrades": upgrades, "unlocked": unlocked,
 		"selected_species": selected_species, "settings": settings, "records": records,
-		"seen_tutorial": seen_tutorial,
+		"seen_tutorial": seen_tutorial, "stats": stats, "missions_done": missions_done,
+		"bestiary": bestiary, "unlocked_weapons": unlocked_weapons, "daily": daily,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -129,3 +143,92 @@ func record_run(result: Dictionary) -> void:
 func vibrate(ms: int) -> void:
 	if settings.get("vibration", true) and OS.has_feature("mobile"):
 		Input.vibrate_handheld(ms)
+
+
+# ---------------------------------------------------------------- missions
+func stat(key: String) -> float:
+	return float(stats.get(key, 0))
+
+
+## Adds to a lifetime counter and checks missions. Saved at the end of runs.
+func bump(key: String, amount := 1) -> void:
+	stats[key] = stat(key) + amount
+	_check_missions(key)
+
+
+func set_max(key: String, value: float) -> void:
+	if value > stat(key):
+		stats[key] = value
+		_check_missions(key)
+
+
+func _check_missions(key: String) -> void:
+	for m in DB.MISSIONS:
+		if m.stat != key or missions_done.has(m.id):
+			continue
+		if stat(key) >= float(m.target):
+			missions_done.append(m.id)
+			pearls += int(m.pearls)
+			records.pearls_total = int(records.pearls_total) + int(m.pearls)
+			if m.has("unlock") and not unlocked_weapons.has(m.unlock):
+				unlocked_weapons.append(m.unlock)
+			mission_completed.emit(m)
+			save_game()
+
+
+func weapon_unlocked(id: String) -> bool:
+	return not DB.LOCKED_WEAPONS.has(id) or unlocked_weapons.has(id)
+
+
+# ---------------------------------------------------------------- bestiary
+## Returns true the first time a species is seen.
+func bestiary_see(id: String) -> bool:
+	if not DB.CREATURES.has(id) or id == "golden":
+		return false
+	var e: Dictionary = bestiary.get(id, {})
+	if e.get("seen", false):
+		return false
+	e["seen"] = true
+	bestiary[id] = e
+	var n := 0
+	for k in bestiary:
+		if bestiary[k].get("seen", false):
+			n += 1
+	set_max("species_seen", n)
+	return true
+
+
+func bestiary_kill(id: String) -> void:
+	var e: Dictionary = bestiary.get(id, {"seen": true})
+	e["kills"] = int(e.get("kills", 0)) + 1
+	e["seen"] = true
+	bestiary[id] = e
+
+
+# ------------------------------------------------------------------- daily
+const DAILY_REWARDS := [20, 30, 40, 60, 80, 100, 200]
+
+
+## Returns the reward available today (0 if already claimed).
+func daily_available() -> int:
+	var today := Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()))
+	if daily.last == today:
+		return 0
+	return DAILY_REWARDS[_next_streak() - 1]
+
+
+func _next_streak() -> int:
+	var yesterday := Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400)
+	var s := int(daily.streak) + 1 if daily.last == yesterday else 1
+	return ((s - 1) % DAILY_REWARDS.size()) + 1
+
+
+func claim_daily() -> int:
+	var amount := daily_available()
+	if amount <= 0:
+		return 0
+	daily.streak = _next_streak()
+	daily.last = Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()))
+	add_pearls(amount)
+	save_game()
+	return amount

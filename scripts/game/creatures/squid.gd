@@ -21,7 +21,7 @@ func think(delta: float) -> void:
 		if prey:
 			seek(prey.position, speed, 150.0, delta)
 			if position.distance_to(prey.position) < radius + prey.radius:
-				prey.die({"eaten": true})
+				eat_prey(prey)
 		else:
 			wander(delta, speed * 0.5)
 		return

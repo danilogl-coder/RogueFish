@@ -21,6 +21,9 @@ import creatures  # noqa: E402
 import env  # noqa: E402
 import fx  # noqa: E402
 import ui  # noqa: E402
+import creatures2  # noqa: E402
+import env2  # noqa: E402
+import fx2  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(ROOT, "assets", "art")
@@ -31,7 +34,8 @@ FRAME_COUNT = {
     "puffer_big": 4, "kraken_segment": 4, "leviathan_segment": 4,
     # env
     "surface": 4, "anemone": 4, "seagrass": 4, "kelp": 4, "plankton": 4, "thicket": 2,
-    "chest": 2, "clam": 3,
+    "chest": 2, "clam": 3, "tube_worms": 4, "glow_mushroom": 2,
+    "detritus": 2, "boss_food": 4, "alpha_scale": 4, "phyto": 4,
     # fx
     "xp_small": 4, "xp_mid": 4, "xp_big": 4, "xp_huge": 4, "pearl": 4, "magnet": 4,
     "bubble": 2, "bubble_big": 2, "torpedo": 2, "ink_cloud": 4, "poison_cloud": 4, "whirlpool": 4,
@@ -60,7 +64,8 @@ def main():
                 meta["player"][f"{species}_{stage}"] = m
                 print("player", species, stage, img.size)
 
-    groups = [("creatures", creatures.ALL, creatures.NF), ("env", env.ALL, 1), ("fx", fx.ALL, 1), ("ui", ui.ALL, 1)]
+    groups = [("creatures", {**creatures.ALL, **creatures2.ALL}, creatures.NF), ("env", {**env.ALL, **env2.ALL}, 1),
+              ("fx", {**fx.ALL, **fx2.ALL}, 1), ("ui", ui.ALL, 1)]
     for gname, table, default_frames in groups:
         if not want(gname):
             continue

@@ -21,6 +21,8 @@ func think(delta: float) -> void:
 		flee(game.player.position, speed * 1.2, 300.0, delta)
 		return
 	var target_pos := Vector2.INF
+	if not is_wave and not player_visible(170.0) and HerbUtil.scavenge(self, delta, 160.0):
+		return
 	if is_wave or player_visible(170.0):
 		target_pos = game.player.position
 	else:
@@ -42,7 +44,7 @@ func think(delta: float) -> void:
 	else:
 		seek(target_pos + _jitter, speed, 320.0, delta)
 	if _prey and is_instance_valid(_prey) and not _prey.dead and position.distance_to(_prey.position) < radius + _prey.radius:
-		_prey.die({"eaten": true})
+		eat_prey(_prey)
 		_prey = null
 		attack_anim = 0.25
 		state = "retreat"

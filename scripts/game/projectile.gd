@@ -71,7 +71,7 @@ func _physics_process(delta: float) -> void:
 			on_arrive.call(position)
 		queue_free()
 		return
-	if position.y > DB.FLOOR_Y + 4 or position.y < 0 or position.x < -20 or position.x > DB.WORLD_W + 20:
+	if position.y > DB.floor_at(position.x) + 4 or position.y < 0 or position.x < -20 or position.x > DB.WORLD_W + 20:
 		_finish()
 		return
 	if hostile:

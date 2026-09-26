@@ -21,14 +21,20 @@ func think(delta: float) -> void:
 		else:
 			vel *= pow(0.15, delta)
 		return
+	if HerbUtil.scavenge(self, delta, 140.0):
+		return
+	if energy > 1.15:
+		wander(delta, speed * 0.4)
+		return
 	if _food == null or not is_instance_valid(_food) or state_t > 7.0:
-		_food = HerbUtil.nearest_plankton(self, 150.0)
+		_food = HerbUtil.nearest_small_food(self, 150.0)
 		state_t = 0.0
 	if _food:
 		seek(_food.position, speed, 140.0, delta)
 		if position.distance_to(_food.position) < radius + 3.0:
 			_food.consume()
 			_food = null
+			feed(0.16)
 	else:
 		wander(delta, speed * 0.45)
 

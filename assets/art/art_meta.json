@@ -3,19 +3,26 @@
   "arrow": 41,
   "back": 29,
   "bolt": 45,
+  "bone": 52,
+  "book": 53,
   "check": 24,
   "chest": 48,
   "clock": 20,
   "coral": 37,
   "crown": 32,
+  "cycle": 56,
+  "dash": 49,
   "dna": 39,
   "eye": 43,
   "fang": 35,
   "fish": 38,
   "gear": 28,
+  "gift": 55,
   "heart": 44,
   "hidden": 33,
+  "leaf": 50,
   "lock": 23,
+  "meat": 51,
   "music": 25,
   "numbers": 40,
   "p_battery": 12,
@@ -34,9 +41,11 @@
   "play": 30,
   "plus": 34,
   "reroll": 22,
+  "scale": 57,
   "skull": 19,
   "sound": 26,
   "star": 42,
+  "target": 54,
   "torpedo": 18,
   "trophy": 31,
   "venom": 46,
@@ -683,6 +692,11 @@
    "h": 12,
    "w": 20
   },
+  "creatures/isopod": {
+   "frames": 6,
+   "h": 13,
+   "w": 22
+  },
   "creatures/jellyfish": {
    "frames": 6,
    "h": 30,
@@ -698,6 +712,11 @@
    "h": 14,
    "w": 14
   },
+  "creatures/lanternfish": {
+   "frames": 6,
+   "h": 11,
+   "w": 18
+  },
   "creatures/leviathan_head": {
    "frames": 6,
    "h": 44,
@@ -712,6 +731,16 @@
    "frames": 6,
    "h": 20,
    "w": 58
+  },
+  "creatures/orca": {
+   "frames": 6,
+   "h": 64,
+   "w": 150
+  },
+  "creatures/otter": {
+   "frames": 6,
+   "h": 18,
+   "w": 40
   },
   "creatures/pilot": {
    "frames": 6,
@@ -738,6 +767,11 @@
    "h": 11,
    "w": 18
   },
+  "creatures/sea_cucumber": {
+   "frames": 6,
+   "h": 12,
+   "w": 26
+  },
   "creatures/shark": {
    "frames": 6,
    "h": 36,
@@ -763,10 +797,20 @@
    "h": 32,
    "w": 48
   },
+  "creatures/urchin": {
+   "frames": 6,
+   "h": 18,
+   "w": 18
+  },
   "env/anemone": {
    "frames": 4,
    "h": 20,
    "w": 20
+  },
+  "env/bacterial_mat": {
+   "frames": 1,
+   "h": 6,
+   "w": 48
   },
   "env/bg_backdrop": {
    "frames": 1,
@@ -787,6 +831,11 @@
    "frames": 1,
    "h": 140,
    "w": 640
+  },
+  "env/black_smoker": {
+   "frames": 1,
+   "h": 64,
+   "w": 34
   },
   "env/cave_back": {
    "frames": 1,
@@ -832,6 +881,11 @@
    "frames": 1,
    "h": 36,
    "w": 52
+  },
+  "env/glow_mushroom": {
+   "frames": 2,
+   "h": 14,
+   "w": 14
   },
   "env/kelp": {
    "frames": 4,
@@ -888,10 +942,30 @@
    "h": 64,
    "w": 84
   },
+  "env/tube_worms": {
+   "frames": 4,
+   "h": 24,
+   "w": 18
+  },
   "env/vent": {
    "frames": 1,
    "h": 26,
    "w": 32
+  },
+  "env/whale_bones": {
+   "frames": 1,
+   "h": 46,
+   "w": 140
+  },
+  "fx/alpha_scale": {
+   "frames": 4,
+   "h": 11,
+   "w": 11
+  },
+  "fx/boss_food": {
+   "frames": 4,
+   "h": 16,
+   "w": 16
   },
   "fx/bubble": {
    "frames": 2,
@@ -902,6 +976,21 @@
    "frames": 2,
    "h": 14,
    "w": 14
+  },
+  "fx/carcass": {
+   "frames": 1,
+   "h": 11,
+   "w": 16
+  },
+  "fx/carcass_big": {
+   "frames": 1,
+   "h": 16,
+   "w": 24
+  },
+  "fx/detritus": {
+   "frames": 2,
+   "h": 5,
+   "w": 5
   },
   "fx/explosion": {
    "frames": 6,
@@ -962,6 +1051,11 @@
    "frames": 4,
    "h": 9,
    "w": 9
+  },
+  "fx/phyto": {
+   "frames": 4,
+   "h": 6,
+   "w": 6
   },
   "fx/poison_cloud": {
    "frames": 4,
@@ -1054,6 +1148,16 @@
    "w": 56
   },
   "ui/btn_attack_pressed": {
+   "frames": 1,
+   "h": 56,
+   "w": 56
+  },
+  "ui/btn_dash": {
+   "frames": 1,
+   "h": 56,
+   "w": 56
+  },
+  "ui/btn_dash_pressed": {
    "frames": 1,
    "h": 56,
    "w": 56

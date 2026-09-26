@@ -24,6 +24,16 @@ var swallowable := true
 var armor_mult := 1.0
 var light_radius := 0.0
 var dmg_mult := 1.0
+# food web
+var trophic := ""
+var diet: Array = []
+var energy := 0.7
+var metab := 0.0
+var peaceful := false
+var baby := false
+var _breed_cd := 20.0
+var _lod_skip := 0
+var _lod_acc := 0.0
 
 var vel := Vector2.ZERO
 var knock := Vector2.ZERO
@@ -75,16 +85,27 @@ func configure(p_id: String, p_def: Dictionary, opts := {}) -> void:
 	light_radius = float(def.get("light", 0.0))
 	is_wave = opts.get("wave", false)
 	elite = opts.get("elite", false)
+	baby = opts.get("baby", false)
+	trophic = def.get("trophic", "")
+	diet = def.get("diet", [])
+	metab = float(def.get("metab", 0.0))
+	peaceful = def.get("peaceful", false)
+	energy = randf_range(0.45, 0.9)
 	if elite:
 		max_hp *= 4.0
 		xp *= 4
 		radius *= 1.3
 		pearl_chance = maxf(pearl_chance, 0.5)
 		scale = Vector2(1.3, 1.3)
+	if baby:
+		max_hp *= 0.5
+		xp = maxi(1, xp / 2)
+		scale = Vector2(0.7, 0.7)
+		energy = 0.5
+		var tw := create_tween()
+		tw.tween_property(self, "scale", Vector2.ONE, 25.0)
 	hp = max_hp
 	var depth: Array = def.get("depth", [0.1, 0.9])
-	y_min = maxf(DB.SURFACE_Y + 20.0, float(depth[0]) * DB.FLOOR_Y)
-	y_max = minf(DB.FLOOR_Y - radius, float(depth[1]) * DB.FLOOR_Y)
 	on_floor = float(depth[0]) >= 1.0
 	home = position
 	wander_dir = Vector2.from_angle(randf() * TAU)
@@ -111,7 +132,7 @@ func configure_boss(p_id: String, p_def: Dictionary, diff: Dictionary) -> void:
 	faction = "boss"
 	radius = 30.0
 	y_min = 60.0
-	y_max = DB.FLOOR_Y - 30.0
+	y_max = DB.WORLD_H - 30.0
 	_setup()
 
 
@@ -126,7 +147,51 @@ func think(_delta: float) -> void:
 
 
 func hostile_now() -> bool:
+	if peaceful:
+		return provoked
 	return faction == "pred" or faction == "hazard" or faction == "boss" or provoked
+
+
+## Depth band depends on the local seafloor (reef is shallow, trench is deep).
+func band_min() -> float:
+	if is_boss:
+		return 60.0
+	var depth: Array = def.get("depth", [0.1, 0.9])
+	return maxf(DB.SURFACE_Y + 12.0, float(depth[0]) * DB.floor_at(position.x) - (0.0 if float(depth[0]) < 1.0 else radius))
+
+
+func band_max() -> float:
+	var f := DB.floor_at(position.x)
+	if is_boss:
+		return f - 40.0
+	var depth: Array = def.get("depth", [0.1, 0.9])
+	return minf(f - radius, float(depth[1]) * f)
+
+
+func hungry() -> bool:
+	return energy < 0.6
+
+
+## Eating: restores energy; well-fed animals breed, and digestion returns
+## some matter to the water as detritus (marine snow).
+func feed(amount: float) -> void:
+	energy = minf(1.3, energy + amount)
+	hp = minf(max_hp, hp + max_hp * 0.1)
+	if randf() < 0.15:
+		game.ecosystem.spawn_detritus(position)
+	var ready: float = 0.9 if DB.TROPHIC_RANK.get(trophic, 1) >= 2 else 1.05
+	if energy > ready and _breed_cd <= 0.0:
+		if game.ecosystem.try_breed(self):
+			energy -= 0.45
+			_breed_cd = randf_range(25.0, 40.0)
+
+
+func eat_prey(prey: Creature) -> void:
+	if prey == null or prey.dead:
+		return
+	prey.die({"eaten": true, "by": self})
+	feed(0.3 + prey.tier * 0.15)
+	attack_anim = 0.25
 
 
 func light_pos() -> Vector2:
@@ -135,6 +200,17 @@ func light_pos() -> Vector2:
 
 # --------------------------------------------------------------------- loop
 func _physics_process(delta: float) -> void:
+	if dead:
+		return
+	# far from the player: think 4x less often (keeps big ecosystems cheap)
+	if not is_boss and game.player and absf(position.x - game.player.position.x) > 900.0:
+		_lod_acc += delta
+		_lod_skip = (_lod_skip + 1) % 4
+		if _lod_skip != 0:
+			return
+		delta = _lod_acc
+	_lod_acc = 0.0
+	_metabolism(delta)
 	if dead:
 		return
 	_tick_status(delta)
@@ -153,8 +229,21 @@ func _physics_process(delta: float) -> void:
 	_clamp()
 	_animate(delta)
 	_contact(delta)
-	if hp_bar_t > 0.0 or flash_t > 0.0:
+	if hp_bar_t > 0.0 or flash_t > 0.0 or elite:
 		queue_redraw()
+
+
+func _metabolism(delta: float) -> void:
+	if metab <= 0.0 or is_wave or is_boss:
+		return
+	_breed_cd -= delta
+	energy -= metab * delta
+	if energy <= 0.0:
+		energy = 0.0
+		hp -= max_hp * 0.04 * delta
+		if hp <= 0.0:
+			game.ecosystem.stats.starved += 1
+			die({"starved": true})
 
 
 func _tick_status(delta: float) -> void:
@@ -207,7 +296,7 @@ func _separate() -> void:
 
 func _clamp() -> void:
 	position.x = clampf(position.x, radius, DB.WORLD_W - radius)
-	var bottom := DB.FLOOR_Y - (radius * 0.6 if on_floor else radius)
+	var bottom := DB.floor_at(position.x) - (radius * 0.6 if on_floor else radius)
 	position.y = clampf(position.y, DB.SURFACE_Y + radius, bottom)
 
 
@@ -245,6 +334,9 @@ func on_touch_player(p: Player) -> void:
 
 
 func _draw() -> void:
+	if elite and not is_boss:
+		var cr := Art.icon("crown")
+		draw_texture_rect(cr, Rect2(Vector2(-5, -radius / scale.y - 12), Vector2(10, 10)), false)
 	if hp_bar_t > 0.0 and not is_boss and hp < max_hp:
 		var w := clampf(radius * 2.2, 12.0, 34.0)
 		var y := -radius - 7.0
@@ -349,9 +441,9 @@ func wander(delta: float, spd: float) -> void:
 		wander_t = randf_range(1.5, 3.5)
 		wander_dir = Vector2.from_angle(randf_range(-0.6, 0.6) + (0.0 if randf() < 0.5 else PI))
 	# stay in depth band
-	if position.y < y_min:
+	if position.y < band_min():
 		wander_dir.y = absf(wander_dir.y) + 0.3
-	elif position.y > y_max:
+	elif position.y > band_max():
 		wander_dir.y = -absf(wander_dir.y) - 0.3
 	if position.x < 60:
 		wander_dir.x = absf(wander_dir.x) + 0.3
@@ -380,12 +472,28 @@ func fears_player() -> bool:
 	return game.player.stage > tier + 1
 
 
-## Closest prey among herbivores smaller than us (ecosystem hunting).
+## Can this animal eat `c`? Food-chain rule: prey must sit lower in the chain
+## (trophic rank) and not be bigger (tier).
+func can_eat(c: Creature) -> bool:
+	if c == self or c.dead or c.is_boss or c.id == id:
+		return false
+	if c.faction == "hazard":
+		return diet.has("jelly")
+	if diet.has("urchin"):
+		return c.id in ["urchin", "crab", "sea_cucumber", "snail"]
+	var my_rank: int = DB.TROPHIC_RANK.get(trophic, 1)
+	var its_rank: int = DB.TROPHIC_RANK.get(c.trophic, 1)
+	return its_rank < my_rank and c.tier <= tier
+
+
+## Closest prey (only when hungry: sated predators leave prey alone).
 func find_prey(range_px: float) -> Creature:
+	if not hungry() and not is_wave:
+		return null
 	var best: Creature = null
 	var bd := range_px * range_px
 	for c in game.grid.query(position, range_px):
-		if c == self or c.dead or c.faction != "herb" or c.tier >= tier:
+		if not can_eat(c):
 			continue
 		var d: float = c.position.distance_squared_to(position)
 		if d < bd:
@@ -399,7 +507,10 @@ func find_threat(range_px: float) -> Vector2:
 	var p: Player = game.player
 	if p.alive and not p.is_hidden and p.stage >= tier and position.distance_squared_to(p.position) < range_px * range_px:
 		return p.position
+	var my_rank: int = DB.TROPHIC_RANK.get(trophic, 1)
 	for c in game.grid.query(position, range_px):
-		if c != self and not c.dead and (c.faction == "pred" or c.faction == "boss") and c.tier > tier:
+		if c == self or c.dead:
+			continue
+		if c.faction == "boss" or (c.hostile_now() and DB.TROPHIC_RANK.get(c.trophic, 0) > my_rank and c.tier >= tier):
 			return c.position
 	return Vector2.INF

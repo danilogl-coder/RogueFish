@@ -22,6 +22,11 @@ func _setup() -> void:
 
 
 func think(delta: float) -> void:
+	if lost_player():
+		search(delta)
+		_head.position = position + Vector2(facing * 42.0, 4.0)
+		_tail.position = position + Vector2(-facing * 44.0, 0.0)
+		return
 	var p: Player = game.player
 	var spd := speed * (1.25 if enraged else 1.0)
 	_summon_t -= delta

@@ -19,7 +19,7 @@ func think(delta: float) -> void:
 		armor_mult = 0.2
 		return
 	armor_mult = 1.0
-	position.y = DB.FLOOR_Y - radius * 0.6
+	position.y = DB.floor_at(position.x) - radius * 0.6
 	if _kelp == null or _kelp.segments < 2:
 		_kelp = game.world.nearest_kelp(position, 500.0)
 	if _kelp:
@@ -31,7 +31,8 @@ func think(delta: float) -> void:
 			_graze_t += delta
 			if _graze_t > 3.0:
 				_graze_t = 0.0
-				_kelp.graze()
+				if _kelp.graze():
+					feed(0.35)
 	else:
 		vel = Vector2(wander_dir.x * speed, 0)
 

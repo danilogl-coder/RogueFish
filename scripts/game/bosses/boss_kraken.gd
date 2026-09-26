@@ -26,9 +26,13 @@ func _setup() -> void:
 
 
 func think(delta: float) -> void:
+	if lost_player():
+		search(delta)
+		_update_tentacles(delta)
+		return
 	var p: Player = game.player
 	var want := p.position + Vector2(0, -150)
-	want.y = clampf(want.y, 90.0, DB.FLOOR_Y - 200.0)
+	want.y = clampf(want.y, 90.0, DB.floor_at(want.x) - 200.0)
 	seek(want, speed, 60.0, delta)
 	_slam_t -= delta
 	_ink_t -= delta
@@ -56,7 +60,7 @@ func _start_slam(at: Vector2) -> void:
 		return
 	free.sort_custom(func(a, b): return (position + a.root).distance_to(at) < (position + b.root).distance_to(at))
 	var t: Dictionary = free[0]
-	at.y = minf(at.y, DB.FLOOR_Y - 10.0)
+	at.y = minf(at.y, DB.floor_at(at.x) - 10.0)
 	t.mode = "wind"
 	t.t = 0.0
 	t.target = at

@@ -37,12 +37,17 @@ func _pick_target() -> void:
 	var p: Player = game.player
 	_target = p.position + Vector2(randf_range(-260, 260), randf_range(-140, 140))
 	_target.x = clampf(_target.x, 60, DB.WORLD_W - 60)
-	_target.y = clampf(_target.y, 80, DB.FLOOR_Y - 40)
+	_target.y = clampf(_target.y, 80, DB.floor_at(_target.x) - 40)
 
 
 func think(delta: float) -> void:
 	var p: Player = game.player
 	var spd := speed * (1.25 if enraged else 1.0)
+	if lost_player():
+		state = "sweep"
+		if position.distance_to(_target) < 60.0 or state_t > 4.0:
+			_target = Vector2(clampf(position.x + randf_range(-400, 400), 60, DB.WORLD_W - 60), randf_range(120, DB.floor_at(position.x) - 80))
+			state_t = 0.0
 	_elec_t -= delta
 	_elec_on -= delta
 	_spit_t -= delta
@@ -67,7 +72,7 @@ func think(delta: float) -> void:
 			if state_t > 0.75:
 				_pick_target()
 				_go("sweep")
-	if _spit_t <= 0.0:
+	if _spit_t <= 0.0 and not lost_player():
 		_spit_t = 3.2 if not enraged else 2.2
 		for i in 3:
 			var a := (p.position - position).angle() + (i - 1) * 0.25

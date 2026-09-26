@@ -47,8 +47,8 @@ func think(delta: float) -> void:
 		"strike":
 			vel = _strike_dir * 330.0
 			for c in game.grid.query(position, radius):
-				if c != self and c.faction == "herb" and c.tier < tier and not c.dead:
-					c.die({"eaten": true})
+				if can_eat(c) and (hungry() or is_wave):
+					eat_prey(c)
 			if state_t > 0.35:
 				state = "return"
 				state_t = 0.0

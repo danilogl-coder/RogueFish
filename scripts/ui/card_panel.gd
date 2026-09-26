@@ -59,6 +59,9 @@ func open(p_mode: String, p_extra := {}) -> void:
 			_title.text = "CRESCIMENTO!"
 			_title.add_theme_color_override("font_color", UIKit.GREEN)
 			_subtitle.text = "Você virou %s. Escolha uma mutação:" % DB.STAGE_NAMES[game.player.stage].to_upper()
+			if extra.get("boss_food", false):
+				_title.text = "ALIMENTO DO CHEFE!"
+				_subtitle.text = "Uma mutação rara aguarda. Escolha:"
 		"treasure":
 			_title.text = "TESOURO!"
 			_subtitle.text = "Escolha sua recompensa"
@@ -99,6 +102,8 @@ func _level_pool() -> Array:
 	var pool := []
 	for id in DB.WEAPONS:
 		var w: Dictionary = DB.WEAPONS[id]
+		if not Profile.weapon_unlocked(id) and not p.weapons.has(id):
+			continue
 		if p.weapons.has(id):
 			var wn: Weapon = p.weapons[id]
 			if wn.evo == "" and wn.level < DB.MAX_LEVEL:
@@ -279,7 +284,20 @@ func _choose(i: int) -> void:
 		return
 	_done = true
 	var o: Dictionary = offers[i]
-	var p: Player = game.player
+	CardPanel.apply_offer(game, o)
+	Sfx.play("card")
+	var card: Control = _cards_row.get_child(i)
+	var t := create_tween().set_parallel(true)
+	t.tween_property(card, "scale", Vector2(1.15, 1.15), 0.15)
+	for j in _cards_row.get_child_count():
+		if j != i:
+			t.tween_property(_cards_row.get_child(j), "modulate:a", 0.0, 0.15)
+	t.chain().tween_property(self, "modulate:a", 0.0, 0.15)
+	t.chain().tween_callback(_close)
+
+
+static func apply_offer(g, o: Dictionary) -> void:
+	var p: Player = g.player
 	match o.kind:
 		"weapon_new", "weapon_up":
 			p.add_weapon(o.id)
@@ -292,16 +310,7 @@ func _choose(i: int) -> void:
 		"heal":
 			p.heal(p.st.max_hp * 0.4)
 		"pearls":
-			game.add_pearls(10)
-	Sfx.play("card")
-	var card: Control = _cards_row.get_child(i)
-	var t := create_tween().set_parallel(true)
-	t.tween_property(card, "scale", Vector2(1.15, 1.15), 0.15)
-	for j in _cards_row.get_child_count():
-		if j != i:
-			t.tween_property(_cards_row.get_child(j), "modulate:a", 0.0, 0.15)
-	t.chain().tween_property(self, "modulate:a", 0.0, 0.15)
-	t.chain().tween_callback(_close)
+			g.add_pearls(10)
 
 
 func _close() -> void:

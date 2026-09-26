@@ -28,8 +28,10 @@ func _process(delta: float) -> void:
 	if game == null or game.player == null:
 		return
 	var cam: Camera2D = game.camera
-	var depth := clampf((cam.get_screen_center_position().y - 260.0) / (DB.FLOOR_Y - 260.0), 0.0, 1.0)
-	target = clampf(depth * 0.62 + extra, 0.0, 0.95)
+	var cc := cam.get_screen_center_position()
+	var depth := clampf((cc.y - 260.0) / (1420.0 - 260.0), 0.0, 1.0)
+	var abyss := 0.12 if DB.biome_at(cc.x).id == "abyss" else 0.0
+	target = clampf(depth * 0.66 + abyss * 0.8 + extra, 0.0, 0.95)
 	current = lerpf(current, target, 1.0 - pow(0.1, delta))
 	tint = tint.lerp(tint_target, 1.0 - pow(0.2, delta))
 	var size := rect.size

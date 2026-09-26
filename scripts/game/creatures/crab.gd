@@ -13,7 +13,7 @@ func _setup() -> void:
 
 func think(delta: float) -> void:
 	_jump_cd -= delta
-	var floor_y := DB.FLOOR_Y - radius * 0.6
+	var floor_y := DB.floor_at(position.x) - radius * 0.6
 	if state == "air":
 		vel.y += 520.0 * delta
 		attack_anim = 0.2
@@ -23,6 +23,8 @@ func think(delta: float) -> void:
 			vel = Vector2.ZERO
 		return
 	position.y = floor_y
+	if HerbUtil.scavenge(self, delta, 200.0):
+		return
 	wander_t -= delta
 	if wander_t <= 0.0:
 		wander_t = randf_range(2.0, 5.0)

@@ -70,6 +70,19 @@ func play(sfx_name: String, volume_db := 0.0, pitch_var := 0.08, min_gap := 0.04
 	p.play()
 
 
+## One-shot at an exact pitch (rising XP chimes, combo sounds).
+func play_pitched(sfx_name: String, pitch: float, volume_db := 0.0) -> void:
+	var s := _stream(sfx_name)
+	if s == null:
+		return
+	var p := _players[_next]
+	_next = (_next + 1) % POOL_SIZE
+	p.stream = s
+	p.volume_db = volume_db
+	p.pitch_scale = pitch
+	p.play()
+
+
 func play_music(key: String, fade := 1.2) -> void:
 	if key == _current_music:
 		return

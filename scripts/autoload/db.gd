@@ -2,10 +2,19 @@ extends Node
 ## Static game data: species, creatures, bosses, weapons, passives, mutations,
 ## synergies, meta upgrades. Everything balance-related lives here.
 
-const WORLD_W := 3200.0
-const WORLD_H := 1000.0
-const FLOOR_Y := 948.0
+const WORLD_W := 4800.0
+const WORLD_H := 1560.0
+const FLOOR_Y := 948.0      # reference floor (kelp forest); use floor_at(x) for the real one
 const SURFACE_Y := 14.0
+
+# Biomes from left to right (Deeeep.io-like): each has its own floor depth,
+# light, decor, food sources and animals.
+const BIOMES := [
+	{"id": "reef", "name": "Recife de Coral", "x0": 0.0, "x1": 1450.0, "tint": Color(1.05, 1.02, 0.95)},
+	{"id": "kelp", "name": "Floresta de Kelp", "x0": 1450.0, "x1": 3150.0, "tint": Color(0.86, 1.05, 0.9)},
+	{"id": "slope", "name": "Talude Continental", "x0": 3150.0, "x1": 3750.0, "tint": Color(0.78, 0.88, 1.0)},
+	{"id": "abyss", "name": "Fossa Abissal", "x0": 3750.0, "x1": 4800.0, "tint": Color(0.5, 0.45, 0.7)},
+]
 
 const STAGE_NAMES := ["Alevino", "Juvenil", "Adulto", "Veterano", "Leviatã"]
 const STAGE_LEVELS := [1, 6, 12, 19, 27]
@@ -66,51 +75,119 @@ const SPECIES := {
 }
 
 # faction: herb | pred | hazard | gold
+# trophic: detritivore < herbivore < carnivore < predator < mega  (food chain rank)
+# diet: what it looks for when hungry: detritus, carcass, plankton, kelp, prey, jelly
+# metab: energy spent per second (hunger); creatures that eat well reproduce,
+# starving ones die and become carcasses for the scavengers.
 const CREATURES := {
+	"sea_cucumber": {"name": "Pepino-do-mar", "sheet": "sea_cucumber", "tier": 0, "hp": 18, "speed": 7, "radius": 6, "dmg": 0,
+		"xp": 2, "faction": "herb", "script": "detritivore", "depth": [1.0, 1.0], "pearl": 0.01,
+		"trophic": "detritivore", "diet": ["detritus"], "metab": 0.006, "biomes": ["reef", "kelp", "abyss", "slope"],
+		"desc": "Recicla os detritos do fundo e devolve nutrientes ao mar."},
+	"isopod": {"name": "Isópode Gigante", "sheet": "isopod", "tier": 1, "hp": 30, "speed": 26, "radius": 7, "dmg": 5,
+		"xp": 3, "faction": "herb", "script": "detritivore", "depth": [1.0, 1.0], "pearl": 0.02,
+		"trophic": "detritivore", "diet": ["carcass", "detritus"], "metab": 0.008, "biomes": ["abyss", "slope"],
+		"desc": "Necrófago do abismo. Farejam carcaças de longe."},
 	"shrimp": {"name": "Camarão", "sheet": "shrimp", "tier": 0, "hp": 6, "speed": 55, "radius": 5, "dmg": 0,
-		"xp": 1, "faction": "herb", "script": "shrimp", "depth": [0.55, 0.97], "pearl": 0.004},
+		"xp": 1, "faction": "herb", "script": "shrimp", "depth": [0.55, 0.97], "pearl": 0.004,
+		"trophic": "detritivore", "diet": ["plankton", "detritus", "carcass"], "metab": 0.01, "biomes": ["reef", "kelp", "slope"],
+		"desc": "Onívoro limpador: plâncton, detritos e restos."},
 	"sardine": {"name": "Sardinha", "sheet": "sardine", "tier": 0, "hp": 5, "speed": 80, "radius": 5, "dmg": 0,
-		"xp": 1, "faction": "herb", "script": "sardine", "depth": [0.08, 0.6], "pearl": 0.004},
+		"xp": 1, "faction": "herb", "script": "sardine", "depth": [0.08, 0.6], "pearl": 0.004,
+		"trophic": "herbivore", "diet": ["plankton"], "metab": 0.01, "biomes": ["reef", "kelp", "slope"],
+		"desc": "Vive em cardume e filtra fitoplâncton."},
+	"lanternfish": {"name": "Peixe-lanterna", "sheet": "lanternfish", "tier": 0, "hp": 6, "speed": 70, "radius": 5, "dmg": 0,
+		"xp": 2, "faction": "herb", "script": "sardine", "depth": [0.45, 0.95], "pearl": 0.01, "light": 20.0,
+		"trophic": "herbivore", "diet": ["detritus", "plankton"], "metab": 0.009, "biomes": ["abyss"],
+		"desc": "Cardumes bioluminescentes que comem a neve marinha."},
 	"snail": {"name": "Caramujo", "sheet": "snail", "tier": 0, "hp": 22, "speed": 10, "radius": 6, "dmg": 0,
-		"xp": 3, "faction": "herb", "script": "snail", "depth": [1.0, 1.0], "pearl": 0.02},
+		"xp": 3, "faction": "herb", "script": "snail", "depth": [1.0, 1.0], "pearl": 0.02,
+		"trophic": "herbivore", "diet": ["kelp"], "metab": 0.006, "biomes": ["reef", "kelp"],
+		"desc": "Raspa as algas devagar. Se esconde na concha."},
+	"urchin": {"name": "Ouriço-do-mar", "sheet": "urchin", "tier": 1, "hp": 24, "speed": 8, "radius": 6, "dmg": 5,
+		"xp": 3, "faction": "herb", "script": "urchin", "depth": [1.0, 1.0], "pearl": 0.02,
+		"trophic": "herbivore", "diet": ["kelp"], "metab": 0.007, "biomes": ["kelp", "reef"],
+		"desc": "Devora o kelp. Sem lontras, destrói a floresta!"},
 	"puffer": {"name": "Baiacu", "sheet": "puffer", "tier": 1, "hp": 28, "speed": 32, "radius": 7, "dmg": 10,
-		"xp": 4, "faction": "herb", "script": "puffer", "depth": [0.3, 0.9], "pearl": 0.02},
+		"xp": 4, "faction": "herb", "script": "puffer", "depth": [0.3, 0.9], "pearl": 0.02,
+		"trophic": "herbivore", "diet": ["plankton", "kelp"], "metab": 0.008, "biomes": ["reef"],
+		"desc": "Infla com espinhos quando ameaçado."},
 	"turtle": {"name": "Tartaruga", "sheet": "turtle", "tier": 3, "hp": 220, "speed": 30, "radius": 14, "dmg": 10,
-		"xp": 25, "faction": "herb", "script": "turtle", "depth": [0.2, 0.85], "pearl": 0.4},
+		"xp": 25, "faction": "herb", "script": "turtle", "depth": [0.2, 0.85], "pearl": 0.4,
+		"trophic": "herbivore", "diet": ["kelp", "jelly"], "metab": 0.005, "biomes": ["reef", "kelp"],
+		"desc": "Pasta kelp e caça águas-vivas. Não a irrite."},
 	"piranha": {"name": "Piranha", "sheet": "piranha", "tier": 1, "hp": 16, "speed": 88, "radius": 7, "dmg": 5,
-		"xp": 2, "faction": "pred", "script": "piranha", "depth": [0.2, 0.9], "pearl": 0.01},
+		"xp": 2, "faction": "pred", "script": "piranha", "depth": [0.2, 0.9], "pearl": 0.01,
+		"trophic": "carnivore", "diet": ["prey", "carcass"], "metab": 0.012, "biomes": ["kelp", "slope"],
+		"desc": "Matilha voraz. Ataca em bando."},
 	"barracuda": {"name": "Barracuda", "sheet": "barracuda", "tier": 2, "hp": 55, "speed": 70, "radius": 8, "dmg": 13,
-		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04},
+		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.01, "biomes": ["reef", "slope"],
+		"desc": "Espreita e dispara como uma flecha."},
 	"jellyfish": {"name": "Água-viva", "sheet": "jellyfish", "tier": 2, "hp": 26, "speed": 22, "radius": 8, "dmg": 6,
-		"xp": 4, "faction": "hazard", "script": "jellyfish", "depth": [0.1, 0.75], "pearl": 0.02, "light": 40.0},
+		"xp": 4, "faction": "hazard", "script": "jellyfish", "depth": [0.1, 0.75], "pearl": 0.02, "light": 40.0,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.006, "biomes": ["kelp", "slope", "abyss"],
+		"desc": "Deriva e queima quem encosta."},
+	"otter": {"name": "Lontra-marinha", "sheet": "otter", "tier": 2, "hp": 60, "speed": 70, "radius": 9, "dmg": 8,
+		"xp": 8, "faction": "pred", "script": "otter", "depth": [0.02, 0.1], "pearl": 0.2, "peaceful": true,
+		"trophic": "carnivore", "diet": ["urchin"], "metab": 0.012, "biomes": ["kelp"],
+		"desc": "Espécie-chave: come ouriços e salva o kelp."},
 	"moray": {"name": "Moreia", "sheet": "moray", "tier": 3, "hp": 90, "speed": 60, "radius": 9, "dmg": 14,
-		"xp": 12, "faction": "pred", "script": "moray", "depth": [1.0, 1.0], "pearl": 0.1},
-	"shark": {"name": "Tubarão", "sheet": "shark", "tier": 4, "hp": 260, "speed": 78, "radius": 15, "dmg": 22,
-		"xp": 30, "faction": "pred", "script": "shark", "depth": [0.1, 0.7], "pearl": 0.3},
-	"angler": {"name": "Peixe-Pescador", "sheet": "angler", "tier": 3, "hp": 70, "speed": 26, "radius": 11, "dmg": 16,
-		"xp": 10, "faction": "pred", "script": "angler", "depth": [0.72, 0.95], "pearl": 0.08, "light": 55.0},
+		"xp": 12, "faction": "pred", "script": "moray", "depth": [1.0, 1.0], "pearl": 0.1,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.006, "biomes": ["reef"],
+		"desc": "Emboscada na toca das rochas."},
 	"crab": {"name": "Caranguejo", "sheet": "crab", "tier": 1, "hp": 30, "speed": 36, "radius": 8, "dmg": 6,
-		"xp": 3, "faction": "pred", "script": "crab", "depth": [1.0, 1.0], "pearl": 0.02},
+		"xp": 3, "faction": "pred", "script": "crab", "depth": [1.0, 1.0], "pearl": 0.02,
+		"trophic": "carnivore", "diet": ["carcass", "detritus"], "metab": 0.008, "biomes": ["reef", "kelp", "abyss"],
+		"desc": "Onívoro do fundo. Salta sobre quem passa."},
 	"squid": {"name": "Lula", "sheet": "squid", "tier": 2, "hp": 40, "speed": 64, "radius": 8, "dmg": 8,
-		"xp": 6, "faction": "pred", "script": "squid", "depth": [0.15, 0.85], "pearl": 0.04},
+		"xp": 6, "faction": "pred", "script": "squid", "depth": [0.15, 0.85], "pearl": 0.04,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.011, "biomes": ["slope", "abyss"],
+		"desc": "Cospe tinta e foge a jato."},
+	"angler": {"name": "Peixe-Pescador", "sheet": "angler", "tier": 3, "hp": 70, "speed": 26, "radius": 11, "dmg": 16,
+		"xp": 10, "faction": "pred", "script": "angler", "depth": [0.72, 0.97], "pearl": 0.08, "light": 55.0,
+		"trophic": "predator", "diet": ["prey"], "metab": 0.004, "biomes": ["abyss"],
+		"desc": "Sua isca de luz atrai presas no escuro."},
+	"shark": {"name": "Tubarão", "sheet": "shark", "tier": 4, "hp": 260, "speed": 78, "radius": 15, "dmg": 22,
+		"xp": 30, "faction": "pred", "script": "shark", "depth": [0.1, 0.7], "pearl": 0.3,
+		"trophic": "predator", "diet": ["prey", "carcass"], "metab": 0.007, "biomes": ["kelp", "slope"],
+		"desc": "Predador de topo. Circula e investe."},
+	"orca": {"name": "Orca", "sheet": "orca", "tier": 5, "hp": 1300, "speed": 96, "radius": 22, "dmg": 30,
+		"xp": 140, "faction": "pred", "script": "orca", "depth": [0.08, 0.6], "pearl": 1.0,
+		"trophic": "mega", "diet": ["prey"], "metab": 0.008, "biomes": ["kelp", "slope", "reef"],
+		"desc": "MEGAPREDADOR. Caça até tubarões. Esconda-se!"},
 	"golden": {"name": "Peixe-Dourado Raro", "sheet": "golden", "tier": 0, "hp": 12, "speed": 110, "radius": 6, "dmg": 0,
-		"xp": 12, "faction": "gold", "script": "sardine", "depth": [0.1, 0.8], "pearl": 1.0},
+		"xp": 12, "faction": "gold", "script": "sardine", "depth": [0.1, 0.8], "pearl": 1.0,
+		"trophic": "herbivore", "diet": ["plankton"], "metab": 0.0, "biomes": ["reef", "kelp", "slope"],
+		"desc": "Raro e valioso. Foge muito rápido."},
+}
+
+const TROPHIC_RANK := {"detritivore": 0, "herbivore": 1, "carnivore": 2, "predator": 3, "mega": 4}
+const TROPHIC_NAMES := {
+	"producer": "Produtores", "detritivore": "Detritívoros", "herbivore": "Herbívoros",
+	"carnivore": "Carnívoros", "predator": "Predadores", "mega": "Megapredadores",
 }
 
 const BOSSES := {
-	"shark_king": {"name": "Mandíbula, o Tubarão-Rei", "hp": 1600, "script": "boss_shark", "dmg": 22, "xp": 250, "pearls": 25},
-	"kraken": {"name": "Kraken das Marés", "hp": 2600, "script": "boss_kraken", "dmg": 24, "xp": 400, "pearls": 40},
-	"angler_queen": {"name": "Rainha Abissal", "hp": 3600, "script": "boss_angler", "dmg": 32, "xp": 600, "pearls": 60},
-	"leviathan": {"name": "Leviatã Elétrico", "hp": 5200, "script": "boss_leviathan", "dmg": 36, "xp": 900, "pearls": 100},
+	"shark_king": {"name": "Mandíbula, o Tubarão-Rei", "hp": 2600, "script": "boss_shark", "dmg": 22, "xp": 250, "pearls": 25},
+	"kraken": {"name": "Kraken das Marés", "hp": 4300, "script": "boss_kraken", "dmg": 24, "xp": 400, "pearls": 40},
+	"angler_queen": {"name": "Rainha Abissal", "hp": 6000, "script": "boss_angler", "dmg": 32, "xp": 600, "pearls": 60},
+	"leviathan": {"name": "Leviatã Elétrico", "hp": 8800, "script": "boss_leviathan", "dmg": 36, "xp": 900, "pearls": 100},
 }
 const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan"]
 
 # Ecosystem populations per cycle (index 0 = cycle 1). Values = target counts.
+# The director only "immigrates" animals when a species falls below half of its
+# target; breeding (well-fed animals) and starvation drive the rest.
 const POPULATION := [
-	{"shrimp": 14, "sardine": 16, "snail": 4, "puffer": 3, "piranha": 5, "crab": 3, "jellyfish": 4, "turtle": 1, "angler": 1},
-	{"shrimp": 14, "sardine": 16, "snail": 4, "puffer": 4, "piranha": 8, "crab": 4, "jellyfish": 5, "turtle": 2, "angler": 2, "squid": 2, "barracuda": 2},
-	{"shrimp": 12, "sardine": 18, "snail": 4, "puffer": 4, "piranha": 8, "crab": 4, "jellyfish": 6, "turtle": 2, "angler": 3, "squid": 3, "barracuda": 3, "shark": 1},
-	{"shrimp": 12, "sardine": 18, "snail": 4, "puffer": 5, "piranha": 10, "crab": 5, "jellyfish": 7, "turtle": 2, "angler": 3, "squid": 4, "barracuda": 4, "shark": 2},
+	{"sea_cucumber": 8, "isopod": 5, "shrimp": 18, "sardine": 24, "lanternfish": 14, "snail": 5, "urchin": 6, "puffer": 4,
+		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2},
+	{"sea_cucumber": 8, "isopod": 6, "shrimp": 18, "sardine": 24, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
+		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1},
+	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
+		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1},
+	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 6,
+		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1},
 ]
 
 # Waves: weighted spawn table per cycle
@@ -221,12 +298,53 @@ const META := {
 	"choice": {"name": "Visão Ampla", "icon": "eye", "desc": "4 cartas por nível", "max": 1, "cost": [650]},
 }
 
+# Weapons that must be unlocked by missions before they show up in runs.
+const LOCKED_WEAPONS := {"pilot": "boss_shark", "whirl": "boss_kraken", "sonar": "reach_abyss"}
+
+# Missions (achievements): stat key reaches target -> pearls (+ unlock).
+const MISSIONS := [
+	{"id": "kills_50", "name": "Primeira Refeição", "desc": "Derrote 50 criaturas", "stat": "kills", "target": 50, "pearls": 30},
+	{"id": "kills_500", "name": "Caçador", "desc": "Derrote 500 criaturas", "stat": "kills", "target": 500, "pearls": 80},
+	{"id": "kills_5000", "name": "Flagelo dos Mares", "desc": "Derrote 5000 criaturas", "stat": "kills", "target": 5000, "pearls": 300},
+	{"id": "stage_2", "name": "Crescendo", "desc": "Chegue ao estágio Adulto", "stat": "max_stage", "target": 2, "pearls": 40},
+	{"id": "stage_4", "name": "Leviatã", "desc": "Chegue ao estágio Leviatã", "stat": "max_stage", "target": 4, "pearls": 120},
+	{"id": "boss_shark", "name": "Rei Deposto", "desc": "Derrote Mandíbula", "stat": "boss_shark_king", "target": 1, "pearls": 60, "unlock": "pilot"},
+	{"id": "boss_kraken", "name": "Mar Sem Tentáculos", "desc": "Derrote o Kraken", "stat": "boss_kraken", "target": 1, "pearls": 100, "unlock": "whirl"},
+	{"id": "boss_angler", "name": "Luz no Abismo", "desc": "Derrote a Rainha Abissal", "stat": "boss_angler_queen", "target": 1, "pearls": 150},
+	{"id": "boss_levi", "name": "Senhor do Oceano", "desc": "Derrote o Leviatã Elétrico", "stat": "boss_leviathan", "target": 1, "pearls": 250},
+	{"id": "reach_abyss", "name": "Mergulho Profundo", "desc": "Alcance a Fossa Abissal", "stat": "reach_abyss", "target": 1, "pearls": 30, "unlock": "sonar"},
+	{"id": "plankton_300", "name": "Filtrador", "desc": "Coma 300 plânctons", "stat": "plankton", "target": 300, "pearls": 50},
+	{"id": "kelp_50", "name": "Pastador", "desc": "Morda o kelp 50 vezes", "stat": "kelp", "target": 50, "pearls": 40},
+	{"id": "carcass_40", "name": "Necrófago", "desc": "Coma 40 pedaços de carcaça", "stat": "carcass", "target": 40, "pearls": 50},
+	{"id": "combo_50", "name": "Frenesi", "desc": "Faça um combo de 50", "stat": "max_combo", "target": 50, "pearls": 60},
+	{"id": "combo_150", "name": "Imparável", "desc": "Faça um combo de 150", "stat": "max_combo", "target": 150, "pearls": 150},
+	{"id": "evolve_1", "name": "Arma Lendária", "desc": "Evolua uma arma", "stat": "evolutions", "target": 1, "pearls": 80},
+	{"id": "mutations_4", "name": "Quimera", "desc": "Tenha 4 mutações na mesma partida", "stat": "max_mutations", "target": 4, "pearls": 100},
+	{"id": "synergy_4", "name": "Harmonia", "desc": "Ative uma sinergia de 4 itens", "stat": "max_synergy", "target": 4, "pearls": 80},
+	{"id": "chests_10", "name": "Caça ao Tesouro", "desc": "Abra 10 baús", "stat": "chests", "target": 10, "pearls": 60},
+	{"id": "alpha_10", "name": "Derruba-Alfas", "desc": "Derrote 10 Alfas", "stat": "alphas", "target": 10, "pearls": 80},
+	{"id": "orca", "name": "Matador de Orcas", "desc": "Derrote uma Orca", "stat": "orcas", "target": 1, "pearls": 200},
+	{"id": "boss_evade", "name": "Fantasma", "desc": "Faça um chefe desistir escondido", "stat": "boss_evaded", "target": 1, "pearls": 100},
+	{"id": "survive_10", "name": "Sobrevivente", "desc": "Sobreviva 10 minutos", "stat": "max_time", "target": 600, "pearls": 100},
+	{"id": "win", "name": "Dono do Oceano", "desc": "Vença uma partida", "stat": "wins", "target": 1, "pearls": 300},
+	{"id": "bestiary", "name": "Biólogo Marinho", "desc": "Descubra todas as espécies", "stat": "species_seen", "target": 19, "pearls": 200},
+]
+
+const COMBO_MILESTONES := {10: "SELVAGEM!", 25: "VORAZ!", 50: "FRENESI!", 100: "IMPARÁVEL!", 200: "LENDÁRIO!"}
+
+const DIETS := {
+	"plant": {"name": "Herbívoro", "icon": "leaf", "desc": "+0.8 PV/s e +15% XP"},
+	"meat": {"name": "Carnívoro", "icon": "fang", "desc": "+12% dano e +15% mordida"},
+	"scavenge": {"name": "Necrófago", "icon": "bone", "desc": "+2 armadura e +30% coleta"},
+	"omni": {"name": "Onívoro", "icon": "meat", "desc": "+6% dano, +0.4 PV/s e +8% XP"},
+}
+
 const RARITY_FRAME := {"common": "card_common", "rare": "card_rare", "epic": "card_epic", "legend": "card_legend", "mutation": "card_mutation"}
 
 
 func xp_to_next(level: int) -> int:
 	var l := float(level - 1)
-	return int(round(7.0 + l * 5.0 + pow(l, 1.45) * 0.9))
+	return int(round(7.0 + l * 5.5 + pow(l, 1.62) * 0.9))
 
 
 func stage_for_level(level: int) -> int:
@@ -255,6 +373,29 @@ func item_tag(id: String) -> String:
 	if MUTATIONS.has(id):
 		return MUTATIONS[id].tag
 	return ""
+
+
+func biome_at(x: float) -> Dictionary:
+	for b in BIOMES:
+		if x < b.x1:
+			return b
+	return BIOMES[BIOMES.size() - 1]
+
+
+## Seafloor height at x: shallow reef, kelp plain, continental slope, abyssal trench.
+func floor_at(x: float) -> float:
+	var y: float
+	if x < 1250.0:
+		y = 830.0
+	elif x < 1650.0:
+		y = lerpf(830.0, 948.0, smoothstep(1250.0, 1650.0, x))
+	elif x < 3150.0:
+		y = 948.0
+	elif x < 3800.0:
+		y = lerpf(948.0, 1470.0, smoothstep(3150.0, 3800.0, x))
+	else:
+		y = 1470.0
+	return y + sin(x * 0.011) * 5.0 + sin(x * 0.029 + 1.3) * 3.0
 
 
 func format_time(t: float) -> String:

@@ -555,6 +555,83 @@ def ic_chest():
     return c.render()
 
 
+def ic_dash():
+    c = icon_canvas()
+    c.poly([(6, 3), (15, 8), (6, 13), (9, 8)], A("cyan", 4, "a"))
+    for k, y in enumerate((5, 8, 11)):
+        c.line(1 + k, y, 6, y, F("white", 5, "l%d" % k, outline=False), 1)
+    return c.render()
+
+
+def ic_leaf():
+    c = icon_canvas()
+    c.poly([(2, 14), (4, 6), (9, 2), (14, 2), (13, 8), (8, 13)], A("lime", 3, "l"))
+    c.line(3, 13, 12, 4, F("kelp", 2, "v", outline=False), 1)
+    return c.render()
+
+
+def ic_meat():
+    from fx2 import carcass
+    img = Image.new("RGBA", (16, 16))
+    img.alpha_composite(carcass(), (0, 3))
+    return img
+
+
+def ic_bone():
+    c = icon_canvas()
+    c.line(4, 12, 12, 4, A("bone", 4, "b"), 2.4)
+    for x, y in ((3, 11), (5, 13), (11, 3), (13, 5)):
+        c.circle(x, y, 1.8, A("bone", 4, "k"))
+    return c.render()
+
+
+def ic_book():
+    c = icon_canvas()
+    c.rect(2, 2, 12, 12, A("brown", 3, "cover"))
+    c.rect(4, 3, 9, 10, F("cream", 4, "page", outline=False))
+    c.line(6, 6, 11, 6, F("brown", 2, "t1", outline=False), 1)
+    c.line(6, 9, 11, 9, F("brown", 2, "t2", outline=False), 1)
+    return c.render()
+
+
+def ic_target():
+    c = icon_canvas()
+    c.circle(8, 8, 6.5, F("red", 4, "o"))
+    c.circle(8, 8, 4.5, F("white", 5, "m"))
+    c.circle(8, 8, 2.5, F("red", 4, "i"))
+    return c.render()
+
+
+def ic_gift():
+    c = icon_canvas()
+    c.rect(2, 6, 12, 8, A("coral", 3, "box"))
+    c.rect(1.5, 4, 13, 3, A("coral", 4, "lid"))
+    c.rect(7, 4, 2, 10, F("volt", 4, "rib", outline=False))
+    c.circle(6, 3, 1.6, F("volt", 4, "bow1"))
+    c.circle(10, 3, 1.6, F("volt", 4, "bow2"))
+    return c.render()
+
+
+def ic_cycle():
+    c = icon_canvas()
+
+    def f(x, y):
+        d = math.hypot(x - 8, y - 8)
+        return 4 < d < 6.5
+    c.paint_fn(f, F("lime", 4, "r"))
+    c.poly([(12, 3), (15.5, 7), (11, 7.5)], F("lime", 4, "a1"))
+    c.poly([(4, 13), (0.5, 9), (5, 8.5)], F("lime", 4, "a2"))
+    c.circle(8, 8, 2, F("cyan", 4, "c"))
+    return c.render()
+
+
+def ic_scale():
+    from fx2 import alpha_scale
+    img = Image.new("RGBA", (16, 16))
+    img.alpha_composite(alpha_scale().crop((0, 0, 11, 11)), (2, 2))
+    return img
+
+
 def ic_arrow():
     c = icon_canvas()
     c.poly([(2, 3), (14, 8), (2, 13), (5, 8)], A("volt", 4, "a"))
@@ -577,6 +654,8 @@ ICONS = {
     "fish": ic_fish, "dna": ic_dna, "numbers": ic_numbers, "arrow": ic_arrow, "star": ic_star,
     "eye": ic_eye, "heart": ic_heart, "bolt": ic_pulse, "venom": ic_venom,
     "pearl": ic_pearl, "chest": ic_chest,
+    "dash": ic_dash, "leaf": ic_leaf, "meat": ic_meat, "bone": ic_bone, "book": ic_book,
+    "target": ic_target, "gift": ic_gift, "cycle": ic_cycle, "scale": ic_scale,
 }
 
 
@@ -665,6 +744,8 @@ ALL = {
     "joy_base": joy_base, "joy_knob": joy_knob,
     "btn_attack": lambda: action_button(False, "coral", ic_fang()),
     "btn_attack_pressed": lambda: action_button(True, "coral", ic_fang()),
+    "btn_dash": lambda: action_button(False, "cyan", ic_dash()),
+    "btn_dash_pressed": lambda: action_button(True, "cyan", ic_dash()),
     "btn_round": round_button, "btn_round_pressed": lambda: round_button(True),
     "logo": logo,
 }

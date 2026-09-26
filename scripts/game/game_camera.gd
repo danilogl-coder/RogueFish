@@ -25,7 +25,11 @@ func add_shake(amount: float) -> void:
 func _physics_process(delta: float) -> void:
 	if target and is_instance_valid(target):
 		var lead: Vector2 = target.vel * 0.18 if "vel" in target else Vector2.ZERO
-		global_position = target.global_position + lead
+		var want: Vector2 = target.global_position + lead
+		# never show much more than a strip of sediment below the local seafloor
+		var half_h := get_viewport_rect().size.y * 0.5 / zoom.y
+		want.y = minf(want.y, DB.floor_at(want.x) + 70.0 - half_h)
+		global_position = want
 	_noise_t += delta * 40.0
 	trauma = maxf(trauma - delta * 1.6, 0.0)
 	var s := trauma * trauma * 8.0

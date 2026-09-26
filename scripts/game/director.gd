@@ -36,9 +36,9 @@ func start() -> void:
 func difficulty() -> Dictionary:
 	var c := float(cycle - 1)
 	var t: float = game.time if game else 0.0
-	var hp := 1.0 + 0.5 * c + t / 900.0
-	var dmg := 1.0 + 0.22 * c
-	var boss_hp := 1.0 + 0.12 * c
+	var hp := 1.0 + 0.6 * c + t / 800.0
+	var dmg := 1.0 + 0.3 * c
+	var boss_hp := 1.25 + 0.2 * c
 	if endless:
 		hp *= 1.35
 		dmg *= 1.2
@@ -76,7 +76,8 @@ func _enter(p: String) -> void:
 			var bid: String = DB.BOSS_ORDER[(cycle - 1) % DB.BOSS_ORDER.size()]
 			var p2: Vector2 = game.player.position
 			var side := -1.0 if p2.x > DB.WORLD_W * 0.5 else 1.0
-			var pos := Vector2(clampf(p2.x + side * 380.0, 60, DB.WORLD_W - 60), clampf(p2.y - 40.0, 90, DB.FLOOR_Y - 90))
+			var bx := clampf(p2.x + side * 380.0, 60, DB.WORLD_W - 60)
+			var pos := Vector2(bx, clampf(p2.y - 40.0, 90, DB.floor_at(bx) - 90))
 			game.spawn_boss(bid, pos)
 			game.darkness.extra = maxf(game.darkness.extra, 0.15)
 			game.darkness.tint_target = Color(0.06, 0.0, 0.08)
@@ -134,6 +135,8 @@ func _group_size(id: String) -> int:
 			return randi_range(5, 8)
 		"piranha":
 			return randi_range(2, 4)
+		"lanternfish":
+			return randi_range(4, 7)
 	return 1
 
 
@@ -148,16 +151,19 @@ func _maintain_population(delta: float) -> void:
 			counts[c.id] = int(counts.get(c.id, 0)) + 1
 	var pop: Dictionary = DB.POPULATION[mini(cycle - 1, DB.POPULATION.size() - 1)]
 	_recycle_far()
+	# Immigration only rescues species that are collapsing; normal numbers come
+	# from breeding (well-fed animals) balanced by predation and starvation.
 	for id in pop:
 		var target: int = int(pop[id])
 		if id == "moray":
 			continue
 		var have: int = int(counts.get(id, 0))
-		if have < target and randf() < 0.6:
-			_spawn_eco(id, mini(_group_size(id), target - have + 2), false)
+		var floor_n := maxi(1, int(ceil(target * 0.5))) if phase_t > 3.0 or cycle > 1 else target
+		if have < floor_n and randf() < 0.6:
+			_spawn_eco(id, mini(_group_size(id), floor_n - have + 2), false)
 	# morays live in their rocks
 	var morays: int = int(counts.get("moray", 0))
-	if morays < game.world.eel_rocks.size() and cycle >= 1 and randf() < 0.2:
+	if morays < game.world.eel_rocks.size() and randf() < 0.2:
 		var rock: Node2D = game.world.eel_rocks[randi() % game.world.eel_rocks.size()]
 		var occupied := false
 		for c in game.creatures:
@@ -167,44 +173,72 @@ func _maintain_population(delta: float) -> void:
 			game.spawn_creature("moray", rock.position + Vector2(2, 6))
 
 
-## Keeps the area around the player lively: creatures far away are quietly
-## moved to an off-screen spot near the player.
+## Keeps the area around the player lively: animals far away are quietly moved
+## to an off-screen spot near the player, but only inside their own biomes.
 func _recycle_far() -> void:
 	var p: Vector2 = game.player.position
+	var here: String = DB.biome_at(p.x).id
 	var moved := 0
 	for c in game.creatures:
-		if moved >= 3:
+		if moved >= 2:
 			break
-		if not is_instance_valid(c) or c.dead or c.is_wave or c.is_boss or c.id == "moray" or c.faction == "gold":
+		if not is_instance_valid(c) or c.dead or c.is_wave or c.is_boss or c.id in ["moray", "golden", "orca", "otter"]:
 			continue
-		if absf(c.position.x - p.x) > 1300.0 and randf() < 0.25:
+		if not c.def.get("biomes", []).has(here):
+			continue
+		if absf(c.position.x - p.x) > 1500.0 and randf() < 0.2:
 			var nx := clampf(p.x + randf_range(420, 700) * (1.0 if randf() < 0.5 else -1.0), 60, DB.WORLD_W - 60)
-			if not _on_screen(Vector2(nx, c.position.y), 40.0):
+			if DB.biome_at(nx).id == here and not _on_screen(Vector2(nx, c.position.y), 40.0):
 				c.position.x = nx
+				c.position.y = clampf(c.position.y, c.band_min(), c.band_max())
 				c.home = c.position
 				moved += 1
+
+
+func _spawn_x_for(def: Dictionary, near: bool) -> float:
+	var biomes: Array = def.get("biomes", ["kelp"])
+	var p: Vector2 = game.player.position
+	if near:
+		for attempt in 6:
+			var x := clampf(p.x + randf_range(380, 760) * (1.0 if randf() < 0.5 else -1.0), 60, DB.WORLD_W - 60)
+			if biomes.has(DB.biome_at(x).id):
+				return x
+	var ranges := []
+	var total := 0.0
+	for b in DB.BIOMES:
+		if biomes.has(b.id):
+			ranges.append(b)
+			total += b.x1 - b.x0
+	var r := randf() * total
+	for b in ranges:
+		var w: float = b.x1 - b.x0
+		if r <= w:
+			return clampf(b.x0 + r, 60, DB.WORLD_W - 60)
+		r -= w
+	return randf_range(60, DB.WORLD_W - 60)
 
 
 func _spawn_eco(id: String, count: int, anywhere: bool) -> void:
 	var def: Dictionary = DB.CREATURES[id]
 	var depth: Array = def.depth
 	var pos := Vector2.ZERO
-	var near: bool = not anywhere and randf() < 0.65
+	var near: bool = not anywhere and randf() < 0.6
 	for attempt in 12:
-		if near:
-			pos.x = game.player.position.x + randf_range(380, 720) * (1.0 if randf() < 0.5 else -1.0)
-			pos.x = clampf(pos.x, 60, DB.WORLD_W - 60)
-		else:
-			pos.x = randf_range(60, DB.WORLD_W - 60)
-		pos.y = randf_range(float(depth[0]), float(depth[1])) * DB.FLOOR_Y
+		pos.x = _spawn_x_for(def, near)
+		var f := DB.floor_at(pos.x)
+		pos.y = randf_range(float(depth[0]), float(depth[1])) * f
+		if id == "otter":
+			pos.y = 24.0
 		if anywhere and game.player.position.distance_to(pos) > 200.0:
 			break
 		if not _on_screen(pos, 60.0):
 			break
-	pos.y = clampf(pos.y, 40.0, DB.FLOOR_Y - 8.0)
+	pos.y = clampf(pos.y, 20.0, DB.floor_at(pos.x) - 8.0)
 	for i in count:
-		var elite: bool = cycle >= 2 and randf() < 0.02 * cycle and def.faction == "pred"
-		game.spawn_creature(id, pos + Vector2(randf_range(-20, 20), randf_range(-12, 12)), {"elite": elite})
+		var alpha: bool = randf() < 0.035 * cycle and def.faction in ["pred", "herb"] and id != "orca"
+		game.spawn_creature(id, pos + Vector2(randf_range(-20, 20), randf_range(-12, 12)), {"elite": alpha})
+	if id == "orca" and not anywhere:
+		game.hud.toast("Um MEGAPREDADOR entrou nas águas...", Color("ff5c4c"))
 
 
 func _spawn_wave(delta: float) -> void:
@@ -212,7 +246,7 @@ func _spawn_wave(delta: float) -> void:
 	if _wave_t > 0.0:
 		return
 	var k := phase_t / phase_len
-	_wave_t = lerpf(1.6, 0.55, k) / (1.0 + 0.15 * (cycle - 1))
+	_wave_t = lerpf(1.6, 0.55, k) / (1.0 + 0.2 * (cycle - 1))
 	var table: Dictionary = DB.WAVES[mini(cycle - 1, DB.WAVES.size() - 1)]
 	var id := _weighted(table)
 	var group := randi_range(2, 4) + int(k * 3.0) + (cycle - 1)
@@ -224,9 +258,9 @@ func _spawn_wave(delta: float) -> void:
 	var ang := randf() * TAU
 	var base := p + Vector2.from_angle(ang) * dist
 	base.x = clampf(base.x, 30, DB.WORLD_W - 30)
-	base.y = clampf(base.y, 40, DB.FLOOR_Y - 20)
+	base.y = clampf(base.y, 40, DB.floor_at(base.x) - 20)
 	if id == "crab":
-		base.y = DB.FLOOR_Y - 6
+		base.y = DB.floor_at(base.x) - 6
 	for i in group:
 		var elite := randf() < 0.03 * cycle
 		game.spawn_creature(id, base + Vector2(randf_range(-24, 24), randf_range(-16, 16)), {"wave": true, "elite": elite})

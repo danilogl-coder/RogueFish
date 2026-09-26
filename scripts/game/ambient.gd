@@ -45,7 +45,7 @@ func _draw() -> void:
 		return
 	var c := cam.get_screen_center_position()
 	var vs := get_viewport_rect().size / cam.zoom
-	var depth := clampf(c.y / DB.FLOOR_Y, 0.0, 1.0)
+	var depth := clampf(c.y / 1400.0, 0.0, 1.0)
 	# distant schools
 	var fw := 18.0
 	for sc in _schools:

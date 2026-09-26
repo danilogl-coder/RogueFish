@@ -16,6 +16,7 @@ var _wander := Vector2.RIGHT
 var _wander_t := 0.0
 var _card_shots := 0
 var shot_every := 2.5
+var idle := false
 
 
 func _ready() -> void:
@@ -29,6 +30,13 @@ func _ready() -> void:
 			minutes = float(a.split("=")[1])
 		elif a.begins_with("--shot-every="):
 			shot_every = float(a.split("=")[1])
+		elif a.begins_with("--x="):
+			var x := float(a.split("=")[1])
+			game.player.position = Vector2(x, DB.floor_at(x) * float(a.split("=")[2]) if a.split("=").size() > 2 else DB.floor_at(x) - 80.0)
+			game.camera.global_position = game.player.position
+			game.camera.reset_smoothing()
+		elif a.begins_with("--idle"):
+			idle = true
 		elif a.begins_with("--speed="):
 			speed = float(a.split("=")[1])
 	Engine.time_scale = speed
@@ -49,8 +57,6 @@ func _ready() -> void:
 	Engine.physics_ticks_per_second = 60
 	Engine.max_physics_steps_per_frame = 16
 	print("[autotest] start god=%s speed=%s minutes=%s" % [god, speed, minutes])
-	await get_tree().process_frame
-	print("[autotest] controls size=", game.hud.controls.size, " root=", game.hud.root.size, " vis=", game.hud.controls.is_visible_in_tree())
 
 
 func _process(delta: float) -> void:
@@ -77,8 +83,16 @@ func _process(delta: float) -> void:
 					best = i
 			m._choose(best)
 			print("[autotest] t=%.0f picked %s %s" % [game.time, m.offers[best].kind, m.offers[best].id])
+		elif m is ChestPanel and m._btn.visible:
+			if shots_dir != "" and not m.has_meta("shot"):
+				m.set_meta("shot", true)
+				_screenshot("chest_%d" % _shot_n)
+				_shot_n += 1
+				return
+			print("[autotest] t=%.0f chest x%d" % [game.time, m._rewards.size()])
+			m._close()
 		elif m is GameOverMenu:
-			print("[autotest] run ended t=%.0f level=%d kills=%d cycle=%d hits=%s" % [game.time, game.level, game.kills, game.director.cycle, str(game.player.hit_log)])
+			print("[autotest] run ended won=%s t=%.0f level=%d kills=%d cycle=%d hits=%s" % [game.won, game.time, game.level, game.kills, game.director.cycle, str(game.player.hit_log)])
 			_screenshot("end")
 			get_tree().quit()
 			return
@@ -132,17 +146,26 @@ func _physics_process(delta: float) -> void:
 			_wander_t = 3.0
 			_wander = Vector2.from_angle(randf() * TAU)
 		dir = _wander
-	game.hud.debug_dir = dir.normalized()
+	if idle:
+		dir = Vector2(sin(game.time * 0.4), cos(game.time * 0.3) * 0.3) * 0.3
+	game.hud.debug_dir = dir.normalized() * (0.4 if idle else 1.0)
 	_bite_t -= delta
 	if _bite_t <= 0.0:
 		_bite_t = 0.25
 		p.try_bite()
 	_log_t -= delta
 	if _log_t <= 0.0:
-		_log_t = 15.0
+		_log_t = 30.0
 		print("[autotest] t=%.0f phase=%s cycle=%d lvl=%d stage=%d hp=%d/%d creatures=%d pickups=%d fps=%d weapons=%s" % [
 			game.time, game.director.phase, game.director.cycle, game.level, p.stage, p.hp, p.st.max_hp,
 			game.creatures.size(), game.pickups.size(), Engine.get_frames_per_second(), str(p.weapons.keys())])
+		var eco = game.ecosystem
+		var nut := []
+		for b in DB.BIOMES:
+			nut.append(int(eco.average_nutrients(b.id)))
+		print("[eco] trophic=%s nutrients=%s stats=%s plankton=%d detritus=%d carcass=%d kelp_seg=%d species=%s" % [
+			str(eco.trophic_counts()), str(nut), str(eco.stats), game.plankton.size(), game.detritus.size(), game.carcasses.size(),
+			eco.trophic_counts().producer - game.plankton.size(), str(eco.species_counts)])
 
 
 func _open_debug(what: String) -> void:

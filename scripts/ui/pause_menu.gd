@@ -25,7 +25,7 @@ func _ready() -> void:
 	top.add_child(UIKit.label("%s  NV %d  %s" % [DB.format_time(game.time), game.level, DB.STAGE_NAMES[game.player.stage].to_upper()], 8, UIKit.DIM))
 	_tabs = UIKit.hbox(4)
 	v.add_child(_tabs)
-	for t in [["STATUS", "_show_status"], ["SINERGIAS", "_show_synergies"], ["OPÇÕES", "_show_options"]]:
+	for t in [["STATUS", "_show_status"], ["SINERGIAS", "_show_synergies"], ["ECOSSISTEMA", "_show_ecosystem"], ["OPÇÕES", "_show_options"]]:
 		var b := UIKit.button(t[0])
 		b.pressed.connect(Callable(self, t[1]))
 		_tabs.add_child(b)
@@ -145,6 +145,47 @@ func _show_synergies() -> void:
 		for t in c.tags:
 			names.append(DB.TAGS[t].name)
 		_content.add_child(UIKit.label("%s %s (%s): %s" % ["[*]" if on else "[ ]", c.name, " + ".join(names), c.desc], 8, UIKit.GREEN if on else UIKit.DIM))
+
+
+func _show_ecosystem() -> void:
+	_clear()
+	var eco: Ecosystem = game.ecosystem
+	var counts: Dictionary = eco.trophic_counts()
+	_content.add_child(UIKit.label("CADEIA ALIMENTAR (agora)", 8, UIKit.GOLD))
+	var order := ["mega", "predator", "carnivore", "herbivore", "detritivore", "producer"]
+	var colors := {"mega": UIKit.RED, "predator": Color("ff9a5c"), "carnivore": UIKit.GOLD, "herbivore": UIKit.GREEN, "detritivore": Color("d2a672"), "producer": UIKit.CYAN}
+	var mx := 1
+	for k in order:
+		mx = maxi(mx, int(counts.get(k, 0)))
+	for k in order:
+		var h := UIKit.hbox(6)
+		var l := UIKit.label(DB.TROPHIC_NAMES[k], 8, colors[k])
+		l.custom_minimum_size.x = 120
+		h.add_child(l)
+		var n: int = counts.get(k, 0)
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(260, 8)
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var w := 258.0 * sqrt(float(n) / mx)
+		var c: Color = colors[k]
+		bar.draw.connect(func():
+			bar.draw_rect(Rect2(0, 0, 260, 8), Color(0.02, 0.05, 0.1))
+			bar.draw_rect(Rect2(1, 1, w, 6), c))
+		h.add_child(bar)
+		h.add_child(UIKit.label(str(n), 8))
+		_content.add_child(h)
+	_content.add_child(UIKit.label("NUTRIENTES POR BIOMA", 8, UIKit.GOLD))
+	var nh := UIKit.hbox(14)
+	for b in DB.BIOMES:
+		nh.add_child(UIKit.label("%s: %d" % [b.name, int(eco.average_nutrients(b.id))], 8, UIKit.WHITE))
+	_content.add_child(nh)
+	var s: Dictionary = eco.stats
+	_content.add_child(UIKit.label("Nascimentos %d   |   Predações %d   |   Mortes de fome %d   |   Nutrientes reciclados %d" % [s.births, s.eaten, s.starved, int(s.recycled)], 8, UIKit.DIM))
+	_content.add_child(UIKit.wrap_label("Ciclo: nutrientes alimentam kelp e fitoplâncton -> herbívoros -> carnívoros -> predadores -> orca. Toda morte vira carcaça; carcaças e fezes viram detritos (neve marinha) que isópodes, pepinos-do-mar e camarões reciclam em nutrientes. No abismo, fontes hidrotermais criam vida sem sol. Poucas lontras? Os ouriços devoram o kelp!", 8, Color("b8c6d8"), 530))
+	var p: Player = game.player
+	var dt: String = p.diet_type()
+	var diet_txt := "Dieta: %s (plantas %d%%, carne %d%%, carniça %d%%)" % [DB.DIETS[dt].name + " - " + DB.DIETS[dt].desc if dt != "" else "indefinida", p.diet_share("plant") * 100, p.diet_share("meat") * 100, p.diet_share("scavenge") * 100]
+	_content.add_child(UIKit.wrap_label(diet_txt, 8, UIKit.GREEN, 530))
 
 
 func _show_options() -> void:

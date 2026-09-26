@@ -16,6 +16,8 @@ func _setup() -> void:
 func think(delta: float) -> void:
 	match state:
 		"patrol":
+			if HerbUtil.scavenge(self, delta, 220.0):
+				return
 			wander(delta, speed * 0.7)
 			if is_wave or player_visible(250.0):
 				_target = game.player
@@ -43,8 +45,8 @@ func think(delta: float) -> void:
 		"charge":
 			vel = vel.move_toward(_charge_dir * 300.0, 900.0 * delta)
 			for c in game.grid.query(position + _charge_dir * radius, radius):
-				if c != self and c.faction == "herb" and c.tier < tier and not c.dead:
-					c.die({"eaten": true})
+				if can_eat(c) and (hungry() or is_wave):
+					eat_prey(c)
 			if state_t > 0.8:
 				_go("recover")
 		"recover":

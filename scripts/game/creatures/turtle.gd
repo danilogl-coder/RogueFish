@@ -24,6 +24,14 @@ func think(delta: float) -> void:
 			attack_anim = 0.25
 		return
 	provoked = false
+	# sea turtles also hunt jellyfish (they keep blooms in check)
+	if hungry():
+		for c in game.grid.query(position, 160.0):
+			if c.id == "jellyfish" and not c.dead:
+				seek(c.position, speed * 1.4, 120.0, delta)
+				if position.distance_to(c.position) < radius + c.radius:
+					eat_prey(c)
+				return
 	if _kelp == null or _kelp.segments < 3:
 		_kelp = game.world.nearest_kelp(position, 700.0)
 	if _kelp:
@@ -36,7 +44,8 @@ func think(delta: float) -> void:
 			if _graze_t > 2.0:
 				_graze_t = 0.0
 				attack_anim = 0.25
-				_kelp.graze()
+				if _kelp.graze():
+					feed(0.3)
 	else:
 		wander(delta, speed * 0.6)
 

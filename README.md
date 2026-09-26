@@ -17,7 +17,7 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Nível, status e pontos | XP → nível; cada nível dá 1 ponto de atributo (FOR/VIT/AGI/INS) + escolha de carta |
 | Barra de vida | HUD + barras de vida nos inimigos feridos + barra do chefe |
 | Cartas estilo Vampire Survivors | 7 armas, 11 passivas, 7 evoluções lendárias (arma nv5 + passiva parceira), rerrolagem |
-| Ecossistema planta/herbívoro/predador | Algas crescem e soltam plâncton; herbívoros pastam/comem plâncton e fogem; predadores caçam herbívoros *e* você; água-viva e pescador também comem presas |
+| Ecossistema planta/herbívoro/predador | Cadeia alimentar completa com ciclo de nutrientes: produtores (kelp, fitoplâncton, quimiossíntese), detritívoros, herbívoros, carnívoros, predadores e a orca (megapredador). Fome, reprodução, carcaças e reciclagem. Veja `docs/DESIGN.md` |
 | Esconderijos | Cavernas e moitas de algas: predadores perdem o rastro, você regenera (limitado pela barra de furtividade) |
 | Pontos de interesse com tempo | Baú (morda 3x), ostra gigante (cura), fenda térmica (+30% dano, guardada por caranguejos) e cardume dourado. Aparecem com timer e setas na borda da tela |
 | Tempo → Onda → Chefe | `director.gd`: EXPLORAR (timer) → ONDA (horda) → CHEFE. São 4 ciclos; depois da vitória há o modo infinito |
@@ -25,7 +25,22 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Evoluções que mudam a aparência | 12 mutações em 4 slots (cabeça, nadadeiras, pele e cauda), cada uma com arte própria em todos os estágios e espécies |
 | Sinergias | 6 afinidades (Elétrico, Veneno, Abissal, Coral, Predador, Corrente) com bônus em 2 e 4 itens + 3 combinações cruzadas |
 
+### Mundo (v1.1)
+4 biomas com relevo próprio: **Recife de Coral** (raso), **Floresta de Kelp**,
+**Talude Continental** (declive com ressurgência) e **Fossa Abissal** (fontes
+hidrotermais, vermes tubulares, queda de baleia, peixes-lanterna).
+
+### Retenção (v1.1)
+Combo com multiplicador de XP e frenesi, tom do XP que sobe a cada coleta
+seguida, baú-roleta (1/3/5 prêmios), onda de choque ao subir de nível, Alfas
+com escamas, dieta que dá bônus, investida (dash), chefes que desistem se você
+se esconder, 25 missões com desbloqueios, bestiário e recompensa diária.
+Pesquisa e justificativas em `docs/DESIGN.md`.
+
 ### Criaturas e comportamentos
+Pepino-do-mar e Isópode gigante (recicladores do fundo), Ouriço (devora o kelp),
+Lontra-marinha (espécie-chave que come ouriços), Peixe-lanterna (cardume
+bioluminescente), Orca (megapredador que caça até tubarões),
 Camarão (salta para fugir), Sardinha (cardume com boids), Caramujo (pasta algas e
 se fecha na concha), Baiacu (infla com espinhos), Tartaruga (pacífica, investe se
 atacada), Piranha (matilha com botes), Barracuda (espreita, sinaliza e dispara em
@@ -42,7 +57,7 @@ foge soltando nuvem).
 
 ## Controles
 - Celular: polegar esquerdo move (joystick flutuante); botão direito morde (segure para repetir).
-- Teclado: WASD/setas movem, ESPAÇO/J morde, ESC/P pausa. O botão voltar do Android pausa o jogo.
+- Teclado: WASD/setas movem, ESPAÇO/J morde, SHIFT/K dá investida, ESC/P pausa. O botão voltar do Android pausa o jogo.
 
 ## Estrutura
 
@@ -83,7 +98,8 @@ Um bot joga sozinho para teste de fumaça e balanceamento:
 
 ```
 godot --headless --path . res://scenes/game.tscn -- --autotest --speed=10 --minutes=16
-# --god (imortal)  --boss=N (pula para o chefe N)  --shots=/pasta (capturas; exige janela)
+# --god (imortal)  --boss=N (pula para o chefe N)  --x=4200 (começa nesse x)  --idle
+# --shots=/pasta (capturas; exige janela). O log [eco] mostra a cadeia alimentar.
 ```
 
 ## Publicar na Play Store

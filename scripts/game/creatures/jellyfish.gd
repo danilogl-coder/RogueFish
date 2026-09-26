@@ -15,16 +15,16 @@ func think(delta: float) -> void:
 	_pulse_t -= delta
 	if _pulse_t <= 0.0:
 		_pulse_t = randf_range(1.6, 2.6)
-		var up := -speed * 2.6 if position.y > y_min + 20 else speed * 0.5
+		var up := -speed * 2.6 if position.y > band_min() + 20 else speed * 0.5
 		vel = Vector2(randf_range(-10, 10), up)
 		state_t = 0.0
 	vel.y = move_toward(vel.y, 9.0, 40.0 * delta)
 	vel.x = move_toward(vel.x, 0.0, 6.0 * delta)
-	if position.y > y_max:
+	if position.y > band_max():
 		_pulse_t = 0.0
 	for c in game.grid.query(position + Vector2(0, 6), radius, 10.0):
-		if c != self and c.faction == "herb" and c.tier == 0 and not c.dead:
-			c.die({"eaten": true})
+		if c != self and c.faction == "herb" and c.tier == 0 and not c.dead and hungry():
+			eat_prey(c)
 			attack_anim = 0.3
 
 

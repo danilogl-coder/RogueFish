@@ -42,12 +42,14 @@ func graze(amount := 1) -> bool:
 func _process(delta: float) -> void:
 	_t += delta
 	_grow_t += delta
-	if _grow_t > 5.0 and segments < max_segments:
+	# growth needs light (shallow water) and dissolved nutrients
+	if _grow_t > 4.0 and segments < max_segments:
 		_grow_t = 0.0
-		segments += 1
+		if game != null and game.ecosystem != null and game.ecosystem.take_nutrients(position.x, 1.5):
+			segments += 1
 	_spore_t -= delta
 	if _spore_t <= 0.0:
-		_spore_t = randf_range(3.5, 6.0)
+		_spore_t = randf_range(4.0, 7.0)
 		if segments >= 4 and game != null and game.plankton.size() < 70:
 			var top := position + Vector2(_sway(segments), -segments * 8.0)
 			game.spawn_pickup("plankton", top + Vector2(randf_range(-6, 6), randf_range(0, 20)), 1)

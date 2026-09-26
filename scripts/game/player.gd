@@ -30,6 +30,13 @@ var is_hidden := false
 var stealth := 1.0
 var revives := 0
 var hit_log: Array = []  # recent hits (debug / analytics)
+var diet := {"plant": 0.0, "meat": 0.0, "scavenge": 0.0}
+var dash_charges := 2
+var dash_max := 2
+var _dash_t := 0.0
+var _dash_recharge := 0.0
+var _diet_dirty := 0.0
+var _diet_type := ""
 
 var visual: PlayerVisual
 var _t := 0.0
@@ -209,14 +216,40 @@ func recalc() -> void:
 	if active_combos.has("living_reef"):
 		s.regen += 1.0
 		s.area_mult += 0.1
+	# diet (Everything-is-Crab style: what you eat shapes you)
+	_diet_type = diet_type()
+	match _diet_type:
+		"plant":
+			s.regen += 0.8
+			s.xp_mult += 0.15
+		"meat":
+			s.damage_mult += 0.12
+			s.bite_damage *= 1.15
+		"scavenge":
+			s.armor += 2
+			s.magnet *= 1.3
+		"omni":
+			s.damage_mult += 0.06
+			s.regen += 0.4
+			s.xp_mult += 0.08
+	dash_max = 2 + (1 if mutations.get("tail", "") == "tail_fork" else 0) + (1 if mutations.get("fins", "") == "fins_wing" else 0)
 	# temporary buffs
 	if buffs.has("vent"):
 		s.damage_mult *= 1.3
+	if buffs.has("frenzy"):
+		s.speed *= 1.2
+		s.damage_mult *= 1.15
+		s.bite_cd *= 0.8
 	s.cooldown_mult = maxf(s.cooldown_mult, 0.35)
 	s.crit_chance = minf(s.crit_chance, 0.9)
 	st = s
 	hp = clampf(ratio * st.max_hp, 1.0, st.max_hp)
 	hp_changed.emit()
+	var best_syn := 0
+	for t in tag_counts:
+		best_syn = maxi(best_syn, int(tag_counts[t]))
+	Profile.set_max("max_synergy", best_syn)
+	Profile.set_max("max_mutations", mutations.size())
 
 
 # ------------------------------------------------------------------- loop
@@ -230,16 +263,29 @@ func _physics_process(delta: float) -> void:
 	_lunge_t -= delta
 	_since_attack += delta
 	_slow_t -= delta
+	_dash_t -= delta
 	_tick_buffs(delta)
+	if dash_charges < dash_max:
+		_dash_recharge += delta
+		if _dash_recharge >= 2.4:
+			_dash_recharge = 0.0
+			dash_charges += 1
+	if _diet_dirty > 0.0:
+		_diet_dirty -= delta
+		if _diet_dirty <= 0.0 and diet_type() != _diet_type:
+			recalc()
+			game.hud.toast("Dieta: %s (%s)" % [DB.DIETS[_diet_type].name, DB.DIETS[_diet_type].desc], Color("a4dc4c"))
 	# movement
 	var spd: float = st.speed * (1.0 - _slow_amt if _slow_t > 0.0 else 1.0)
-	if _lunge_t <= 0.0:
+	if _dash_t > 0.0:
+		pass
+	elif _lunge_t <= 0.0:
 		var target_v := input_dir * spd
 		var accel := 820.0 if input_dir != Vector2.ZERO else 420.0
 		vel = vel.move_toward(target_v, accel * delta)
 	position += vel * delta
 	position.x = clampf(position.x, radius, DB.WORLD_W - radius)
-	position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.FLOOR_Y - radius)
+	position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.floor_at(position.x) - radius)
 	if absf(input_dir.x) > 0.15 and _lunge_t <= 0.0:
 		facing = signf(input_dir.x)
 	# visuals
@@ -253,7 +299,9 @@ func _physics_process(delta: float) -> void:
 		var swim_fps := 5.0 + vel.length() / maxf(st.speed, 1.0) * 7.0
 		frame = int(_t * swim_fps) % 4
 	visual.set_frame(frame)
-	visual.flash(_invuln > 0.45)
+	visual.flash(_invuln > 0.45 and _invuln < 0.8)
+	if buffs.has("frenzy"):
+		visual.modulate = Color(1.3, 1.1, 0.6) if int(_t * 10.0) % 2 == 0 else Color(1.1, 1.0, 0.8)
 	visual.modulate.a = 0.5 if is_hidden else (0.55 if _invuln > 0.0 and int(_t * 20.0) % 2 == 0 else 1.0)
 	visual.pulse_glows(_t)
 	_regen(delta)
@@ -409,6 +457,26 @@ func try_bite() -> void:
 		if is_instance_valid(p) and p.kind == "chest" and p.position.distance_to(mouth) < reach + 16.0:
 			p.bite()
 			landed += 1
+	# carcasses: scavenging heals and feeds the "necrófago" diet
+	for cc in game.carcasses.duplicate():
+		if is_instance_valid(cc) and cc.position.distance_to(mouth) < reach + cc.radius:
+			var got: int = cc.bite(1 + stage / 2)
+			if got > 0:
+				heal(1.5 * got * (1.6 if _diet_type == "scavenge" else 1.0))
+				game.add_xp_f(0.8 * got)
+				eat_diet("scavenge", 2.0 * got)
+				Profile.bump("carcass", got)
+				landed += 1
+	# kelp: grazing is the herbivore path
+	if landed == 0:
+		var k: Kelp = game.world.nearest_kelp(mouth, reach + 10.0)
+		if k and k.graze():
+			heal(1.0)
+			game.add_xp_f(0.4)
+			eat_diet("plant", 3.0)
+			Profile.bump("kelp")
+			game.burst(mouth, [6, 0], 5, 30.0, 0.5)
+			landed += 1
 	if swallowed:
 		Sfx.play("gulp")
 	if landed > 0:
@@ -521,6 +589,7 @@ func revive() -> void:
 
 
 func on_kill(c: Creature, info: Dictionary) -> void:
+	eat_diet("meat", 1.0 + c.tier)
 	if st.kill_heal > 0.0 and c.faction != "herb":
 		heal(st.kill_heal, false)
 	if flags.get("crit_heal", false) and info.get("crit", false):
@@ -543,6 +612,7 @@ func add_weapon(id: String) -> void:
 
 
 func evolve_weapon(evo_id: String) -> void:
+	Profile.bump("evolutions")
 	var from: String = DB.EVOLUTIONS[evo_id].from
 	if weapons.has(from):
 		weapons[from].evolve(evo_id)
@@ -602,3 +672,43 @@ func free_mutation_slots() -> Array:
 
 func weapon_level(id: String) -> int:
 	return weapons[id].level if weapons.has(id) else 0
+
+
+# ------------------------------------------------------------------- diet
+func eat_diet(kind: String, amount: float) -> void:
+	diet[kind] = float(diet[kind]) + amount
+	_diet_dirty = 1.5
+
+
+## Dominant diet (>= 50% of what you ate) or omnivore when balanced.
+func diet_type() -> String:
+	var total: float = diet.plant + diet.meat + diet.scavenge
+	if total < 25.0:
+		return ""
+	for k in ["plant", "meat", "scavenge"]:
+		if diet[k] / total >= 0.5:
+			return k
+	return "omni"
+
+
+func diet_share(kind: String) -> float:
+	var total: float = diet.plant + diet.meat + diet.scavenge
+	return diet[kind] / total if total > 0.0 else 0.0
+
+
+# ------------------------------------------------------------------- dash
+## Deeeep.io-style boost: quick burst with brief invulnerability.
+func try_dash() -> void:
+	if not alive or dash_charges <= 0 or game.get_tree().paused or _dash_t > -0.15:
+		return
+	dash_charges -= 1
+	_dash_t = 0.2
+	var dir := input_dir.normalized() if input_dir.length() > 0.2 else Vector2(facing, 0)
+	vel = dir * st.speed * 3.4
+	grant_invuln(0.25)
+	Sfx.play("dash", -2.0)
+	game.burst(position, [0, 1, 1], 8, 60.0, 0.6)
+
+
+func grant_invuln(seconds: float) -> void:
+	_invuln = maxf(_invuln, seconds)

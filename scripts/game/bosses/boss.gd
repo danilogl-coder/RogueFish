@@ -28,7 +28,45 @@ func boss_name() -> String:
 	return def.name
 
 
+var giving_up := false
+var _leave_t := 0.0
+
+
+## True while the player hides: bosses lose track and roam instead of attacking.
+func lost_player() -> bool:
+	return game.player.is_hidden and not giving_up
+
+
+func search(delta: float) -> void:
+	wander(delta, speed * 0.45)
+	attack_anim = 0.0
+
+
+func give_up() -> void:
+	if giving_up or dead:
+		return
+	giving_up = true
+	_leave_t = 0.0
+	Sfx.play("boss_roar", -6.0)
+
+
+func hostile_now() -> bool:
+	return not giving_up and super.hostile_now()
+
+
 func _physics_process(delta: float) -> void:
+	if giving_up and not dead:
+		_leave_t += delta
+		var away: Vector2 = (position - game.player.position).normalized()
+		position += (away + Vector2(0, -0.3)).normalized() * speed * 2.0 * delta
+		modulate.a = clampf(1.0 - _leave_t / 2.5, 0.0, 1.0)
+		_animate(delta)
+		if _leave_t >= 2.5:
+			dead = true
+			on_death()
+			game.on_boss_gave_up(self)
+			queue_free()
+		return
 	if not dead and not enraged and hp < max_hp * 0.5:
 		enraged = true
 		on_enrage()

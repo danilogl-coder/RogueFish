@@ -29,6 +29,15 @@ var banner_sub: Label
 var toast_label: Label
 var indicators: Control
 var debug_dir := Vector2.ZERO
+var combo_box: VBoxContainer
+var combo_label: Label
+var combo_sub: Label
+var combo_bar: TextureProgressBar
+var diet_icon: TextureRect
+var biome_lbl: Label
+var evade_bar: TextureProgressBar
+var _combo_seen := 0
+var _biome_tween: Tween
 var _banner_tween: Tween
 var _toast_tween: Tween
 
@@ -50,6 +59,7 @@ func _ready() -> void:
 	controls = TouchControls.new()
 	root.add_child(controls)
 	controls.bite_pressed.connect(func(): game.player.try_bite())
+	controls.dash_pressed.connect(func(): game.player.try_dash())
 
 	# XP bar across the top
 	xp_bar = UIKit.bar("bar_xp", Vector2(100, 8))
@@ -78,6 +88,9 @@ func _ready() -> void:
 	tl.add_child(stage_row)
 	stage_label = UIKit.label("ALEVINO", 8, UIKit.GOLD)
 	stage_row.add_child(stage_label)
+	diet_icon = UIKit.icon_rect("leaf", 12)
+	diet_icon.visible = false
+	stage_row.add_child(diet_icon)
 	stealth_icon = UIKit.icon_rect("hidden", 12)
 	stage_row.add_child(stealth_icon)
 	stealth_bar = UIKit.bar("bar_stealth", Vector2(40, 7))
@@ -148,6 +161,37 @@ func _ready() -> void:
 	boss_bar = UIKit.bar("bar_boss", Vector2(260, 10))
 	boss_box.add_child(boss_bar)
 
+	# boss evasion meter (hide to make the boss give up)
+	evade_bar = UIKit.bar("bar_stealth", Vector2(120, 6))
+	evade_bar.visible = false
+	boss_box.add_child(evade_bar)
+
+	# combo meter (right side)
+	combo_box = UIKit.vbox(0)
+	combo_box.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	combo_box.offset_left = -110
+	combo_box.offset_right = -8
+	combo_box.offset_top = -60
+	combo_box.alignment = BoxContainer.ALIGNMENT_END
+	combo_box.modulate.a = 0.0
+	root.add_child(combo_box)
+	combo_label = UIKit.label("x0", 24, UIKit.GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+	combo_box.add_child(combo_label)
+	combo_sub = UIKit.label("COMBO", 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_RIGHT)
+	combo_box.add_child(combo_sub)
+	combo_bar = UIKit.bar("bar_wave", Vector2(90, 5))
+	combo_bar.size_flags_horizontal = Control.SIZE_SHRINK_END
+	combo_box.add_child(combo_bar)
+
+	# biome name
+	biome_lbl = UIKit.label("", 16, Color("c8fbff"), HORIZONTAL_ALIGNMENT_CENTER)
+	biome_lbl.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	biome_lbl.offset_left = -200
+	biome_lbl.offset_right = 200
+	biome_lbl.offset_top = -86
+	biome_lbl.modulate.a = 0.0
+	root.add_child(biome_lbl)
+
 	# banner
 	banner_box = UIKit.vbox(6)
 	banner_box.set_anchors_preset(Control.PRESET_CENTER)
@@ -165,6 +209,7 @@ func _ready() -> void:
 	game.player.inventory_changed.connect(_refresh_inventory)
 	game.player.stage_changed.connect(_refresh_inventory)
 	game.boss_changed.connect(_on_boss_changed)
+	Profile.mission_completed.connect(_on_mission)
 	_refresh_inventory()
 
 
@@ -215,6 +260,32 @@ func _process(_delta: float) -> void:
 	points_btn.visible = game.status_points > 0
 	points_btn.text = "+%d PONTOS" % game.status_points
 	controls.cooldown = p.bite_cooldown_ratio()
+	controls.dash_charges = p.dash_charges
+	controls.dash_max = p.dash_max
+	# combo
+	if game.combo >= 3:
+		combo_box.modulate.a = minf(1.0, combo_box.modulate.a + _delta * 6.0)
+		if game.combo != _combo_seen:
+			_combo_seen = game.combo
+			combo_label.text = "x%d" % game.combo
+			combo_label.pivot_offset = combo_label.size * Vector2(1.0, 0.5)
+			combo_label.scale = Vector2(1.35, 1.35)
+			var hue := clampf(game.combo / 150.0, 0.0, 1.0)
+			combo_label.add_theme_color_override("font_color", UIKit.GOLD.lerp(UIKit.RED, hue))
+		combo_label.scale = combo_label.scale.lerp(Vector2.ONE, 1.0 - pow(0.001, _delta))
+		combo_bar.value = clampf(game._combo_t / 2.6, 0.0, 1.0)
+		combo_sub.text = "COMBO  XP x%.2f" % game.combo_mult()
+	else:
+		combo_box.modulate.a = maxf(0.0, combo_box.modulate.a - _delta * 3.0)
+		_combo_seen = 0
+	# diet
+	var dt: String = p.diet_type()
+	diet_icon.visible = dt != ""
+	if dt != "":
+		diet_icon.texture = Art.icon(DB.DIETS[dt].icon)
+	# boss evasion
+	evade_bar.visible = game.boss != null and game.boss_evade_ratio() > 0.0
+	evade_bar.value = game.boss_evade_ratio()
 	if game.boss and is_instance_valid(game.boss):
 		boss_bar.value = game.boss.hp / game.boss.max_hp
 	indicators.queue_redraw()
@@ -305,6 +376,9 @@ func _draw_indicators() -> void:
 			targets.append([p.global_position, Color("ffbf45")])
 	if game.boss and is_instance_valid(game.boss):
 		targets.append([game.boss.global_position, Color("cc7ee0")])
+	for c in game.creatures:
+		if is_instance_valid(c) and c.id == "orca" and c.position.distance_to(game.player.position) < 700.0:
+			targets.append([c.global_position, Color("ff5c4c")])
 	var arrow := Art.icon("arrow")
 	for t in targets:
 		var sp: Vector2 = xf * t[0]
@@ -320,3 +394,25 @@ func _draw_indicators() -> void:
 		indicators.draw_set_transform(edge, dir.angle(), Vector2.ONE)
 		indicators.draw_texture(arrow, Vector2(-8, -8), Color(t[1], pulse))
 		indicators.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+
+func combo_milestone(n: int, label: String) -> void:
+	banner("%s" % label, "COMBO x%d" % n, UIKit.GOLD.lerp(UIKit.RED, clampf(n / 150.0, 0.0, 1.0)))
+
+
+func biome_label(text: String) -> void:
+	biome_lbl.text = "~ %s ~" % text
+	if _biome_tween:
+		_biome_tween.kill()
+	_biome_tween = create_tween()
+	_biome_tween.tween_property(biome_lbl, "modulate:a", 1.0, 0.5)
+	_biome_tween.tween_interval(2.2)
+	_biome_tween.tween_property(biome_lbl, "modulate:a", 0.0, 0.8)
+
+
+func _on_mission(m: Dictionary) -> void:
+	var extra := ""
+	if m.has("unlock"):
+		extra = "  |  Desbloqueado: %s" % DB.WEAPONS[m.unlock].name
+	toast("MISSÃO: %s  +%d pérolas%s" % [m.name, m.pearls, extra], UIKit.GREEN)
+	Sfx.play("level_up", -2.0)
