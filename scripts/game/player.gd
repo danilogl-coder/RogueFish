@@ -29,6 +29,7 @@ var radius := 7.0
 var is_hidden := false
 var swallowed := false     ## inside the Titanacon
 var container               ## Stomach while swallowed (keeps you inside the moving titan)
+var infest: Infestation     ## fish-louse colony living inside you
 var stealth := 1.0
 var revives := 0
 var hit_log: Array = []  # recent hits (debug / analytics)
@@ -63,6 +64,11 @@ func setup(p_species: String) -> void:
 	visual = PlayerVisual.new()
 	add_child(visual)
 	revives = Profile.upgrade_level("revive")
+	infest = Infestation.new()
+	infest.game = game
+	infest.player = self
+	infest.z_index = 1
+	add_child(infest)
 	recalc()
 	hp = st.max_hp
 	visual.set_look(species, stage, mutations)
@@ -247,6 +253,8 @@ func recalc() -> void:
 		s.speed *= 1.2
 		s.damage_mult *= 1.15
 		s.bite_cd *= 0.8
+	if infest:
+		infest.modify(s)
 	s.cooldown_mult = maxf(s.cooldown_mult, 0.35)
 	s.crit_chance = minf(s.crit_chance, 0.9)
 	st = s
@@ -569,6 +577,8 @@ func heal(amount: float, show := true) -> void:
 
 
 func _die() -> void:
+	if infest and infest.save_host():
+		return
 	if revives > 0:
 		revives -= 1
 		hp = st.max_hp * 0.5
@@ -603,6 +613,8 @@ func revive() -> void:
 
 func on_kill(c: Creature, info: Dictionary) -> void:
 	eat_diet("meat", 1.0 + c.tier)
+	if c.id == "shrimp" and infest and infest.active():
+		infest.clean(2)  # cleaner shrimp: eating them rids you of parasites
 	if st.kill_heal > 0.0 and c.faction != "herb":
 		heal(st.kill_heal, false)
 	if flags.get("crit_heal", false) and info.get("crit", false):

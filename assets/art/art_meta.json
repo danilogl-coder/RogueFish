@@ -3676,6 +3676,13 @@
    "swim": 6,
    "w": 54
   },
+  "creatures/bobbit": {
+   "act": 2,
+   "frames": 6,
+   "h": 72,
+   "swim": 4,
+   "w": 28
+  },
   "creatures/boss_angler": {
    "act": 4,
    "frames": 10,
@@ -3748,6 +3755,20 @@
    "frames": 4,
    "h": 30,
    "w": 30
+  },
+  "creatures/louse": {
+   "act": 2,
+   "frames": 6,
+   "h": 11,
+   "swim": 4,
+   "w": 16
+  },
+  "creatures/louse_f": {
+   "act": 2,
+   "frames": 6,
+   "h": 16,
+   "swim": 4,
+   "w": 24
   },
   "creatures/moray": {
    "act": 4,

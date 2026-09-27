@@ -159,6 +159,18 @@ const CREATURES := {
 		"xp": 3, "faction": "pred", "script": "parasite", "depth": [0.0, 1.0], "pearl": 0.03,
 		"trophic": "carnivore", "diet": [], "metab": 0.0, "biomes": [],
 		"desc": "Lampreia que vive dentro do Titanacon e protege seus órgãos vitais."},
+	"bobbit": {"name": "Minhoca-do-mar", "sheet": "bobbit", "tier": 3, "hp": 70, "speed": 0, "radius": 8, "dmg": 12,
+		"xp": 10, "faction": "pred", "script": "bobbit", "depth": [1.0, 1.0], "pearl": 0.08,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.004, "biomes": ["reef", "kelp", "slope"],
+		"desc": "Verme-de-bobbit: enterrado na areia, dá o bote em quem passa. Carrega larvas de piolho."},
+	"louse": {"name": "Piolho-do-mar", "sheet": "louse", "tier": 0, "hp": 12, "speed": 74, "radius": 4, "dmg": 0,
+		"xp": 2, "faction": "herb", "script": "louse", "depth": [0.25, 0.95], "pearl": 0.01,
+		"trophic": "carnivore", "diet": [], "metab": 0.0, "biomes": ["reef", "kelp", "slope", "abyss"],
+		"desc": "Parasita (Cymothoa). Entra pelas brânquias: todos nascem machos."},
+	"louse_f": {"name": "Piolho-do-mar Fêmea", "sheet": "louse_f", "tier": 1, "hp": 28, "speed": 62, "radius": 5, "dmg": 0,
+		"xp": 6, "faction": "herb", "script": "louse", "depth": [0.25, 0.95], "pearl": 0.1,
+		"trophic": "carnivore", "diet": [], "metab": 0.0, "biomes": ["reef", "kelp", "slope", "abyss"],
+		"desc": "Fêmea com bolsa de ovos. Procura um hospedeiro com machos para fundar uma colônia."},
 	"barracuda": {"name": "Barracuda", "sheet": "barracuda", "tier": 2, "hp": 55, "speed": 70, "radius": 8, "dmg": 13,
 		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04,
 		"trophic": "carnivore", "diet": ["prey"], "metab": 0.01, "biomes": ["reef", "slope"],
@@ -221,13 +233,13 @@ const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan", "titan
 # target; breeding (well-fed animals) and starvation drive the rest.
 const POPULATION := [
 	{"sea_cucumber": 8, "isopod": 5, "shrimp": 18, "sardine": 24, "lanternfish": 14, "snail": 5, "urchin": 6, "puffer": 4,
-		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2},
+		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2, "bobbit": 3, "louse": 9, "louse_f": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 18, "sardine": 24, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1},
+		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1, "bobbit": 3, "louse": 10, "louse_f": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1},
+		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1, "bobbit": 4, "louse": 10, "louse_f": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 6,
-		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1},
+		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1, "bobbit": 4, "louse": 12, "louse_f": 3},
 ]
 
 # Waves: weighted spawn table per cycle

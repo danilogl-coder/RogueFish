@@ -406,6 +406,8 @@ func _show_guide(start_after := false) -> void:
 		["hidden", "ESCONDERIJOS", "Cavernas e moitas escondem você e regeneram vida. Fique escondido tempo suficiente e até um CHEFE desiste, deixando seu alimento."],
 		["clock", "CICLOS", "Explore -> a ONDA chega -> o CHEFE aparece. Vença 5 chefes para dominar o oceano; cada chefe vencido vira uma espécie jogável."],
 		["target", "TITANACON", "O último chefe engole você! Lá dentro, ataque o coração e as glândulas, derrote os parasitas e fuja do ácido no fundo até ele te cuspir."],
+		["dna", "PARASITAS", "Piolhos-do-mar entram pelas brânquias (a Investida os espanta). Com uma fêmea, eles cruzam e a colônia cresce no seu corpo: ela te deixa lento e come XP, mas te salva da morte e, cheia, explode num ENXAME que devora inimigos. Coma camarões-limpadores para se livrar deles."],
+		["skull", "MINHOCA-DO-MAR", "Montinhos de areia com antenas escondem o verme-de-bobbit: ele salta, morde e pode deixar uma larva de piolho em você."],
 		["chest", "EVENTOS", "Baús (1, 3 ou 5 prêmios!), ostras gigantes, fendas térmicas e cardumes dourados surgem por tempo limitado."],
 		["pearl", "PÉROLAS", "Guarde pérolas entre partidas: evoluções ancestrais, novas espécies, missões e recompensa diária."],
 	]

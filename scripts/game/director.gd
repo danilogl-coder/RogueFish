@@ -182,7 +182,7 @@ func _recycle_far() -> void:
 	for c in game.creatures:
 		if moved >= 2:
 			break
-		if not is_instance_valid(c) or c.dead or c.is_wave or c.is_boss or c.id in ["moray", "golden", "orca", "otter"]:
+		if not is_instance_valid(c) or c.dead or c.is_wave or c.is_boss or c.id in ["moray", "golden", "orca", "otter", "bobbit"]:
 			continue
 		if not c.def.get("biomes", []).has(here):
 			continue

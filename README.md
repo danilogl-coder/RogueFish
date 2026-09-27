@@ -80,7 +80,7 @@ liberam na hora os chefes que já foram vencidos.
 scripts/autoload/   DB (dados/balanceamento + mapa de altura), Art (sprites + metadados), Profile (save), Sfx (áudio)
 scripts/game/       game.gd (orquestra a partida), director.gd (ciclos/ondas/chefes/POIs),
                     player.gd (stats, mordida, mutações, sinergias), weapon.gd (7 armas + evoluções),
-                    creatures/ (14 comportamentos), bosses/ (5 chefes + estômago do Titanacon), world.gd, poi.gd, ...
+                    creatures/ (16 comportamentos), bosses/ (5 chefes + estômago do Titanacon), world.gd, poi.gd, ...
 scripts/ui/         HUD, controles de toque, cartas, pausa, game over, menu principal, tema
 tools/art/          gerador de pixel art (Python + Pillow/NumPy/SciPy)
 tools/audio/        gerador de efeitos e trilhas chiptune

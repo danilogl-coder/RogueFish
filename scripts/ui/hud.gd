@@ -37,6 +37,8 @@ var diet_icon: TextureRect
 var biome_lbl: Label
 var evade_bar: TextureProgressBar
 var stomach_bar: TextureProgressBar
+var xray: Control                 ## x-ray of your body showing the parasite colony
+var _xray_a := 0.0
 var _combo_seen := 0
 var _biome_tween: Tween
 var _banner_tween: Tween
@@ -171,12 +173,24 @@ func _ready() -> void:
 	stomach_bar.visible = false
 	boss_box.add_child(stomach_bar)
 
+	# x-ray of the parasite colony (top-right, only while infested)
+	xray = Control.new()
+	xray.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	xray.offset_left = -156
+	xray.offset_right = -6
+	xray.offset_top = 58
+	xray.offset_bottom = 146
+	xray.clip_contents = true
+	xray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xray.draw.connect(_draw_xray)
+	root.add_child(xray)
+
 	# combo meter (right side)
 	combo_box = UIKit.vbox(0)
 	combo_box.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
 	combo_box.offset_left = -110
 	combo_box.offset_right = -8
-	combo_box.offset_top = -60
+	combo_box.offset_top = -24
 	combo_box.alignment = BoxContainer.ALIGNMENT_END
 	combo_box.modulate.a = 0.0
 	root.add_child(combo_box)
@@ -298,6 +312,13 @@ func _process(_delta: float) -> void:
 		boss_bar.value = game.boss.hp / game.boss.max_hp
 		boss_label.text = ("DENTRO DO TITÃ: ÓRGÃOS %d%%" % int(game.stomach_ratio() * 100.0)) if game.stomach != null else game.boss.boss_name()
 	indicators.queue_redraw()
+	var inf: Infestation = p.infest
+	var want := 1.0 if inf and inf.active() and p.alive else 0.0
+	_xray_a = move_toward(_xray_a, want, _delta * 3.0)
+	xray.visible = _xray_a > 0.0
+	xray.modulate.a = _xray_a
+	if xray.visible:
+		xray.queue_redraw()
 
 
 func _refresh_inventory() -> void:
@@ -425,3 +446,91 @@ func _on_mission(m: Dictionary) -> void:
 		extra = "  |  Desbloqueado: %s" % DB.WEAPONS[m.unlock].name
 	toast("MISSÃO: %s  +%d pérolas%s" % [m.name, m.pearls, extra], UIKit.GREEN)
 	Sfx.play("level_up", -2.0)
+
+
+## X-ray window: your fish in cyan, the lice crawling inside, the female's
+## eggs, hatchlings popping out. Lets you watch the colony multiply.
+func _draw_xray() -> void:
+	var p: Player = game.player
+	var inf: Infestation = p.infest
+	if inf == null:
+		return
+	var sz := xray.size
+	var t := Time.get_ticks_msec() / 1000.0
+	xray.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.02, 0.07, 0.12, 0.88))
+	for gx in range(0, int(sz.x), 8):
+		xray.draw_line(Vector2(gx, 12), Vector2(gx, sz.y - 12), Color(0.2, 0.7, 0.9, 0.08))
+	for gy in range(12, int(sz.y) - 12, 8):
+		xray.draw_line(Vector2(0, gy), Vector2(sz.x, gy), Color(0.2, 0.7, 0.9, 0.08))
+	var scan := fmod(t * 30.0, sz.y - 24.0) + 12.0
+	xray.draw_line(Vector2(1, scan), Vector2(sz.x - 1, scan), Color(0.4, 0.95, 1.0, 0.25))
+	xray.draw_rect(Rect2(Vector2.ZERO, sz), Color(0.37, 0.88, 1.0, 0.8), false, 1.0)
+	var font := xray.get_theme_default_font()
+	var fs := UIKit.px(8)
+	var n := inf.count()
+	# the fish body (all visual layers, current frame), tinted like an x-ray
+	var body := Rect2(6, 16, sz.x - 12, sz.y - 36)
+	var meta: Dictionary = Art.player_meta(p.species, p.stage)
+	var fl: float = float(meta.get("length", 20.0))
+	var fh: float = float(meta.get("height", 12.0))
+	var k := minf(body.size.x * 0.6 / fl, body.size.y * 0.62 / fh)
+	var origin := body.get_center() + Vector2(0, 2)
+	for spr in p.visual.sprites:
+		var dst := Rect2(origin + spr.offset * k, spr.region_rect.size * k)
+		xray.draw_texture_rect_region(spr.texture, dst, spr.region_rect, Color(0.45, 0.95, 1.0, 0.55))
+	var title := "COLÔNIA %d/%d" % [n, Infestation.MAX_COLONY]
+	xray.draw_string(font, Vector2(5, 12), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("ff8ab0") if n >= Infestation.MAX_COLONY - 4 else UIKit.CYAN)
+	# body-space ellipse where the colony lives (the gut/gill cavity)
+	var c := origin
+	var ex := fl * k * 0.3
+	var ey := fh * k * 0.26
+	var lt := Art.tex("creatures/louse")
+	var ft := Art.tex("creatures/louse_f")
+	var lw := lt.get_width() / 6.0
+	var fw := ft.get_width() / 6.0
+	var i := 0
+	for l in inf.lice:
+		var lp: Vector2 = c + Vector2(l.pos.x * ex, l.pos.y * ey)
+		var fem: bool = l.sex == "f"
+		var tex: Texture2D = ft if fem else lt
+		var w: float = fw if fem else lw
+		var fr := int(t * 8.0 + i) % 4
+		var h := float(tex.get_height())
+		var sc: float = 0.9 if fem else 0.6
+		var dst := Rect2(lp - Vector2(w, h) * sc * 0.5, Vector2(w, h) * sc)
+		if l.dir.x < 0.0:
+			dst = Rect2(dst.position + Vector2(dst.size.x, 0), Vector2(-dst.size.x, dst.size.y))
+		var age: float = inf._t - float(l.born)
+		var col := Color(1, 1, 1, clampf(age * 3.0, 0.3, 1.0))
+		xray.draw_texture_rect_region(tex, dst, Rect2(fr * w, 0, w, h), col)
+		i += 1
+	for e in inf.eggs:
+		var ep: Vector2 = c + Vector2(e.pos.x * ex, e.pos.y * ey)
+		var rip: float = 1.0 - clampf(e.t / Infestation.HATCH_TIME, 0.0, 1.0)
+		var rr: float = 1.5 + rip * 1.0 + sin(t * 8.0 + e.pos.x * 9.0) * 0.4
+		xray.draw_circle(ep, rr, Color(0.95, 0.82, 0.35, 0.9))
+		xray.draw_circle(ep + Vector2(-0.5, -0.5), rr * 0.4, Color(1, 1, 0.8, 0.9))
+	# events: hatch pops, morphs, deaths
+	for ev in inf.events():
+		var ep: Vector2 = c + Vector2(ev.pos.x * ex, ev.pos.y * ey)
+		var a: float = 1.0 - ev.t / 0.8
+		var col: Color = {"hatch": Color(1, 0.9, 0.4, a), "morph": Color(1, 0.5, 0.75, a), "die": Color(0.5, 0.9, 1.0, a), "enter": Color(1, 1, 1, a), "brood": Color(1, 0.85, 0.3, a)}.get(ev.kind, Color(1, 1, 1, a))
+		xray.draw_arc(ep, 2.0 + ev.t * 12.0, 0.0, TAU, 12, col, 1.0)
+	# status line
+	var status := ""
+	var col2 := UIKit.DIM
+	if inf.females() == 0 and inf.males() >= 2:
+		status = "MACHO VIRANDO FÊMEA %d%%" % int(inf.morph * 100.0)
+		col2 = Color("ff8ab0")
+	elif inf.females() > 0 and inf.males() > 0:
+		status = "CRUZANDO  OVOS %d" % inf.eggs.size()
+		col2 = Color("f0d060")
+	elif inf.females() > 0:
+		status = "FÊMEA ESPERANDO MACHO"
+		col2 = Color("ff8ab0")
+	else:
+		status = "MACHO SOLITÁRIO"
+	xray.draw_string(font, Vector2(5, sz.y - 5), status, HORIZONTAL_ALIGNMENT_LEFT, sz.x - 10, fs, col2)
+	# brood / morph progress
+	var prog: float = inf.brood if inf.females() > 0 else inf.morph
+	xray.draw_rect(Rect2(2, sz.y - 18, (sz.x - 4) * prog, 2), col2)

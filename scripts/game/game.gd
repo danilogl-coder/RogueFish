@@ -33,6 +33,8 @@ const CreatureScripts := {
 	"boss_leviathan": preload("res://scripts/game/bosses/boss_leviathan.gd"),
 	"boss_titanacon": preload("res://scripts/game/bosses/boss_titanacon.gd"),
 	"parasite": preload("res://scripts/game/creatures/parasite.gd"),
+	"bobbit": preload("res://scripts/game/creatures/bobbit.gd"),
+	"louse": preload("res://scripts/game/creatures/louse.gd"),
 }
 const MAX_CREATURES := 240
 const MAX_PICKUPS := 260

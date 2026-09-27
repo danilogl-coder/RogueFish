@@ -43,6 +43,18 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--open="):
 			_open_debug(a.substr(7))
+		if a.begins_with("--spawn="):
+			await get_tree().process_frame
+			var bits := a.substr(8).split(":")
+			for i in (int(bits[1]) if bits.size() > 1 else 1):
+				var x: float = game.player.position.x + 60.0 + i * 70.0
+				game.spawn_creature(bits[0], Vector2(x, DB.floor_at(x) - 4.0), {"force": true})
+		if a.begins_with("--infest="):
+			await get_tree().process_frame
+			var inf: Infestation = game.player.infest
+			for i in int(a.split("=")[1]):
+				inf.add("m", game.player.position, "")
+			inf.add("f", game.player.position, "")
 		if a.begins_with("--boss="):
 			var n := int(a.split("=")[1])
 			await get_tree().process_frame
@@ -59,9 +71,17 @@ func _ready() -> void:
 	print("[autotest] start god=%s speed=%s minutes=%s" % [god, speed, minutes])
 
 
+var _col_log := 0.0
+
+
 func _process(delta: float) -> void:
 	if game == null:
 		return
+	_col_log -= delta
+	if _col_log <= 0.0 and game.player.infest and game.player.infest.active():
+		_col_log = 5.0 * Engine.time_scale
+		var inf: Infestation = game.player.infest
+		print("[autotest] colony lice=%d (m%d f%d) eggs=%d born=%d hp=%d" % [inf.count(), inf.males(), inf.females(), inf.eggs.size(), inf.total_born, int(game.player.hp)])
 	var real := delta / maxf(Engine.time_scale, 0.001)
 	# auto-pick menus
 	if Array(OS.get_cmdline_user_args()).any(func(x): return x.begins_with("--open=")):

@@ -41,6 +41,18 @@ mas nunca tira nada do jogador).
   os protegem, o **ácido** no fundo queima e a **digestão** tira vida aos poucos. Com 25% da vida dele
   tirados por dentro, ele cospe o jogador e fica atordoado (vulnerável) por alguns segundos.
 
+### Parasitas: colônia dentro do jogador (v1.3)
+
+- Pesquisa: o *Cymothoa exigua* entra pelas brânquias como macho; sem fêmea, um macho vira fêmea e o casal
+  cruza dentro do hospedeiro. O verme-de-bobbit caça enterrado na areia. Poliquetas carregam larvas de parasitas.
+- Objetivo de design: transformar a infecção numa **escolha de risco e recompensa**, não numa punição chata.
+  Custos: -1,2% de velocidade e -2,2% de XP por parasita (máx. -28% e -50%). Ganhos: cura com vida abaixo de 30%,
+  salva da morte (a partir de 4 parasitas, perde metade), e o **Enxame** ao chegar a 24 (dano contínuo
+  escalado pelo seu dano). O jogador decide: **cultivar** a colônia (sobrevivência e enxames) ou **limpar**
+  comendo camarões (velocidade e XP de volta).
+- Visibilidade: painel de raio-x com o próprio sprite do jogador, piolhos animados, ovos que incham até
+  eclodir, anéis nos eventos (entrada, cruzamento, eclosão, troca de sexo, limpeza) e piolhos visíveis no corpo.
+
 ## 3. Inspirações de Deeeep.io
 
 | Ideia | Aplicação |

@@ -664,3 +664,128 @@ def organ_gland():
 
 
 ALL.update({"organ_heart": organ_heart, "organ_gland": organ_gland})
+
+
+# ------------------------------------------------- sea worm & fish lice
+BOBBIT = ramp("#8a4aa0")
+BOBBIT_B = ramp("#c08a3a")
+LOUSE = ramp("#b8aa98", dark=0.3)
+LOUSE_F = ramp("#e89aa8", dark=0.3)
+EGG = ramp("#f0d060")
+
+
+def bobbit():
+    """Minhoca-do-mar (bobbit worm): iridescent segmented body springing out
+    of the sand, five striped antennae and scissor jaws.
+    4 sway frames + 2 strike frames (jaws open, snap). Anchored at the bottom."""
+    frames = []
+    for i in range(6):
+        w, h = 28, 72
+        X, Y = grid(w, h)
+        lay = Layer(w, h)
+        sway = [-2.5, -0.8, 2.5, 0.8, 0.0, 0.0][i]
+        top = 17.0 if i < 4 else 12.0
+        pts = curve_pts((14, h + 2), (14 - sway * 1.6, 44), (14 + sway, top))
+        segs = tube(pts, 5.2, 4.2)
+        m, hg = capsule_field(segs, X, Y)
+        # bristles (parapodia) along both flanks
+        for k in range(len(pts) - 1):
+            px, py = pts[k]
+            for s in (-1, 1):
+                d = seg_dist(X, Y, px + s * 4.5, py, px + s * 6.8, py - 1.2)
+                lay.paint((d < 0.45) & (py < h - 3), BOBBIT_B, 5, outline=False)
+        shaded(lay, m, hg, BOBBIT, gain=1.3)
+        # segment rings with an iridescent bronze sheen band
+        rings = m & ((np.floor(Y) % 3) == 0)
+        lay.shift(rings, -1, lo=1)
+        sheen = m & (np.abs(X - (np.interp(Y, pts[::-1, 1], pts[::-1, 0]) - 1.5)) < 1.1) & ((np.floor(Y) % 3) != 0)
+        lay.paint(sheen, BOBBIT_B, 5, outline=False)
+        # head
+        hx, hy = pts[-1]
+        head = ((X - hx) / 5.4) ** 2 + ((Y - hy) / 4.2) ** 2 <= 1.0
+        shaded(lay, head, pro.dome_height(head), BOBBIT, gain=1.2, shift=1)
+        # five antennae, striped
+        for k, a in enumerate((-0.9, -0.45, 0.0, 0.45, 0.9)):
+            ln = 9.0 - abs(a) * 3.0 + (1.0 if (i + k) % 2 else 0.0)
+            ax = hx + math.sin(a + sway * 0.05) * ln
+            ay = hy - 3.0 - math.cos(a) * ln
+            d = seg_dist(X, Y, hx + a * 2.0, hy - 3.0, ax, ay)
+            stripe = (np.floor(Y) % 2) == 0
+            lay.paint((d < 0.5) & stripe, PAL["white"], 5, outline=False)
+            lay.paint((d < 0.5) & ~stripe, BOBBIT, 2, outline=False)
+        # scissor jaws: closed while swaying, wide open then snapped on a strike
+        gape = [0.35, 0.35, 0.35, 0.35, 1.25, 0.05][i]
+        for s in (-1, 1):
+            a0 = -math.pi / 2 + s * (0.35 + gape)
+            x0, y0 = hx + s * 1.6, hy - 3.2
+            x1 = x0 + math.cos(a0) * 5.5
+            y1 = y0 + math.sin(a0) * 5.5
+            x2 = x1 - s * 2.4
+            y2 = y1 - 1.2
+            d = np.minimum(seg_dist(X, Y, x0, y0, x1, y1), seg_dist(X, Y, x1, y1, x2, y2))
+            lay.paint(d < 0.6, BOBBIT_B, 3)
+            lay.paint((d < 0.6) & (Y < y1), BOBBIT_B, 5)
+        eye(lay, X, Y, hx - 2.2, hy + 0.5)
+        eye(lay, X, Y, hx + 2.2, hy + 0.5)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+def _louse(female: bool):
+    """Fish louse (Cymothoa-like isopod). Males are small and grey; the female
+    is bigger, pink and carries a brood pouch full of eggs.
+    4 crawl frames + 2 grip frames (legs clamp, body arches)."""
+    frames = []
+    rmp = LOUSE_F if female else LOUSE
+    for i in range(6):
+        w, h = (24, 16) if female else (16, 11)
+        X, Y = grid(w, h)
+        lay = Layer(w, h)
+        s = 1.35 if female else 1.0
+        cx, cy = w / 2 - 0.5, h / 2 - 0.5
+        grip = i >= 4
+        step = i % 2
+        # seven pairs of hooked legs
+        for k in range(7):
+            lx = cx - 4.6 * s + k * 1.45 * s
+            curl = 1.2 if grip else (0.9 if (k + step) % 2 else -0.3)
+            d = seg_dist(X, Y, lx, cy + 1.5 * s, lx - curl, cy + 3.6 * s)
+            lay.paint(d < 0.45, rmp, 1, outline=False)
+        arch = 0.6 if (grip and i == 5) else 0.0
+        body = (((X - cx) / (6.3 * s)) ** 2 + ((Y - cy + arch) / (3.2 * s)) ** 2 <= 1.0) & (Y < cy + 2.0 * s)
+        shaded(lay, body, pro.dome_height(body), rmp, gain=1.6)
+        seams = body & ((np.floor(X - cx + 40) % 2) == 0) & (X < cx + 3.6 * s) & (X > cx - 5.0 * s)
+        lay.shift(seams, -1, lo=2)
+        if female:
+            # marsupium: translucent pouch under the belly, eggs showing through
+            pouch = ((X - cx + 0.5) / 5.0) ** 2 + ((Y - cy - 2.8) / 2.6) ** 2 <= 1.0
+            lay.paint(pouch & ~body, rmp, 5)
+        # head with big dark eyes
+        hx = cx + 6.0 * s
+        head = ((X - hx) / (1.9 * s)) ** 2 + ((Y - cy) / (2.0 * s)) ** 2 <= 1.0
+        shaded(lay, head, pro.dome_height(head), rmp, shift=1)
+        dot(lay, X, Y, hx, cy - 0.8, PAL["black"], 0)
+        if female:
+            dot(lay, X, Y, hx + 0.9, cy - 0.8, PAL["black"], 0)
+        # tail fan
+        tail = poly_mask(X, Y, [(cx - 6 * s, cy), (cx - 8.2 * s, cy - 1.4 * s), (cx - 8.2 * s, cy + 1.6 * s), (cx - 6 * s, cy + 1.4 * s)])
+        lay.paint(tail, rmp, 3)
+        lay.clean(1)
+        if female:
+            for ex in range(-4, 4, 2):
+                egg = np.hypot(X - (cx + ex + 0.5 + (i % 2) * 0.4), Y - (cy + 3.2)) < 0.9
+                lay.paint(egg, EGG, 4, outline=False)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+def louse():
+    return _louse(False)
+
+
+def louse_f():
+    return _louse(True)
+
+
+ALL.update({"bobbit": bobbit, "louse": louse, "louse_f": louse_f})
