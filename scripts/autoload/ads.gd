@@ -36,6 +36,13 @@ func has_real_backend() -> bool:
 	return _backend != null
 
 
+## Videos can be shown: a real ad SDK is connected, the player is VIP (instant
+## rewards) or this is a debug build (simulated video). Release builds
+## without an SDK hide every video button instead of faking ads.
+func available() -> bool:
+	return _backend != null or Profile.vip or OS.is_debug_build()
+
+
 # ---------------------------------------------------------------- limits
 func _today() -> String:
 	return Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()))
@@ -56,6 +63,8 @@ func watched_today(placement: String) -> int:
 
 
 func remaining(placement: String) -> int:
+	if not available():
+		return 0
 	return maxi(0, int(Offers.VIDEOS[placement].daily) - watched_today(placement))
 
 
@@ -66,7 +75,7 @@ func cooldown_left(placement: String) -> float:
 
 
 func can_show(placement: String) -> bool:
-	return not _busy and remaining(placement) > 0 and cooldown_left(placement) <= 0.0
+	return available() and not _busy and remaining(placement) > 0 and cooldown_left(placement) <= 0.0
 
 
 ## Short text for a button ("VER VÍDEO", "3/5 hoje", "volte em 2:10"...).

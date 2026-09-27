@@ -38,3 +38,6 @@ const PRODUCTS := {
 }
 
 const VIP_PEARL_BONUS := 0.25
+
+## Public privacy policy (docs/privacy.html published with GitHub Pages).
+const PRIVACY_URL := "https://danilogl-coder.github.io/roguefish/privacy.html"

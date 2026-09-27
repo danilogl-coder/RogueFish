@@ -34,14 +34,23 @@ func _ready() -> void:
 	_apply_audio()
 
 
-func load_game() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return
-	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+## Reads a save file; returns {} when missing or corrupt.
+func _read(path: String) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
-		return
-	var data = JSON.parse_string(f.get_as_text())
-	if typeof(data) != TYPE_DICTIONARY:
+		return {}
+	var parsed = JSON.parse_string(f.get_as_text())
+	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+func load_game() -> void:
+	var data := _read(SAVE_PATH)
+	if data.is_empty():
+		# the main file is missing or was cut by a crash: use the backup
+		data = _read(SAVE_PATH + ".bak")
+	if data.is_empty():
 		return
 	pearls = int(data.get("pearls", 0))
 	upgrades = data.get("upgrades", {})
@@ -81,10 +90,27 @@ func save_game() -> void:
 		"bestiary": bestiary, "unlocked_weapons": unlocked_weapons, "daily": daily,
 		"owned": owned, "ad_log": ad_log, "purchases": purchases, "vip": vip,
 	}
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	# write to a temp file first, then swap it in: a crash or the OS killing
+	# the app mid-write can never leave a half-written save behind
+	var tmp := SAVE_PATH + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data))
+		f.close()
+		var dir := DirAccess.open("user://")
+		if dir:
+			if FileAccess.file_exists(SAVE_PATH):
+				dir.copy(SAVE_PATH, SAVE_PATH + ".bak")
+			if dir.rename(tmp, SAVE_PATH) != OK:
+				dir.remove(SAVE_PATH)
+				dir.rename(tmp, SAVE_PATH)
 	changed.emit()
+
+
+func _notification(what: int) -> void:
+	# Android may kill the app at any time once it is in the background
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		save_game()
 
 
 func upgrade_level(id: String) -> int:

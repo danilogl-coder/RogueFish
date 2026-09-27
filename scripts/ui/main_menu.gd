@@ -61,6 +61,8 @@ func _ready() -> void:
 func _refresh_video_btn() -> void:
 	if _video_btn == null:
 		return
+	_video_btn.visible = Ads.available()
+	_video_hint.visible = Ads.available()
 	_video_btn.disabled = not Ads.can_show("pearls")
 	_video_btn.text = ("VÍDEO +%d" if not Profile.vip else "VIP +%d") % int(Offers.VIDEOS.pearls.reward)
 	_video_hint.text = Ads.status_text("pearls")
@@ -821,6 +823,16 @@ func _show_options() -> void:
 		Profile.settings.erase("modes")
 		Profile.save_game()
 		reset.text = "APAGADO")
+	var links := UIKit.hbox(6)
+	v.add_child(links)
+	var priv := UIKit.button("PRIVACIDADE", "", 0, "eye")
+	priv.pressed.connect(func(): OS.shell_open(Offers.PRIVACY_URL))
+	links.add_child(priv)
+	var rest := UIKit.button("RESTAURAR COMPRAS", "", 0, "chest")
+	rest.pressed.connect(func():
+		Billing.restore()
+		rest.text = "VERIFICANDO...")
+	links.add_child(rest)
 	v.add_child(reset)
 
 

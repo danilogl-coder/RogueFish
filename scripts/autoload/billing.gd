@@ -36,6 +36,9 @@ func _ready() -> void:
 		_play.connect("purchases_updated", _on_play_purchases)
 		_play.connect("purchase_error", func(code, msg): _fail("store", str(msg)))
 		_play.connect("sku_details_query_completed", _on_play_details)
+		_play.connect("query_purchases_response", func(res):
+			if typeof(res) == TYPE_DICTIONARY and int(res.get("status", 1)) == 0:
+				_on_play_purchases(res.get("purchases", [])))
 		_play.startConnection()
 
 
@@ -102,6 +105,15 @@ func grant(id: String) -> void:
 func _fail(id: String, reason: String) -> void:
 	_pending = ""
 	failed.emit(id, reason)
+
+
+## Asks the store again for everything this account owns (new phone,
+## reinstall). Non-consumables come back through grant().
+func restore() -> void:
+	if _play != null:
+		_play.queryPurchases("inapp")
+	elif _backend != null and _backend.has_method("restore"):
+		_backend.call("restore")
 
 
 # ------------------------------------------------------------ Google Play

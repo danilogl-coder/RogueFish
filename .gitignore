@@ -3,3 +3,11 @@
 /android/
 *.tmp
 __pycache__/
+
+# build outputs and signing keys never go to git
+builds/*.apk
+builds/*.aab
+builds/*.idsig
+*.keystore
+*.jks
+*.bundle
