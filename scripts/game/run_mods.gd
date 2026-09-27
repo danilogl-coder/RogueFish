@@ -47,9 +47,9 @@ func run_start() -> void:
 		var ids := DB.MUTATIONS.keys()
 		ids.shuffle()
 		p.add_mutation(ids[0])
-		game.hud.toast("Âmbar Ancestral: %s" % Families.mutation_name(p.species, ids[0]), Color("ffbf45"))
+		game.hud.toast(tr("Âmbar Ancestral: %s") % Families.mutation_name(p.species, ids[0]), Color("ffbf45"))
 	if tide != "":
-		game.hud.toast(Shop.ITEMS[tide].name.to_upper() + " ativa", Color("7ae0ff"))
+		game.hud.toast(tr(Shop.ITEMS[tide].name).to_upper() + tr(" ativa"), Color("7ae0ff"))
 
 
 func cycle_start() -> void:

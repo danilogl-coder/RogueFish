@@ -54,19 +54,19 @@ func open(p_mode: String, p_extra := {}) -> void:
 	_reroll_btn.pressed.connect(_reroll)
 	bottom.add_child(_reroll_btn)
 	if game.banishes > 0 and mode == "level":
-		_banish_btn = UIKit.button("BANIR %d" % game.banishes, "", 0, "skull")
+		_banish_btn = UIKit.button(tr("BANIR %d") % game.banishes, "", 0, "skull")
 		_banish_btn.pressed.connect(func():
 			_banish_mode = not _banish_mode
-			_banish_btn.text = ("TOQUE NA CARTA" if _banish_mode else "BANIR %d" % game.banishes))
+			_banish_btn.text = ("TOQUE NA CARTA" if _banish_mode else tr("BANIR %d") % game.banishes))
 		bottom.add_child(_banish_btn)
 	match mode:
 		"level":
 			_title.text = "SUBIU DE NÍVEL!"
-			_subtitle.text = "Nível %d  -  escolha uma melhoria" % game.level
+			_subtitle.text = tr("Nível %d  -  escolha uma melhoria") % game.level
 		"mutation":
 			_title.text = "CRESCIMENTO!"
 			_title.add_theme_color_override("font_color", UIKit.GREEN)
-			_subtitle.text = "Você virou %s. Escolha uma mutação:" % Evolutions.stage_name(game.player.species, game.player.stage).to_upper()
+			_subtitle.text = tr("Você virou %s. Escolha uma mutação:") % Evolutions.stage_name(game.player.species, game.player.stage).to_upper()
 			if extra.get("boss_food", false):
 				_title.text = "ALIMENTO DO CHEFE!"
 				_subtitle.text = "Uma mutação rara aguarda. Escolha:"
@@ -116,18 +116,18 @@ func _level_pool() -> Array:
 		if p.weapons.has(id):
 			var wn: Weapon = p.weapons[id]
 			if wn.evo == "" and wn.level < DB.weapon_max(id):
-				pool.append(_offer("weapon_up", id, w.name, DB.weapon_desc(id, wn.level), w.icon, "epic" if fused else "common", w.tag, wn.level, 12.0 if fused else 10.0))
+				pool.append(_offer("weapon_up", id, tr(w.name), DB.weapon_desc(id, wn.level), w.icon, "epic" if fused else "common", w.tag, wn.level, 12.0 if fused else 10.0))
 		elif fused or not DB.item_unlocked(id):
 			continue
 		elif p.weapons.size() < DB.MAX_WEAPONS:
-			pool.append(_offer("weapon_new", id, w.name, DB.weapon_desc(id, 0), w.icon, "rare", w.tag, 0, 6.0))
+			pool.append(_offer("weapon_new", id, tr(w.name), DB.weapon_desc(id, 0), w.icon, "rare", w.tag, 0, 6.0))
 	for id in DB.PASSIVES:
 		var pd: Dictionary = DB.PASSIVES[id]
 		var lvl: int = p.passives.get(id, 0)
 		if lvl > 0 and lvl < DB.MAX_LEVEL:
-			pool.append(_offer("passive_up", id, pd.name, pd.desc, pd.icon, "common", pd.tag, lvl, 7.0))
+			pool.append(_offer("passive_up", id, tr(pd.name), tr(pd.desc), pd.icon, "common", pd.tag, lvl, 7.0))
 		elif lvl == 0 and p.passives.size() < DB.MAX_PASSIVES:
-			pool.append(_offer("passive_new", id, pd.name, pd.desc, pd.icon, "common", pd.tag, 0, 5.0))
+			pool.append(_offer("passive_new", id, tr(pd.name), tr(pd.desc), pd.icon, "common", pd.tag, 0, 5.0))
 	for e in _available_evolutions():
 		pool.append(e)
 	for f in available_fusions(p):
@@ -147,7 +147,7 @@ func _available_evolutions() -> Array:
 		var e: Dictionary = DB.EVOLUTIONS[evo]
 		var from: String = e.from
 		if p.weapons.has(from) and p.weapons[from].evo == "" and p.weapons[from].level >= DB.MAX_LEVEL and p.passives.has(DB.WEAPONS[from].pair):
-			out.append(_offer("evolution", evo, e.name, e.desc, e.icon, "legend", DB.WEAPONS[from].tag, 5, 60.0))
+			out.append(_offer("evolution", evo, tr(e.name), tr(e.desc), e.icon, "legend", DB.WEAPONS[from].tag, 5, 60.0))
 	return out
 
 
@@ -163,7 +163,7 @@ static func available_fusions(p) -> Array:
 		if ok and not p.weapons.has(fid):
 			var a: String = DB.WEAPONS[f.from[0]].name
 			var b: String = DB.WEAPONS[f.from[1]].name
-			var o := {"kind": "fusion", "id": fid, "title": f.name, "desc": "%s + %s\n%s" % [a, b, f.desc], "icon": f.icon,
+			var o := {"kind": "fusion", "id": fid, "title": I18n.t(f.name), "desc": "%s + %s\n%s" % [a, b, I18n.t(f.desc)], "icon": f.icon,
 				"rarity": "legend", "tag": f.tag, "level": 0, "weight": 80.0, "from": f.from}
 			out.append(o)
 	return out
@@ -199,7 +199,7 @@ func _mutation_offers(n: int) -> Array:
 	var out := []
 	for mid in picks:
 		var m: Dictionary = DB.MUTATIONS[mid]
-		out.append(_offer("mutation", mid, Families.mutation_name(p.species, mid), m.desc, "dna", "mutation", m.tag, 0, 1.0))
+		out.append(_offer("mutation", mid, Families.mutation_name(p.species, mid), tr(m.desc), "dna", "mutation", m.tag, 0, 1.0))
 	return out
 
 
@@ -264,7 +264,7 @@ func _make_card(o: Dictionary, w: float) -> Button:
 		"weapon_new", "passive_new":
 			head = "NOVO!"
 		"weapon_up", "passive_up":
-			head = "NV %d > %d" % [o.level, o.level + 1]
+			head = tr("NV %d > %d") % [o.level, o.level + 1]
 		"evolution":
 			head = "EVOLUÇÃO"
 		"fusion":
@@ -288,10 +288,10 @@ func _make_card(o: Dictionary, w: float) -> Button:
 		var ic := UIKit.icon_rect(o.icon, 32)
 		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		v.add_child(ic)
-	var t := UIKit.wrap_label(o.title, 8, UIKit.GOLD if o.rarity == "legend" else UIKit.WHITE, w - 16)
+	var t := UIKit.wrap_label(tr(o.title), 8, UIKit.GOLD if o.rarity == "legend" else UIKit.WHITE, w - 16)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(t)
-	var d := UIKit.wrap_label(o.desc, 8, Color("b8c6d8"), w - 16)
+	var d := UIKit.wrap_label(tr(o.desc), 8, Color("b8c6d8"), w - 16)
 	d.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	d.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(d)
@@ -299,12 +299,12 @@ func _make_card(o: Dictionary, w: float) -> Button:
 		var chip := UIKit.hbox(3)
 		chip.alignment = BoxContainer.ALIGNMENT_CENTER
 		chip.add_child(UIKit.icon_rect(DB.TAGS[o.tag].icon, 12))
-		chip.add_child(UIKit.label(DB.TAGS[o.tag].name, 8, DB.TAGS[o.tag].color))
+		chip.add_child(UIKit.label(tr(DB.TAGS[o.tag].name), 8, DB.TAGS[o.tag].color))
 		v.add_child(chip)
 		var have: int = game.player.tag_counts.get(o.tag, 0)
 		var adds: bool = o.kind in ["weapon_new", "passive_new", "mutation"]
 		if adds and (have + 1 == 2 or have + 1 == 4):
-			var syn := UIKit.label("SINERGIA %d!" % (have + 1), 8, UIKit.GREEN, HORIZONTAL_ALIGNMENT_CENTER)
+			var syn := UIKit.label(tr("SINERGIA %d!") % (have + 1), 8, UIKit.GREEN, HORIZONTAL_ALIGNMENT_CENTER)
 			v.add_child(syn)
 	b.mouse_entered.connect(func():
 		b.pivot_offset = b.size * 0.5
@@ -321,7 +321,7 @@ func _choose(i: int) -> void:
 		game.banishes -= 1
 		game.banished[offers[i].id] = true
 		_banish_mode = false
-		_banish_btn.text = "BANIR %d" % game.banishes
+		_banish_btn.text = tr("BANIR %d") % game.banishes
 		_banish_btn.disabled = game.banishes <= 0
 		var ids := offers.map(func(o): return o.id)
 		var pool := _level_pool().filter(func(o): return not ids.has(o.id))
@@ -388,7 +388,7 @@ func _reroll() -> void:
 
 func _update_reroll() -> void:
 	if game.rerolls > 0:
-		_reroll_btn.text = "REROLAR (%d)" % game.rerolls
+		_reroll_btn.text = tr("REROLAR (%d)") % game.rerolls
 		_reroll_btn.visible = true
 	else:
 		_reroll_btn.text = "VÍDEO: REROLAR" if not Profile.vip else "REROLAR (VIP)"
@@ -401,13 +401,13 @@ func _refresh_attrs() -> void:
 		return
 	for c in _attr_row.get_children():
 		c.queue_free()
-	_points_label.text = "PONTOS: %d" % game.status_points
+	_points_label.text = tr("PONTOS: %d") % game.status_points
 	for key in DB.ATTRIBUTES:
 		var a: Dictionary = DB.ATTRIBUTES[key]
 		var val: int = game.player.attributes[key]
-		var b := UIKit.button("%s %d" % [a.name, val], "", 0, a.icon)
+		var b := UIKit.button("%s %d" % [tr(a.name), val], "", 0, a.icon)
 		b.disabled = game.status_points <= 0 or val >= DB.ATTRIBUTE_MAX
-		b.tooltip_text = a.desc
+		b.tooltip_text = tr(a.desc)
 		b.pressed.connect(func():
 			if game.status_points > 0 and game.player.add_attribute(key):
 				game.status_points -= 1

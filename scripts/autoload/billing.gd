@@ -163,7 +163,7 @@ func _simulate(id: String) -> void:
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(v)
 	v.add_child(UIKit.label("COMPRA DE TESTE", 16, UIKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
-	v.add_child(UIKit.label("%s — %s" % [d.name, price_text(id)], 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label("%s — %s" % [tr(d.name), price_text(id)], 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(UIKit.label("(simulada: nenhuma loja ligada, nada é cobrado)", 8, UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	var h := UIKit.hbox(8)
 	h.alignment = BoxContainer.ALIGNMENT_CENTER

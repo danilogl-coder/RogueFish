@@ -22,7 +22,7 @@ func setup(amount: float, crit: bool, p_color: Color) -> void:
 
 
 func setup_text(p_text: String, p_color: Color, p_size := 8) -> void:
-	text = p_text
+	text = tr(p_text)
 	color = p_color
 	size = p_size
 	_life = 1.2

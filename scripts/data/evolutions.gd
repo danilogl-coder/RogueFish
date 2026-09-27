@@ -136,11 +136,11 @@ static func stage(species: String, i: int) -> Array:
 
 
 static func stage_name(species: String, i: int) -> String:
-	return String(stage(species, i)[0])
+	return I18n.t(String(stage(species, i)[0]))
 
 
 static func stage_desc(species: String, i: int) -> String:
-	return String(stage(species, i)[1])
+	return I18n.t(String(stage(species, i)[1]))
 
 
 static func move_id(species: String, i: int) -> String:

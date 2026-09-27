@@ -42,7 +42,7 @@ func evolve(evo_id: String) -> void:
 
 
 func display_name() -> String:
-	return DB.EVOLUTIONS[evo].name if evo != "" else DB.WEAPONS[id].name
+	return tr(DB.EVOLUTIONS[evo].name) if evo != "" else tr(DB.WEAPONS[id].name)
 
 
 func is_fusion() -> bool:

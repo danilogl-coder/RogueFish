@@ -305,7 +305,7 @@ func _physics_process(delta: float) -> void:
 		_diet_dirty -= delta
 		if _diet_dirty <= 0.0 and diet_type() != _diet_type:
 			recalc()
-			game.hud.toast("Dieta: %s (%s)" % [DB.DIETS[_diet_type].name, DB.DIETS[_diet_type].desc], Color("a4dc4c"))
+			game.hud.toast(tr("Dieta: %s (%s)") % [tr(DB.DIETS[_diet_type].name), tr(DB.DIETS[_diet_type].desc)], Color("a4dc4c"))
 	# movement
 	var spd: float = st.speed * (1.0 - _slow_amt if _slow_t > 0.0 else 1.0)
 	if _dash_t > 0.0:
@@ -743,7 +743,7 @@ func fuse_weapons(fid: String) -> void:
 	Profile.bump("fused_" + fid)
 	Sfx.play_stinger("fusion")
 	game.fx("fx/explosion", position, 14.0, 2.4, Color("ff8ae0"))
-	game.hud.banner("FUSÃO!", f.name, Color("ff8ae0"))
+	game.hud.banner("FUSÃO!", tr(f.name), Color("ff8ae0"))
 	game.shake(6.0)
 	recalc()
 	inventory_changed.emit()
@@ -786,7 +786,7 @@ func grow_to(new_stage: int) -> void:
 	var old_move := Evolutions.move_id(species, stage - 1)
 	var mv := Evolutions.move(species, stage)
 	if Evolutions.move_id(species, stage) != old_move:
-		game.hud.toast("%s — novo movimento: %s. %s" % [Evolutions.stage_desc(species, stage), mv.name, mv.desc], Color("7ae0ff"))
+		game.hud.toast(tr("%s — novo movimento: %s. %s") % [Evolutions.stage_desc(species, stage), tr(mv.name), tr(mv.desc)], Color("7ae0ff"))
 	else:
 		game.hud.toast(Evolutions.stage_desc(species, stage), Color("ffd76a"))
 	game.fx("fx/explosion", position, 12.0, 2.5, Color("5ee0ff"))

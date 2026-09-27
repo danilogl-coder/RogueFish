@@ -256,7 +256,7 @@ func move_vector() -> Vector2:
 func _process(_delta: float) -> void:
 	var p: Player = game.player
 	xp_bar.value = float(game.xp) / float(maxi(1, game.xp_next))
-	level_label.text = "NV %d" % game.level
+	level_label.text = tr("NV %d") % game.level
 	hp_bar.value = p.hp / p.st.max_hp
 	hp_label.text = "%d/%d" % [int(ceil(p.hp)), int(p.st.max_hp)]
 	kills_label.text = str(game.kills)
@@ -264,11 +264,11 @@ func _process(_delta: float) -> void:
 	var d: Director = game.director
 	match d.phase:
 		"explore":
-			phase_label.text = "EXPLORAR %s" % DB.format_time(d.time_left())
+			phase_label.text = tr("EXPLORAR %s") % DB.format_time(d.time_left())
 			phase_bar.value = d.phase_t / d.phase_len
 			phase_label.add_theme_color_override("font_color", UIKit.CYAN)
 		"wave":
-			phase_label.text = "ONDA %d  %s" % [d.cycle, DB.format_time(d.time_left())]
+			phase_label.text = tr("ONDA %d  %s") % [d.cycle, DB.format_time(d.time_left())]
 			phase_bar.value = 1.0 - d.phase_t / d.phase_len
 			phase_label.add_theme_color_override("font_color", UIKit.RED)
 		"rest":
@@ -284,7 +284,7 @@ func _process(_delta: float) -> void:
 	stealth_bar.value = p.stealth
 	stealth_icon.modulate = Color.WHITE if p.is_hidden else Color(1, 1, 1, 0.4)
 	points_btn.visible = game.status_points > 0
-	points_btn.text = "+%d PONTOS" % game.status_points
+	points_btn.text = tr("+%d PONTOS") % game.status_points
 	controls.cooldown = p.bite_cooldown_ratio()
 	controls.dash_charges = p.dash_charges
 	controls.dash_max = p.dash_max
@@ -317,7 +317,7 @@ func _process(_delta: float) -> void:
 		stomach_bar.value = game.stomach_ratio()
 	if game.boss and is_instance_valid(game.boss):
 		boss_bar.value = game.boss.hp / game.boss.max_hp
-		boss_label.text = ("DENTRO DO TITÃ: ÓRGÃOS %d%%" % int(game.stomach_ratio() * 100.0)) if game.stomach != null else game.boss.boss_name()
+		boss_label.text = (tr("DENTRO DO TITÃ: ÓRGÃOS %d%%") % int(game.stomach_ratio() * 100.0)) if game.stomach != null else game.boss.boss_name()
 	indicators.queue_redraw()
 	var inf: Infestation = p.infest
 	var want := 1.0 if inf and inf.active() and p.alive else 0.0
@@ -464,8 +464,8 @@ func biome_label(text: String) -> void:
 func _on_mission(m: Dictionary) -> void:
 	var extra := ""
 	if m.has("unlock"):
-		extra = "  |  Desbloqueado: %s" % DB.WEAPONS[m.unlock].name
-	toast("MISSÃO: %s  +%d pérolas%s" % [m.name, m.pearls, extra], UIKit.GREEN)
+		extra = tr("  |  Desbloqueado: %s") % tr(DB.WEAPONS[m.unlock].name)
+	toast(tr("MISSÃO: %s  +%d pérolas%s") % [tr(m.name), m.pearls, extra], UIKit.GREEN)
 	Sfx.play("level_up", -2.0)
 
 
@@ -499,8 +499,8 @@ func _draw_xray() -> void:
 	for spr in p.visual.sprites:
 		var dst := Rect2(origin + spr.offset * k, spr.region_rect.size * k)
 		xray.draw_texture_rect_region(spr.texture, dst, spr.region_rect, Color(0.45, 0.95, 1.0, 0.55))
-	var title := "COLÔNIA %d/%d" % [n, Infestation.MAX_COLONY]
-	xray.draw_string(font, Vector2(5, 12), title, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("ff8ab0") if n >= Infestation.MAX_COLONY - 4 else UIKit.CYAN)
+	var title := tr("COLÔNIA %d/%d") % [n, Infestation.MAX_COLONY]
+	xray.draw_string(font, Vector2(5, 12), tr(title), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color("ff8ab0") if n >= Infestation.MAX_COLONY - 4 else UIKit.CYAN)
 	# body-space ellipse where the colony lives (the gut/gill cavity)
 	var c := origin
 	var ex := fl * k * 0.3
@@ -541,17 +541,17 @@ func _draw_xray() -> void:
 	var status := ""
 	var col2 := UIKit.DIM
 	if inf.females() == 0 and inf.males() >= 2:
-		status = "MACHO VIRANDO FÊMEA %d%%" % int(inf.morph * 100.0)
+		status = tr("MACHO VIRANDO FÊMEA %d%%") % int(inf.morph * 100.0)
 		col2 = Color("ff8ab0")
 	elif inf.females() > 0 and inf.males() > 0:
-		status = "CRUZANDO  OVOS %d" % inf.eggs.size()
+		status = tr("CRUZANDO  OVOS %d") % inf.eggs.size()
 		col2 = Color("f0d060")
 	elif inf.females() > 0:
 		status = "FÊMEA ESPERANDO MACHO"
 		col2 = Color("ff8ab0")
 	else:
 		status = "MACHO SOLITÁRIO"
-	xray.draw_string(font, Vector2(5, sz.y - 5), status, HORIZONTAL_ALIGNMENT_LEFT, sz.x - 10, fs, col2)
+	xray.draw_string(font, Vector2(5, sz.y - 5), tr(status), HORIZONTAL_ALIGNMENT_LEFT, sz.x - 10, fs, col2)
 	# brood / morph progress
 	var prog: float = inf.brood if inf.females() > 0 else inf.morph
 	xray.draw_rect(Rect2(2, sz.y - 18, (sz.x - 4) * prog, 2), col2)

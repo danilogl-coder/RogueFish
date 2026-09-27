@@ -205,3 +205,19 @@ Cada estágio tem um modo de locomoção (`Player._move`):
 
 Por isso o mesmo animal joga de forma diferente ao crescer: o caranguejo nada como zoea e anda
 de lado quando adulto, e o pepino-abissal volta a nadar.
+
+## Idiomas
+
+O jogo abre em **inglês** por padrão, e **português (Brasil)** é a segunda língua. O jogador troca em
+*Opções → IDIOMA / LANGUAGE*; o menu se reconstrói na hora.
+
+- **Onde fica:** `scripts/autoload/i18n.gd` (autoload `I18n`) e o catálogo `assets/i18n/en.json`.
+- **Como funciona:** os textos continuam escritos em português no código e servem como chave de tradução. O
+  catálogo `{pt: en}` vira uma `Translation` do Godot. Label e Button traduzem sozinhos, e cada entrada também é
+  registrada em MAIÚSCULAS, porque muitos nomes aparecem com `.to_upper()`.
+- **Texto montado:** traduza o modelo antes de formatar, com `tr("NV %d") % n` (ou `I18n.t(...)` em funções
+  estáticas), e passe nomes de dados por `tr(d.name)`.
+- **Idioma de reserva:** `project.godot` define `locale/fallback="pt_BR"`. Sem isso, o Godot mostraria o inglês
+  para quem escolheu português.
+- **Auditoria:** rode `-- --autotest --i18n-audit` (autopilot). Ela lista todo texto visível em português enquanto
+  o jogo está em inglês, cobrindo HUD, cartas, baús, toasts e todas as abas da pausa.

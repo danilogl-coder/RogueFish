@@ -543,7 +543,7 @@ func _exit_tree() -> void:
 
 func _announce_species(sp: String) -> void:
 	await get_tree().create_timer(2.2, false).timeout
-	hud.banner("NOVA ESPÉCIE!", "%s agora é jogável" % DB.SPECIES[sp].name, Color("ffbf45"))
+	hud.banner("NOVA ESPÉCIE!", tr("%s agora é jogável") % tr(DB.SPECIES[sp].name), Color("ffbf45"))
 	Sfx.play("evolve")
 
 
@@ -846,12 +846,12 @@ func _discover_species() -> void:
 	for c in creatures:
 		if is_instance_valid(c) and not c.is_boss and c.id != "" and rect.has_point(c.position):
 			if Profile.bestiary_see(c.id):
-				hud.toast("Nova espécie: %s!" % DB.CREATURES[c.id].name, Color("a4dc4c"))
+				hud.toast(tr("Nova espécie: %s!") % tr(DB.CREATURES[c.id].name), Color("a4dc4c"))
 				Sfx.play("pearl", -4.0)
 
 
 func _on_biome_entered(b: Dictionary) -> void:
-	hud.biome_label(b.name)
+	hud.biome_label(tr(b.name))
 	if b.id == "abyss":
 		Profile.set_max("reach_abyss", 1)
 

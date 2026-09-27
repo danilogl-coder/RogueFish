@@ -5,6 +5,7 @@ extends VBoxContainer
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 6)
+	_language()
 	_slider("MÚSICA", "music", "music")
 	_slider("EFEITOS", "sfx", "sound")
 	_toggle("VIBRAÇÃO", "vibration", "vibrate")
@@ -37,6 +38,29 @@ func _track_picker() -> void:
 		b.text = TRACKS[idx][1]
 		Profile.set_setting("music_track", TRACKS[idx][0])
 		Sfx.play("click"))
+	h.add_child(b)
+	add_child(h)
+
+
+## Language picker (English / Português). The menu rebuilds itself on change.
+func _language() -> void:
+	var h := UIKit.hbox(6)
+	h.add_child(UIKit.icon_rect("book", 16))
+	var l := UIKit.label("IDIOMA / LANGUAGE", 8)
+	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	l.custom_minimum_size.x = 120
+	h.add_child(l)
+	var idx := 0
+	for i in I18n.LANGUAGES.size():
+		if I18n.LANGUAGES[i][0] == I18n.lang():
+			idx = i
+	var b := UIKit.button(I18n.LANGUAGES[idx][1], "", 110)
+	b.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	b.pressed.connect(func():
+		idx = (idx + 1) % I18n.LANGUAGES.size()
+		b.text = I18n.LANGUAGES[idx][1]
+		Sfx.play("click")
+		I18n.set_lang(I18n.LANGUAGES[idx][0]))
 	h.add_child(b)
 	add_child(h)
 

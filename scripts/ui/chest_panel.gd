@@ -107,12 +107,12 @@ func _spin() -> void:
 		var suffix := ""
 		match o.kind:
 			"weapon_up", "passive_up":
-				suffix = "  NV %d" % (o.level + 1)
+				suffix = tr("  NV %d") % (o.level + 1)
 			"weapon_new", "passive_new":
 				suffix = "  NOVO!"
 			"evolution":
 				suffix = "  EVOLUÇÃO!"
-		row.add_child(UIKit.label(o.title + suffix, 8, UIKit.RARITY_COLOR.get(o.rarity, UIKit.WHITE)))
+		row.add_child(UIKit.label(tr(o.title) + suffix, 8, UIKit.RARITY_COLOR.get(o.rarity, UIKit.WHITE)))
 		_list.add_child(row)
 		UIKit.pop_in(row)
 		Sfx.play_pitched("pearl", 1.0 + i * 0.12, -4.0)
@@ -120,7 +120,7 @@ func _spin() -> void:
 	var pr := UIKit.hbox(4)
 	pr.alignment = BoxContainer.ALIGNMENT_CENTER
 	pr.add_child(UIKit.icon_rect("pearl", 12))
-	pr.add_child(UIKit.label("+%d pérolas" % pearls, 8, UIKit.WHITE))
+	pr.add_child(UIKit.label(tr("+%d pérolas") % pearls, 8, UIKit.WHITE))
 	_list.add_child(pr)
 	_btn.visible = true
 	UIKit.pop_in(_btn)

@@ -101,5 +101,5 @@ const NAMES := {
 static func mutation_name(species: String, mid: String) -> String:
 	var fam: String = SPECIES.get(species, "")
 	if fam != "" and NAMES[fam].has(mid):
-		return NAMES[fam][mid]
-	return DB.MUTATIONS[mid].name
+		return I18n.t(NAMES[fam][mid])
+	return I18n.t(DB.MUTATIONS[mid].name)

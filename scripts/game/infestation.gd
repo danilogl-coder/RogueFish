@@ -187,7 +187,7 @@ func clean(n: int) -> void:
 		removed += 1
 	if removed < n:
 		removed += _remove(n - removed, false)
-	game.float_text(player.position + Vector2(0, -18), "LIMPEZA -%d" % removed, Color("7ae0ff"), 10)
+	game.float_text(player.position + Vector2(0, -18), tr("LIMPEZA -%d") % removed, Color("7ae0ff"), 10)
 	if not active():
 		morph = 0.0
 		brood = 0.0
@@ -231,7 +231,7 @@ func swarm() -> void:
 		out += 1
 	eggs.clear()
 	brood = 0.0
-	game.hud.banner("ENXAME!", "%d parasitas saíram para devorar seus inimigos" % out, Color("ff8ab0"))
+	game.hud.banner("ENXAME!", tr("%d parasitas saíram para devorar seus inimigos") % out, Color("ff8ab0"))
 	game.shake(5.0)
 	Sfx.play("boss_roar", -10.0)
 	game.burst(player.position, [6, 2, 6], 20, 110.0, 0.8)

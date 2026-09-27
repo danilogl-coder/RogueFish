@@ -22,7 +22,7 @@ func _ready() -> void:
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(sp)
-	top.add_child(UIKit.label("%s  NV %d  %s" % [DB.format_time(game.time), game.level, Evolutions.stage_name(game.player.species, game.player.stage).to_upper()], 8, UIKit.DIM))
+	top.add_child(UIKit.label(tr("%s  NV %d  %s") % [DB.format_time(game.time), game.level, Evolutions.stage_name(game.player.species, game.player.stage).to_upper()], 8, UIKit.DIM))
 	_tabs = UIKit.hbox(4)
 	v.add_child(_tabs)
 	for t in [["STATUS", "_show_status"], ["ARSENAL", "_show_arsenal"], ["SINERGIAS", "_show_synergies"], ["ECOSSISTEMA", "_show_ecosystem"], ["OPÇÕES", "_show_options"]]:
@@ -73,12 +73,12 @@ func _show_status() -> void:
 	# attributes
 	var left := UIKit.vbox(5)
 	cols.add_child(left)
-	left.add_child(UIKit.label("ATRIBUTOS  (pontos: %d)" % game.status_points, 8, UIKit.GOLD))
+	left.add_child(UIKit.label(tr("ATRIBUTOS  (pontos: %d)") % game.status_points, 8, UIKit.GOLD))
 	for key in DB.ATTRIBUTES:
 		var a: Dictionary = DB.ATTRIBUTES[key]
 		var h := UIKit.hbox(4)
 		h.add_child(UIKit.icon_rect(a.icon, 16))
-		var l := UIKit.label("%s %d/%d" % [a.full.to_upper(), p.attributes[key], DB.ATTRIBUTE_MAX], 8)
+		var l := UIKit.label("%s %d/%d" % [tr(a.full).to_upper(), p.attributes[key], DB.ATTRIBUTE_MAX], 8)
 		l.custom_minimum_size.x = 118
 		h.add_child(l)
 		var b := UIKit.button("+", "GoldButton", 24)
@@ -89,19 +89,19 @@ func _show_status() -> void:
 				_show_status())
 		h.add_child(b)
 		left.add_child(h)
-		left.add_child(UIKit.label("   " + a.desc, 8, UIKit.DIM))
+		left.add_child(UIKit.label("   " + tr(a.desc), 8, UIKit.DIM))
 	# stats
 	var right := UIKit.vbox(3)
 	cols.add_child(right)
 	right.add_child(UIKit.label("ESTATÍSTICAS", 8, UIKit.GOLD))
 	var s: Dictionary = p.st
 	var rows := [
-		["Vida", "%d/%d" % [p.hp, s.max_hp]], ["Regeneração", "%.1f/s" % s.regen],
-		["Armadura", "%d" % s.armor], ["Mordida", "%d" % (s.bite_damage * s.damage_mult)],
-		["Dano", "+%d%%" % ((s.damage_mult - 1.0) * 100.0)], ["Crítico", "%d%% x%.1f" % [s.crit_chance * 100.0, s.crit_mult]],
-		["Velocidade", "%d" % s.speed], ["Recarga", "-%d%%" % ((1.0 - s.cooldown_mult) * 100.0)],
-		["Área", "+%d%%" % ((s.area_mult - 1.0) * 100.0)], ["Coleta", "%d" % s.magnet],
-		["Experiência", "+%d%%" % ((s.xp_mult - 1.0) * 100.0)], ["Sorte", "+%d%%" % (s.luck * 100.0)],
+		["Vida", "%d/%d" % [p.hp, s.max_hp]], [tr("Regeneração"), "%.1f/s" % s.regen],
+		["Armadura", "%d" % s.armor], [tr("Mordida"), "%d" % (s.bite_damage * s.damage_mult)],
+		["Dano", "+%d%%" % ((s.damage_mult - 1.0) * 100.0)], [tr("Crítico"), "%d%% x%.1f" % [s.crit_chance * 100.0, s.crit_mult]],
+		["Velocidade", "%d" % s.speed], [tr("Recarga"), "-%d%%" % ((1.0 - s.cooldown_mult) * 100.0)],
+		["Área", "+%d%%" % ((s.area_mult - 1.0) * 100.0)], [tr("Coleta"), "%d" % s.magnet],
+		["Experiência", "+%d%%" % ((s.xp_mult - 1.0) * 100.0)], [tr("Sorte"), "+%d%%" % (s.luck * 100.0)],
 	]
 	for r in rows:
 		var h2 := UIKit.hbox(4)
@@ -136,9 +136,9 @@ func _show_arsenal() -> void:
 		var h := UIKit.hbox(4)
 		h.add_child(UIKit.icon_rect(w.icon_name(), 16))
 		var fused := w.is_fusion()
-		var txt := "%s  NV %d/%d" % [w.display_name(), w.level, DB.weapon_max(wid)]
+		var txt := tr("%s  NV %d/%d") % [w.display_name(), w.level, DB.weapon_max(wid)]
 		if w.evo != "":
-			txt = "%s  EVOLUÍDA" % w.display_name()
+			txt = tr("%s  EVOLUÍDA") % w.display_name()
 		h.add_child(UIKit.label(txt, 8, Color("ff8ae0") if fused else (UIKit.GOLD if w.evo != "" else UIKit.WHITE)))
 		left.add_child(h)
 	left.add_child(UIKit.label("FUSÕES POSSÍVEIS", 8, Color("ff8ae0")))
@@ -152,12 +152,12 @@ func _show_arsenal() -> void:
 		var need := []
 		for wid2 in f.from:
 			if not p.weapons.has(wid2):
-				need.append("pegar " + DB.WEAPONS[wid2].name)
+				need.append(tr("pegar ") + tr(DB.WEAPONS[wid2].name))
 			elif p.weapons[wid2].level < DB.MAX_LEVEL:
-				need.append("%s nv %d" % [DB.WEAPONS[wid2].name, DB.MAX_LEVEL])
+				need.append(tr("%s nv %d") % [tr(DB.WEAPONS[wid2].name), DB.MAX_LEVEL])
 		var row := UIKit.hbox(4)
 		row.add_child(UIKit.icon_rect(f.icon, 16))
-		row.add_child(UIKit.wrap_label("%s: %s" % [f.name, "PRONTA! (escolha nas cartas)" if need.is_empty() else "falta " + ", ".join(need)], 8, UIKit.GREEN if need.is_empty() else UIKit.DIM, 270))
+		row.add_child(UIKit.wrap_label("%s: %s" % [tr(f.name), tr("PRONTA! (escolha nas cartas)") if need.is_empty() else tr("falta ") + ", ".join(need)], 8, UIKit.GREEN if need.is_empty() else UIKit.DIM, 270))
 		left.add_child(row)
 		any = true
 	if not any:
@@ -165,14 +165,14 @@ func _show_arsenal() -> void:
 	var right := UIKit.vbox(4)
 	cols.add_child(right)
 	var sp: Dictionary = DB.SPECIES[p.species]
-	right.add_child(UIKit.label(sp.name.to_upper(), 8, UIKit.GOLD))
-	right.add_child(UIKit.label("TRAÇO: " + sp.trait.name.to_upper(), 8, UIKit.GREEN))
-	right.add_child(UIKit.wrap_label(sp.trait.desc, 8, Color("b8c6d8"), 210))
+	right.add_child(UIKit.label(tr(sp.name).to_upper(), 8, UIKit.GOLD))
+	right.add_child(UIKit.label(tr("TRAÇO: ") + tr(sp.trait.name).to_upper(), 8, UIKit.GREEN))
+	right.add_child(UIKit.wrap_label(tr(sp.trait.desc), 8, Color("b8c6d8"), 210))
 	if game.mods.tide != "":
-		right.add_child(UIKit.label("MARÉ: " + Shop.ITEMS[game.mods.tide].name.to_upper(), 8, UIKit.CYAN))
-		right.add_child(UIKit.wrap_label(Shop.ITEMS[game.mods.tide].desc, 8, Color("b8c6d8"), 210))
+		right.add_child(UIKit.label(tr("MARÉ: ") + tr(Shop.ITEMS[game.mods.tide].name).to_upper(), 8, UIKit.CYAN))
+		right.add_child(UIKit.wrap_label(tr(Shop.ITEMS[game.mods.tide].desc), 8, Color("b8c6d8"), 210))
 	for m in game.mods.modes:
-		right.add_child(UIKit.label("MODO: " + Shop.ITEMS[m].name.to_upper(), 8, UIKit.RED))
+		right.add_child(UIKit.label(tr("MODO: ") + tr(Shop.ITEMS[m].name).to_upper(), 8, UIKit.RED))
 	var relics := []
 	for id in Shop.ITEMS:
 		if Shop.ITEMS[id].cat == "relic" and Profile.owns(id):
@@ -184,7 +184,7 @@ func _show_arsenal() -> void:
 			rr.add_child(UIKit.icon_rect(Shop.ITEMS[id].icon, 16))
 		right.add_child(rr)
 	if game.banishes > 0:
-		right.add_child(UIKit.label("BANIMENTOS: %d" % game.banishes, 8, UIKit.DIM))
+		right.add_child(UIKit.label(tr("BANIMENTOS: %d") % game.banishes, 8, UIKit.DIM))
 
 
 func _show_synergies() -> void:
@@ -195,13 +195,13 @@ func _show_synergies() -> void:
 		var n: int = p.tag_counts.get(tag, 0)
 		var h := UIKit.hbox(6)
 		h.add_child(UIKit.icon_rect(DB.TAGS[tag].icon, 16))
-		var name_l := UIKit.label("%s  %d" % [DB.TAGS[tag].name.to_upper(), n], 8, DB.TAGS[tag].color)
+		var name_l := UIKit.label("%s  %d" % [tr(DB.TAGS[tag].name).to_upper(), n], 8, DB.TAGS[tag].color)
 		name_l.custom_minimum_size.x = 104
 		h.add_child(name_l)
 		var v := UIKit.vbox(1)
 		var bonus: Array = DB.SYNERGIES[tag]
-		v.add_child(UIKit.label(("[2] " if n >= 2 else "( 2) ") + bonus[0], 8, UIKit.WHITE if n >= 2 else UIKit.DIM))
-		v.add_child(UIKit.label(("[4] " if n >= 4 else "( 4) ") + bonus[1], 8, UIKit.WHITE if n >= 4 else UIKit.DIM))
+		v.add_child(UIKit.label(("[2] " if n >= 2 else "( 2) ") + tr(bonus[0]), 8, UIKit.WHITE if n >= 2 else UIKit.DIM))
+		v.add_child(UIKit.label(("[4] " if n >= 4 else "( 4) ") + tr(bonus[1]), 8, UIKit.WHITE if n >= 4 else UIKit.DIM))
 		h.add_child(v)
 		_content.add_child(h)
 	_content.add_child(UIKit.label("COMBINAÇÕES (2 + 2)", 8, UIKit.GOLD))
@@ -210,8 +210,8 @@ func _show_synergies() -> void:
 		var on: bool = p.active_combos.has(cid)
 		var names := []
 		for t in c.tags:
-			names.append(DB.TAGS[t].name)
-		_content.add_child(UIKit.label("%s %s (%s): %s" % ["[*]" if on else "[ ]", c.name, " + ".join(names), c.desc], 8, UIKit.GREEN if on else UIKit.DIM))
+			names.append(tr(DB.TAGS[t].name))
+		_content.add_child(UIKit.label("%s %s (%s): %s" % ["[*]" if on else "[ ]", tr(c.name), " + ".join(names), tr(c.desc)], 8, UIKit.GREEN if on else UIKit.DIM))
 
 
 func _show_ecosystem() -> void:
@@ -244,14 +244,14 @@ func _show_ecosystem() -> void:
 	_content.add_child(UIKit.label("NUTRIENTES POR BIOMA", 8, UIKit.GOLD))
 	var nh := UIKit.hbox(14)
 	for b in DB.BIOMES:
-		nh.add_child(UIKit.label("%s: %d" % [b.name, int(eco.average_nutrients(b.id))], 8, UIKit.WHITE))
+		nh.add_child(UIKit.label("%s: %d" % [tr(b.name), int(eco.average_nutrients(b.id))], 8, UIKit.WHITE))
 	_content.add_child(nh)
 	var s: Dictionary = eco.stats
-	_content.add_child(UIKit.label("Nascimentos %d   |   Predações %d   |   Mortes de fome %d   |   Nutrientes reciclados %d" % [s.births, s.eaten, s.starved, int(s.recycled)], 8, UIKit.DIM))
+	_content.add_child(UIKit.label(tr("Nascimentos %d   |   Predações %d   |   Mortes de fome %d   |   Nutrientes reciclados %d") % [s.births, s.eaten, s.starved, int(s.recycled)], 8, UIKit.DIM))
 	_content.add_child(UIKit.wrap_label("Ciclo: nutrientes alimentam kelp e fitoplâncton -> herbívoros -> carnívoros -> predadores -> orca. Toda morte vira carcaça; carcaças e fezes viram detritos (neve marinha) que isópodes, pepinos-do-mar e camarões reciclam em nutrientes. No abismo, fontes hidrotermais criam vida sem sol. Poucas lontras? Os ouriços devoram o kelp!", 8, Color("b8c6d8"), 530))
 	var p: Player = game.player
 	var dt: String = p.diet_type()
-	var diet_txt := "Dieta: %s (plantas %d%%, carne %d%%, carniça %d%%)" % [DB.DIETS[dt].name + " - " + DB.DIETS[dt].desc if dt != "" else "indefinida", p.diet_share("plant") * 100, p.diet_share("meat") * 100, p.diet_share("scavenge") * 100]
+	var diet_txt := tr("Dieta: %s (plantas %d%%, carne %d%%, carniça %d%%)") % [tr(DB.DIETS[dt].name) + " - " + tr(DB.DIETS[dt].desc) if dt != "" else "indefinida", p.diet_share("plant") * 100, p.diet_share("meat") * 100, p.diet_share("scavenge") * 100]
 	_content.add_child(UIKit.wrap_label(diet_txt, 8, UIKit.GREEN, 530))
 
 

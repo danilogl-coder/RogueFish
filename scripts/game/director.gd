@@ -61,7 +61,7 @@ func _enter(p: String) -> void:
 			_poi_schedule = [12.0, phase_len * 0.55]
 			game.darkness.extra = 0.0
 			game.darkness.tint_target = Color(0.01, 0.02, 0.07)
-			game.hud.banner("CICLO %d" % cycle, "Explore, coma e cresça", Color("5ee0ff"))
+			game.hud.banner(tr("CICLO %d") % cycle, tr("Explore, coma e cresça"), Color("5ee0ff"))
 			game.mods.cycle_start()
 			Sfx.play_music("game")    # next exploration song of the rotation
 		"wave":
@@ -69,7 +69,7 @@ func _enter(p: String) -> void:
 			_wave_t = 0.0
 			game.darkness.extra = 0.12
 			game.darkness.tint_target = Color(0.14, 0.0, 0.03)
-			game.hud.banner("ONDA %d!" % cycle, "Sobreviva à horda", Color("ff5c4c"))
+			game.hud.banner(tr("ONDA %d!") % cycle, tr("Sobreviva à horda"), Color("ff5c4c"))
 			Sfx.play("wave")
 			Sfx.play_stinger("horde")
 			Sfx.play_music("horde", 1.5)
@@ -85,7 +85,7 @@ func _enter(p: String) -> void:
 			game.spawn_boss(bid, pos)
 			game.darkness.extra = maxf(game.darkness.extra, 0.15)
 			game.darkness.tint_target = Color(0.06, 0.0, 0.08)
-			game.hud.banner("CHEFE", DB.BOSSES[bid].name, Color("cc7ee0"))
+			game.hud.banner("CHEFE", tr(DB.BOSSES[bid].name), Color("cc7ee0"))
 			Sfx.play("boss_roar")
 			Sfx.play_music("final" if bid in ["titanacon", "leviathan", "megalodon"] else "boss")
 			game.shake(8.0)

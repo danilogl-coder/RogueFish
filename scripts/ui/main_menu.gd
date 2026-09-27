@@ -23,6 +23,8 @@ func _ready() -> void:
 	_build_background()
 	_build_main()
 	Sfx.play_music("menu")
+	# a new language rebuilds every screen
+	I18n.language_changed.connect(func(): get_tree().reload_current_scene.call_deferred())
 	Billing.purchased.connect(func(_id: String):
 		Sfx.play_stinger("fusion")
 		if _screen != null and _store_cat == "iap":
@@ -64,7 +66,7 @@ func _refresh_video_btn() -> void:
 	_video_btn.visible = Ads.available()
 	_video_hint.visible = Ads.available()
 	_video_btn.disabled = not Ads.can_show("pearls")
-	_video_btn.text = ("VÍDEO +%d" if not Profile.vip else "VIP +%d") % int(Offers.VIDEOS.pearls.reward)
+	_video_btn.text = (tr("VÍDEO +%d") if not Profile.vip else tr("VIP +%d")) % int(Offers.VIDEOS.pearls.reward)
 	_video_hint.text = Ads.status_text("pearls")
 
 
@@ -245,7 +247,7 @@ func _build_main() -> void:
 	_video_btn.offset_left = -120
 	_video_btn.offset_right = -8
 	_video_btn.offset_top = 30
-	_video_btn.tooltip_text = "Veja um vídeo e ganhe %d pérolas" % reward
+	_video_btn.tooltip_text = tr("Veja um vídeo e ganhe %d pérolas") % reward
 	_video_btn.pressed.connect(func():
 		Ads.show_rewarded("pearls", func():
 			Profile.add_pearls(reward)
@@ -261,7 +263,7 @@ func _build_main() -> void:
 	_main.add_child(_video_hint)
 	_refresh_video_btn()
 	# records
-	var rec := UIKit.label("RECORDE %s  |  VITÓRIAS %d  |  CHEFES %d" % [DB.format_time(float(Profile.records.best_time)), int(Profile.records.wins), int(Profile.records.bosses)], 8, Color("c8fbff"))
+	var rec := UIKit.label(tr("RECORDE %s  |  VITÓRIAS %d  |  CHEFES %d") % [DB.format_time(float(Profile.records.best_time)), int(Profile.records.wins), int(Profile.records.bosses)], 8, Color("c8fbff"))
 	rec.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	rec.offset_left = 8
 	rec.offset_top = -16
@@ -315,7 +317,7 @@ func _show_species() -> void:
 		_sp_view = Profile.selected_species
 	if _sp_group == "":
 		_sp_group = DB.SPECIES[_sp_view].group
-	var v := _open_screen("PERSONAGENS  %d/%d" % [Profile.unlocked.filter(func(x): return DB.SPECIES.has(x)).size(), DB.SPECIES.size()], Vector2(612, 0))
+	var v := _open_screen(tr("PERSONAGENS  %d/%d") % [Profile.unlocked.filter(func(x): return DB.SPECIES.has(x)).size(), DB.SPECIES.size()], Vector2(612, 0))
 	var body := UIKit.hbox(8)
 	v.add_child(body)
 	# ---- left: tabs + grid
@@ -383,7 +385,7 @@ func _species_details(sp: String) -> Control:
 	p.add_child(v)
 	var head := UIKit.hbox(6)
 	v.add_child(head)
-	head.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD))
+	head.add_child(UIKit.label(tr(d.name).to_upper(), 8, UIKit.GOLD))
 	var stage_lbl := UIKit.label("", 8, UIKit.DIM)
 	stage_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stage_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -404,7 +406,7 @@ func _species_details(sp: String) -> Control:
 		if not unlocked:
 			pv.modulate = Color(0.1, 0.12, 0.22)
 		holder.add_child(pv)
-		stage_lbl.text = "%s · %s" % [Evolutions.stage_name(sp, st).to_upper(), String(Evolutions.move(sp, st).name).to_upper()]
+		stage_lbl.text = "%s · %s" % [Evolutions.stage_name(sp, st).to_upper(), tr(String(Evolutions.move(sp, st).name)).to_upper()]
 		holder.tooltip_text = Evolutions.stage_desc(sp, st)
 	refresh.call()
 	var timer := Timer.new()
@@ -413,16 +415,16 @@ func _species_details(sp: String) -> Control:
 	timer.timeout.connect(refresh)
 	holder.add_child.call_deferred(timer)
 	# trait
-	var tr := UIKit.hbox(4)
-	tr.add_child(UIKit.icon_rect("dna", 12))
-	tr.add_child(UIKit.label("TRAÇO: " + d.trait.name.to_upper(), 8, UIKit.GREEN))
-	v.add_child(tr)
-	v.add_child(UIKit.wrap_label(d.trait.desc, 8, Color("b8c6d8"), 280))
+	var trait_row := UIKit.hbox(4)
+	trait_row.add_child(UIKit.icon_rect("dna", 12))
+	trait_row.add_child(UIKit.label(tr("TRAÇO: ") + tr(d.trait.name).to_upper(), 8, UIKit.GREEN))
+	v.add_child(trait_row)
+	v.add_child(UIKit.wrap_label(tr(d.trait.desc), 8, Color("b8c6d8"), 280))
 	# unique item
 	var w: Dictionary = DB.WEAPONS[d.weapon]
 	var ir := UIKit.hbox(4)
 	ir.add_child(UIKit.icon_rect(w.icon, 16))
-	ir.add_child(UIKit.label("ITEM ÚNICO: " + w.name.to_upper(), 8, UIKit.CYAN))
+	ir.add_child(UIKit.label(tr("ITEM ÚNICO: ") + tr(w.name).to_upper(), 8, UIKit.CYAN))
 	v.add_child(ir)
 	v.add_child(UIKit.wrap_label(DB.weapon_desc(d.weapon, 0), 8, Color("b8c6d8"), 280))
 	# stats
@@ -453,17 +455,17 @@ func _species_details(sp: String) -> Control:
 			Sfx.play("card")
 			_show_species())
 	elif u.type == "boss":
-		b = UIKit.button("DERROTE: " + DB.BOSSES[u.boss].name.to_upper(), "", 0, "lock")
+		b = UIKit.button(tr("DERROTE: ") + tr(DB.BOSSES[u.boss].name).to_upper(), "", 0, "lock")
 		b.disabled = true
 	elif u.type == "stat":
 		var pr: Array = Profile.species_progress(sp)
-		b = UIKit.button("%s  %d/%d" % [u.desc.to_upper(), pr[0], pr[1]], "", 0, "target")
+		b = UIKit.button("%s  %d/%d" % [tr(u.desc).to_upper(), pr[0], pr[1]], "", 0, "target")
 		b.disabled = true
 	elif u.type == "pack" and not Profile.owns(u.pack):
-		b = UIKit.button("REQUER: " + Shop.ITEMS[u.pack].name.to_upper(), "", 0, "lock")
+		b = UIKit.button(tr("REQUER: ") + tr(Shop.ITEMS[u.pack].name).to_upper(), "", 0, "lock")
 		b.disabled = true
 	else:
-		b = UIKit.button("%d PÉROLAS" % int(d.price), "GoldButton" if Profile.pearls >= int(d.price) else "", 0, "pearl")
+		b = UIKit.button(tr("%d PÉROLAS") % int(d.price), "GoldButton" if Profile.pearls >= int(d.price) else "", 0, "pearl")
 		b.disabled = Profile.pearls < int(d.price)
 		b.pressed.connect(func():
 			if Profile.buy_species(sp):
@@ -492,10 +494,10 @@ func _show_collection() -> void:
 		if not DB.WEAPONS[id].get("fusion", false) and DB.item_unlocked(id):
 			have += 1
 	var total := DB.WEAPONS.size() - DB.FUSIONS.size()
-	var v := _open_screen("COLEÇÃO  %d/%d ITENS" % [have, total], Vector2(612, 0))
+	var v := _open_screen(tr("COLEÇÃO  %d/%d ITENS") % [have, total], Vector2(612, 0))
 	var tabs := UIKit.hbox(4)
 	v.add_child(tabs)
-	for t in [["items", "ITENS"], ["fusions", "FUSÕES (%d)" % DB.FUSIONS.size()]]:
+	for t in [["items", "ITENS"], ["fusions", tr("FUSÕES (%d)") % DB.FUSIONS.size()]]:
 		var tid: String = t[0]
 		var b := UIKit.button(t[1], "GoldButton" if tid == _col_tab else "", 0)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -530,8 +532,8 @@ func _show_collection() -> void:
 			h.add_child(ic)
 			var col := UIKit.vbox(0)
 			h.add_child(col)
-			col.add_child(UIKit.label(w.name.to_upper() if ok else "???", 8, UIKit.WHITE if ok else UIKit.DIM))
-			var src: String = "Item básico" if owner == "" else ("Item de " + DB.SPECIES[owner].name if ok else "Libere: " + DB.SPECIES[owner].name)
+			col.add_child(UIKit.label(tr(w.name).to_upper() if ok else "???", 8, UIKit.WHITE if ok else UIKit.DIM))
+			var src: String = "Item básico" if owner == "" else (tr("Item de ") + tr(DB.SPECIES[owner].name) if ok else tr("Libere: ") + tr(DB.SPECIES[owner].name))
 			col.add_child(UIKit.label(src, 8, UIKit.CYAN if ok else UIKit.DIM))
 			grid.add_child(p)
 	else:
@@ -546,12 +548,12 @@ func _show_collection() -> void:
 			var h2 := UIKit.hbox(4)
 			v2.add_child(h2)
 			h2.add_child(UIKit.icon_rect(f.icon, 16))
-			h2.add_child(UIKit.label(f.name.to_upper() if known else "FUSÃO ???", 8, Color("ff8ae0") if known else UIKit.DIM))
+			h2.add_child(UIKit.label(tr(f.name).to_upper() if known else "FUSÃO ???", 8, Color("ff8ae0") if known else UIKit.DIM))
 			var r := UIKit.hbox(2)
 			v2.add_child(r)
 			for wid in f.from:
 				r.add_child(UIKit.icon_rect(DB.WEAPONS[wid].icon, 12))
-			r.add_child(UIKit.label("%s + %s" % [DB.WEAPONS[f.from[0]].name, DB.WEAPONS[f.from[1]].name] if known else "itens ainda bloqueados", 8, Color("b8c6d8")))
+			r.add_child(UIKit.label("%s + %s" % [DB.WEAPONS[f.from[0]].name, DB.WEAPONS[f.from[1]].name] if known else tr("itens ainda bloqueados"), 8, Color("b8c6d8")))
 			grid.add_child(p2)
 
 
@@ -609,13 +611,13 @@ func _offer_card(id: String) -> Control:
 	var h := UIKit.hbox(4)
 	v.add_child(h)
 	h.add_child(UIKit.icon_rect(d.icon, 16))
-	h.add_child(UIKit.label(String(d.name).to_upper(), 8, UIKit.GOLD))
+	h.add_child(UIKit.label(String(tr(d.name)).to_upper(), 8, UIKit.GOLD))
 	if String(d.tag) != "":
 		var tag := UIKit.label(d.tag, 8, UIKit.GREEN)
 		tag.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		h.add_child(tag)
-	var desc := UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 180)
+	var desc := UIKit.wrap_label(tr(d.desc), 8, Color("b8c6d8"), 180)
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(desc)
 	var b: Button
@@ -642,15 +644,15 @@ func _store_card(id: String) -> Control:
 	var h := UIKit.hbox(4)
 	v.add_child(h)
 	h.add_child(UIKit.icon_rect(d.icon, 16))
-	h.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD if owned else UIKit.WHITE))
-	var desc := UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 180)
+	h.add_child(UIKit.label(tr(d.name).to_upper(), 8, UIKit.GOLD if owned else UIKit.WHITE))
+	var desc := UIKit.wrap_label(tr(d.desc), 8, Color("b8c6d8"), 180)
 	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(desc)
 	var b: Button
 	var needs: String = d.get("needs", "")
 	if not owned:
 		if needs != "" and not Profile.owns(needs):
-			b = UIKit.button("REQUER " + Shop.ITEMS[needs].name.to_upper(), "", 0, "lock")
+			b = UIKit.button(tr("REQUER ") + tr(Shop.ITEMS[needs].name).to_upper(), "", 0, "lock")
 			b.disabled = true
 		else:
 			b = UIKit.button("%d" % int(d.price), "GoldButton" if Profile.pearls >= int(d.price) else "", 0, "pearl")
@@ -724,9 +726,9 @@ func _shop_entry(id: String) -> Control:
 	p.add_child(v)
 	var h := UIKit.hbox(4)
 	h.add_child(UIKit.icon_rect(d.icon, 16))
-	h.add_child(UIKit.wrap_label(d.name, 8, UIKit.WHITE, 150))
+	h.add_child(UIKit.wrap_label(tr(d.name), 8, UIKit.WHITE, 150))
 	v.add_child(h)
-	v.add_child(UIKit.label(d.desc, 8, UIKit.DIM))
+	v.add_child(UIKit.label(tr(d.desc), 8, UIKit.DIM))
 	var h2 := UIKit.hbox(4)
 	var pips := Control.new()
 	var mx: int = d.max
@@ -858,7 +860,7 @@ func _show_credits() -> void:
 func _show_missions() -> void:
 	var v := _open_screen("MISSÕES")
 	var done := Profile.missions_done.size()
-	v.add_child(UIKit.label("Concluídas %d/%d  -  recompensas entregues automaticamente" % [done, DB.MISSIONS.size()], 8, UIKit.DIM))
+	v.add_child(UIKit.label(tr("Concluídas %d/%d  -  recompensas entregues automaticamente") % [done, DB.MISSIONS.size()], 8, UIKit.DIM))
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(584, 262)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -877,9 +879,9 @@ func _show_missions() -> void:
 		h.add_child(UIKit.icon_rect("check" if is_done else "target", 16))
 		var col := UIKit.vbox(1)
 		col.custom_minimum_size.x = 300
-		col.add_child(UIKit.label(m.name, 8, UIKit.GREEN if is_done else UIKit.WHITE))
-		var unlock: String = ("  -  desbloqueia " + DB.WEAPONS[m.unlock].name) if m.has("unlock") else ""
-		col.add_child(UIKit.label(m.desc + unlock, 8, UIKit.DIM))
+		col.add_child(UIKit.label(tr(m.name), 8, UIKit.GREEN if is_done else UIKit.WHITE))
+		var unlock: String = (tr("  -  desbloqueia ") + tr(DB.WEAPONS[m.unlock].name)) if m.has("unlock") else ""
+		col.add_child(UIKit.label(tr(m.desc) + unlock, 8, UIKit.DIM))
 		h.add_child(col)
 		var prog := clampf(Profile.stat(m.stat) / float(m.target), 0.0, 1.0)
 		var bar := UIKit.bar("bar_xp", Vector2(120, 8))
@@ -905,7 +907,7 @@ func _show_bestiary() -> void:
 		total += 1
 		if Profile.bestiary.get(id, {}).get("seen", false):
 			seen += 1
-	v.add_child(UIKit.label("Espécies descobertas: %d/%d" % [seen, total], 8, UIKit.DIM))
+	v.add_child(UIKit.label(tr("Espécies descobertas: %d/%d") % [seen, total], 8, UIKit.DIM))
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(584, 262)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -942,11 +944,11 @@ func _bestiary_card(id: String) -> Control:
 	if not known:
 		pic.modulate = Color(0.05, 0.07, 0.12)
 	v.add_child(pic)
-	v.add_child(UIKit.label(d.name if known else "???", 8, UIKit.GOLD if known else UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label(tr(d.name) if known else "???", 8, UIKit.GOLD if known else UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(UIKit.label(DB.TROPHIC_NAMES[d.trophic], 8, UIKit.CYAN, HORIZONTAL_ALIGNMENT_CENTER))
 	if known:
-		v.add_child(UIKit.wrap_label(d.get("short", d.desc), 8, Color("b8c6d8"), 136))
-		v.add_child(UIKit.label("Abatidos: %d" % int(e.get("kills", 0)), 8, UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+		v.add_child(UIKit.wrap_label(d.get("short", tr(d.desc)), 8, Color("b8c6d8"), 136))
+		v.add_child(UIKit.label(tr("Abatidos: %d") % int(e.get("kills", 0)), 8, UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	return p
 
 
@@ -966,7 +968,7 @@ func _show_daily() -> void:
 		box.custom_minimum_size = Vector2(56, 64)
 		var bv := UIKit.vbox(2)
 		box.add_child(bv)
-		bv.add_child(UIKit.label("DIA %d" % (i + 1), 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+		bv.add_child(UIKit.label(tr("DIA %d") % (i + 1), 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
 		var ic := UIKit.icon_rect("gift" if i == 6 else "pearl", 16)
 		ic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		bv.add_child(ic)
@@ -976,7 +978,7 @@ func _show_daily() -> void:
 	var bh := UIKit.hbox(8)
 	bh.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_child(bh)
-	var b := UIKit.button("RESGATAR +%d" % amount, "", 150, "gift")
+	var b := UIKit.button(tr("RESGATAR +%d") % amount, "", 150, "gift")
 	b.pressed.connect(func():
 		Profile.claim_daily()
 		Sfx.play("level_up")
@@ -984,7 +986,7 @@ func _show_daily() -> void:
 		_main.visible = true)
 	bh.add_child(b)
 	if Ads.can_show("daily_x2"):
-		var b2 := UIKit.button("VÍDEO: +%d (x2)" % (amount * 2), "GoldButton", 150, "play")
+		var b2 := UIKit.button(tr("VÍDEO: +%d (x2)") % (amount * 2), "GoldButton", 150, "play")
 		b2.pressed.connect(func():
 			Ads.show_rewarded("daily_x2", func():
 				Profile.claim_daily()

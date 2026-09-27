@@ -84,8 +84,8 @@ func status_text(placement: String) -> String:
 		return "volte amanhã"
 	var cd := cooldown_left(placement)
 	if cd > 0.0:
-		return "em %d:%02d" % [int(cd) / 60, int(cd) % 60]
-	return "%d/%d hoje" % [remaining(placement), int(Offers.VIDEOS[placement].daily)]
+		return tr("em %d:%02d") % [int(cd) / 60, int(cd) % 60]
+	return tr("%d/%d hoje") % [remaining(placement), int(Offers.VIDEOS[placement].daily)]
 
 
 # ------------------------------------------------------------------ show

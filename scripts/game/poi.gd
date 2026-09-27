@@ -139,7 +139,7 @@ func _draw() -> void:
 	if kind == "clam" or kind == "vent":
 		draw_arc(Vector2(0, -10), radius, 0, TAU, 32, Color(1, 1, 1, 0.15 + 0.1 * sin(_t * 4.0)), 1.0)
 	if kind == "chest" and _hits < 3:
-		var s := "MORDA x%d" % (3 - _hits)
+		var s := tr("MORDA x%d") % (3 - _hits)
 		var f: Font = Art.num_font
 		var tw := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x * 0.5
 		draw_set_transform(Vector2(-tw * 0.5, -30), 0, Vector2(0.5, 0.5))

@@ -294,9 +294,9 @@ static func fusion_value(f: Dictionary, key: String, level: int, fallback = 0.0)
 
 
 static func fusion_level_desc(level: int) -> String:
-	var parts := ["+16% dano", "-3.5% recarga"]
+	var parts := [I18n.t("+16% dano"), I18n.t("-3.5% recarga")]
 	if level % 3 == 0:
-		parts.append("+1 quantidade")
+		parts.append(I18n.t("+1 quantidade"))
 	if level % 4 == 0:
-		parts.append("+1 perfuração")
+		parts.append(I18n.t("+1 perfuração"))
 	return ", ".join(parts)

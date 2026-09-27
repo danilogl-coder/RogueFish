@@ -25,7 +25,7 @@ func configure_boss(p_id: String, p_def: Dictionary, diff: Dictionary) -> void:
 
 
 func boss_name() -> String:
-	return def.name
+	return tr(def.name)
 
 
 var giving_up := false

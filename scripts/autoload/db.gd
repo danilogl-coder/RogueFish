@@ -69,8 +69,12 @@ func weapon_desc(id: String, level: int) -> String:
 	var w: Dictionary = WEAPONS[id]
 	var arr: Array = w.get("desc_levels", w.get("desc", [""])) if w.get("fusion", false) else w.desc
 	if not w.get("fusion", false) and level >= arr.size():
-		return "LIMITE QUEBRADO: +15% dano, -5% recarga"
-	return str(arr[clampi(level, 0, arr.size() - 1)])
+		return tr("LIMITE QUEBRADO: +15% dano, -5% recarga")
+	var i := clampi(level, 0, arr.size() - 1)
+	# fused levels 2+ are generated each call so they follow the language
+	if w.get("fusion", false) and i > 0:
+		return Arsenal.fusion_level_desc(i + 1)
+	return tr(str(arr[i]))
 
 
 ## Creatures from expansions only exist once their pack was bought.

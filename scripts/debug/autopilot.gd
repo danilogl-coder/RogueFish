@@ -39,6 +39,9 @@ func _ready() -> void:
 			game.player.position = Vector2(x, DB.floor_at(x) * float(a.split("=")[2]) if a.split("=").size() > 2 else DB.floor_at(x) - 80.0)
 			game.camera.global_position = game.player.position
 			game.camera.reset_smoothing()
+		elif a == "--i18n-audit":
+			_audit = true
+			I18n.apply("en")
 		elif a.begins_with("--idle"):
 			idle = true
 		elif a.begins_with("--speed="):
@@ -97,11 +100,60 @@ func _ready() -> void:
 
 
 var _col_log := 0.0
+var _audit := false
+var _audit_t := 0.0
+var _audit_seen := {}
+var _audit_paused := false
+
+
+## --i18n-audit: prints every visible text that still looks Portuguese while
+## the game runs in English (HUD, toasts, cards, chests, pause menu tabs).
+func _audit_scan() -> void:
+	var r := RegEx.new()
+	r.compile("[ãõçáéíóúâêôÃÕÇÁÉÍÓÚÂÊÔ]|\\b(de|da|do|das|dos|você|com|para|nível|pérolas|PÉROLAS|NÍVEL|um|uma|não|seu|sua|mais|por|partida|dano|vida|recarga|nv|NV)\\b")
+	var nodes: Array = game.hud.find_children("*", "", true, false) + game.menus.find_children("*", "", true, false) + game.layer_text.get_children()
+	for c in nodes:
+		var t := ""
+		if c is Label or c is Button:
+			t = c.text
+			if c.auto_translate_mode != Node.AUTO_TRANSLATE_MODE_DISABLED:
+				t = TranslationServer.translate(t)
+		elif c is DamageNumber:
+			t = c.text
+		if t != "" and _is_pt(t) and not _audit_seen.has(t) and (not (c is CanvasItem) or c.is_visible_in_tree()):
+			_audit_seen[t] = true
+			print("[i18n] ", c.get_class(), ": ", t.replace("\n", " / "))
+	# visit every pause menu tab once
+	for m in game.menus.get_children():
+		if m is PauseMenu and not m.has_meta("audited"):
+			m.set_meta("audited", true)
+			for fn in ["_show_status", "_show_arsenal", "_show_synergies", "_show_ecosystem"]:
+				m.call(fn)
+				_audit_scan_menu(m, r)
+			m._resume()
+
+
+func _audit_scan_menu(m: Node, r: RegEx) -> void:
+	for c in m.find_children("*", "", true, false):
+		if c is Label or c is Button:
+			var t: String = TranslationServer.translate(c.text)
+			if _is_pt(t) and not _audit_seen.has(t):
+				_audit_seen[t] = true
+				print("[i18n] pause: ", t.replace("\n", " / "))
+	print("[i18n-pause-scanned] ", m.find_children("*", "Label", true, false).size())
 
 
 func _process(delta: float) -> void:
 	if game == null:
 		return
+	if _audit:
+		_audit_t -= delta
+		if _audit_t <= 0.0:
+			_audit_t = 1.0 * Engine.time_scale
+			_audit_scan()
+			if game.time > 45.0 and not _audit_paused and not game._menu_open and not game.run_over:
+				_audit_paused = true
+				game.open_pause()
 	_col_log -= delta
 	if _col_log <= 0.0 and game.player.infest and game.player.infest.active():
 		_col_log = 5.0 * Engine.time_scale
@@ -269,3 +321,29 @@ func _screenshot(tag: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	if img:
 		img.save_png("%s/shot_%s.png" % [shots_dir, tag])
+
+
+var _ptw := {}
+var _word_rx: RegEx
+func _is_pt(t: String) -> bool:
+	if _ptw.is_empty():
+		# words that only exist on the Portuguese side of the catalog
+		var cat = JSON.parse_string(FileAccess.get_file_as_string(I18n.CATALOG))
+		var rx := RegEx.new()
+		rx.compile("[A-Za-zÀ-ú]{4,}")
+		var en := {}
+		for k in cat:
+			for m in rx.search_all(String(cat[k])):
+				en[m.get_string().to_lower()] = true
+		for k in cat:
+			for m in rx.search_all(String(k)):
+				var w := m.get_string().to_lower()
+				if not en.has(w):
+					_ptw[w] = true
+	if _word_rx == null:
+		_word_rx = RegEx.new()
+		_word_rx.compile("[A-Za-zÀ-ú]{4,}")
+	for m in _word_rx.search_all(t):
+		if _ptw.has(m.get_string().to_lower()):
+			return true
+	return false

@@ -26,6 +26,7 @@ DB="*res://scripts/autoload/db.gd"
 Art="*res://scripts/autoload/art.gd"
 Profile="*res://scripts/autoload/profile.gd"
 Sfx="*res://scripts/autoload/audio.gd"
+I18n="*res://scripts/autoload/i18n.gd"
 Ads="*res://scripts/autoload/ads.gd"
 Billing="*res://scripts/autoload/billing.gd"
 
@@ -61,3 +62,7 @@ renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.027, 0.063, 0.118, 1)
 2d/snap/snap_2d_vertices_to_pixel=false
+
+[internationalization]
+
+locale/fallback="pt_BR"

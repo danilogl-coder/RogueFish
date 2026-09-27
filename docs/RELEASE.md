@@ -66,7 +66,7 @@ estão em `docs/MONETIZATION.md`.
 
 1. **Criar app:**
    - nome *Rogue Fish: Da Larva à Lenda*;
-   - idioma pt-BR;
+   - idioma padrão **English (United States)**, com a tradução pt-BR adicionada em seguida;
    - tipo Jogo;
    - gratuito.
 2. **Configurar o app:**

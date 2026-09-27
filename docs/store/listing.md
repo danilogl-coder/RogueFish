@@ -1,6 +1,13 @@
 # Ficha da Play Store
 
-## Português (Brasil) — idioma principal
+O jogo abre em **inglês** por padrão, e o jogador pode trocar para português em *Options → IDIOMA / LANGUAGE*.
+Na Play Console, use **English (United States)** como idioma padrão e adicione **Português (Brasil)** como
+tradução.
+
+- Imagens em inglês: `docs/store/`.
+- Imagens em português: `docs/store/pt-BR/`.
+
+## Português (Brasil)
 
 **Nome do app** (máx. 30 caracteres)
 > Rogue Fish: Da Larva à Lenda
@@ -61,7 +68,7 @@
 
 ---
 
-## English (United States)
+## English (United States) — idioma padrão
 
 **App name**
 > Rogue Fish: Larva to Legend
@@ -103,6 +110,6 @@
 
 | Arquivo | Uso | Tamanho |
 | --- | --- | --- |
-| `icon_512.png` | Ícone do app | 512×512 |
-| `feature_graphic.png` | Recurso gráfico | 1024×500 |
-| `screenshots/01.png` … `08.png` | Capturas de tela do telefone (paisagem) | 1920×1080 |
+| `icon_512.png` | Ícone do app (os dois idiomas) | 512×512 |
+| `feature_graphic.png` / `pt-BR/feature_graphic.png` | Recurso gráfico (EN / PT) | 1024×500 |
+| `screenshots/01..08.png` / `pt-BR/screenshots/01..08.png` | Capturas de tela, paisagem (EN / PT) | 1920×1080 |

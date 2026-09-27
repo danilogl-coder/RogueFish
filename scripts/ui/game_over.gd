@@ -101,7 +101,7 @@ func show_result(r: Dictionary) -> void:
 	var rows := [
 		["Tempo", DB.format_time(r.time)], ["Nível", str(r.level)], ["Fase", Evolutions.stage_name(game.player.species, r.stage)],
 		["Ciclo", str(r.cycle)], ["Abates", str(r.kills)], ["Chefes", str(r.bosses)],
-		["Pérolas", "+%d" % r.pearls], ["Bônus", "+%d" % r.bonus],
+		["Pérolas", "+%d" % r.pearls], [tr("Bônus"), "+%d" % r.bonus],
 	]
 	if float(r.get("mode_mult", 1.0)) > 1.0:
 		rows.append(["Modos", "x%.1f" % float(r.mode_mult)])
@@ -111,13 +111,13 @@ func show_result(r: Dictionary) -> void:
 	var total := UIKit.hbox(4)
 	total.alignment = BoxContainer.ALIGNMENT_CENTER
 	total.add_child(UIKit.icon_rect("pearl", 16))
-	var total_lbl := UIKit.label("TOTAL: %d   (banco: %d)" % [r.pearls + r.bonus, Profile.pearls], 8, UIKit.GOLD)
+	var total_lbl := UIKit.label(tr("TOTAL: %d   (banco: %d)") % [r.pearls + r.bonus, Profile.pearls], 8, UIKit.GOLD)
 	total.add_child(total_lbl)
 	v.add_child(total)
 	# rewarded video: double what this run earned
 	var earned: int = int(r.pearls) + int(r.bonus)
 	if earned > 0 and Ads.remaining("double") > 0:
-		var dbl := UIKit.button("VÍDEO: DOBRAR +%d PÉROLAS" % earned if not Profile.vip else "VIP: DOBRAR +%d PÉROLAS" % earned, "GoldButton", 0, "pearl")
+		var dbl := UIKit.button(tr("VÍDEO: DOBRAR +%d PÉROLAS") % earned if not Profile.vip else tr("VIP: DOBRAR +%d PÉROLAS") % earned, "GoldButton", 0, "pearl")
 		dbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		dbl.pressed.connect(func():
 			dbl.disabled = true
@@ -125,7 +125,7 @@ func show_result(r: Dictionary) -> void:
 				Profile.add_pearls(earned)
 				Profile.save_game()
 				Sfx.play("level_up")
-				total_lbl.text = "TOTAL: %d   (banco: %d)" % [earned * 2, Profile.pearls]
+				total_lbl.text = tr("TOTAL: %d   (banco: %d)") % [earned * 2, Profile.pearls]
 				dbl.text = "PÉROLAS DOBRADAS!", func(): dbl.disabled = false))
 		v.add_child(dbl)
 	if r.time >= float(Profile.records.best_time) - 0.01 and r.time > 30.0:
