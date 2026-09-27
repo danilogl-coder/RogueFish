@@ -606,6 +606,7 @@ func _open_cards(mode: String, extra := {}) -> void:
 	_menu_open = true
 	hud.visible = false
 	get_tree().paused = true
+	hud.controls.release_all()
 	var p := CardPanel.new()
 	p.game = self
 	menus.add_child(p)
@@ -619,6 +620,7 @@ func open_treasure(guarantee_evolution := false) -> void:
 	_menu_open = true
 	hud.visible = false
 	get_tree().paused = true
+	hud.controls.release_all()
 	var c := ChestPanel.new()
 	c.game = self
 	menus.add_child(c)
@@ -640,6 +642,7 @@ func open_pause() -> void:
 	_menu_open = true
 	hud.visible = false
 	get_tree().paused = true
+	hud.controls.release_all()
 	var p := PauseMenu.new()
 	p.game = self
 	menus.add_child(p)
@@ -690,6 +693,7 @@ func on_victory() -> void:
 
 func _end_run(victory: bool) -> void:
 	get_tree().paused = true
+	hud.controls.release_all()
 	_menu_open = true
 	hud.visible = false
 	hud.controls.release_all()

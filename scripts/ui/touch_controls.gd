@@ -32,6 +32,11 @@ var _dash_tex_p: Texture2D
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# keep listening while the game is paused (level-up / evolution cards),
+	# otherwise a finger lifted during the pause is never seen and the
+	# bite button stays "held" forever
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	visibility_changed.connect(release_all)
 	_base_tex = Art.tex("ui/joy_base")
 	_knob_tex = Art.tex("ui/joy_knob")
 	_btn_tex = Art.tex("ui/btn_attack")
@@ -57,7 +62,11 @@ func _dash_pos() -> Vector2:
 
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree():
+	if event is InputEventScreenTouch and not event.pressed:
+		# releases always count, even while hidden or paused
+		_release(event.index)
+		return
+	if not is_visible_in_tree() or get_tree().paused:
 		return
 	if event is InputEventScreenTouch:
 		var pos: Vector2 = event.position
@@ -80,14 +89,6 @@ func _input(event: InputEvent) -> void:
 				_joy_knob = pos
 				direction = Vector2.ZERO
 				get_viewport().set_input_as_handled()
-		else:
-			if event.index == _joy_touch:
-				_joy_touch = -1
-				direction = Vector2.ZERO
-			if event.index == _btn_touch:
-				_btn_touch = -1
-			if event.index == _dash_touch:
-				_dash_touch = -1
 		queue_redraw()
 	elif event is InputEventScreenDrag and event.index == _joy_touch:
 		var pos2: Vector2 = get_global_transform_with_canvas().affine_inverse() * event.position
@@ -102,7 +103,21 @@ func _input(event: InputEvent) -> void:
 		queue_redraw()
 
 
+func _release(index: int) -> void:
+	if index == _joy_touch:
+		_joy_touch = -1
+		direction = Vector2.ZERO
+	if index == _btn_touch:
+		_btn_touch = -1
+	if index == _dash_touch:
+		_dash_touch = -1
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
+	if get_tree().paused or not is_visible_in_tree():
+		_hold_t = 0.0
+		return
 	if _btn_touch != -1:
 		_hold_t += delta
 		if _hold_t > 0.12:
@@ -111,6 +126,7 @@ func _process(delta: float) -> void:
 
 
 func release_all() -> void:
+	_hold_t = 0.0
 	_joy_touch = -1
 	_btn_touch = -1
 	_dash_touch = -1
