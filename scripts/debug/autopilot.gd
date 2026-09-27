@@ -78,6 +78,12 @@ func _ready() -> void:
 			for i in int(a.split("=")[1]):
 				inf.add("m", game.player.position, "")
 			inf.add("f", game.player.position, "")
+		if a.begins_with("--phase="):
+			await get_tree().process_frame
+			game.director._enter(a.split("=")[1])
+		if a.begins_with("--evolve-every="):
+			_evolve_every = float(a.split("=")[1])
+			_evolve_t = _evolve_every
 		if a.begins_with("--stage="):
 			await get_tree().process_frame
 			var target := int(a.split("=")[1])
@@ -101,6 +107,8 @@ func _ready() -> void:
 
 var _col_log := 0.0
 var _audit := false
+var _evolve_every := 0.0
+var _evolve_t := 0.0
 var _audit_t := 0.0
 var _audit_seen := {}
 var _audit_paused := false
@@ -146,6 +154,14 @@ func _audit_scan_menu(m: Node, r: RegEx) -> void:
 func _process(delta: float) -> void:
 	if game == null:
 		return
+	if _evolve_every > 0.0 and game.player.stage < 4:
+		# marketing capture: grow through every life stage on a timer
+		_evolve_t -= delta / maxf(Engine.time_scale, 0.001)
+		if _evolve_t <= 0.0:
+			_evolve_t = _evolve_every
+			var nxt: int = game.player.stage + 1
+			game.level = DB.STAGE_LEVELS[nxt]
+			game.player.grow_to(nxt)
 	if _audit:
 		_audit_t -= delta
 		if _audit_t <= 0.0:

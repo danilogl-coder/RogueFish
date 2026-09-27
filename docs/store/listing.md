@@ -70,39 +70,11 @@ tradução.
 
 ## English (United States) — idioma padrão
 
-**App name**
-> Rogue Fish: Larva to Legend
+A versão final, otimizada para busca na loja (ASO), está em [`docs/marketing/COPY.md`](../marketing/COPY.md#2-google-play--aso-idioma-padrão-english-us):
 
-**Short description**
-> Hatch as a larva, grow, mutate and devour the ocean in this pixel roguelike!
-
-**Full description**
-
-> You hatch as a tiny see-through larva at the bottom of the sea. Eat, grow and evolve into a legend of the deep!
->
-> **Rogue Fish** is a pixel-art survival roguelike inspired by Vampire Survivors. Every run is different: build your
-> loadout with cards, mutate into new shapes, and survive hordes and colossal bosses.
->
-> 🐟 **LARVA TO LEGEND** — Every animal lives its real life cycle. The crab hatches as a zoea and a megalopa before it
-> walks sideways, the jellyfish starts as an eight-armed ephyra, and the goldfish hatches grey and becomes an Imperial
-> Oranda. Every stage is redrawn in pixel art.
->
-> 🦀 **33 PLAYABLE ANIMALS** — Each one has a trait, a unique item and its own way of moving: squids jet, jellyfish
-> pulse, crabs walk the sea floor and morays slither.
->
-> ⚔️ **BUILD YOUR RUN** — Weapons, passives, synergies, legendary evolutions and FUSIONS: merge two maxed weapons
-> into a new one that levels up to 10.
->
-> 🧬 **MUTATIONS** — Piranha jaws, swordfish bill, abyssal lure, electric fins, toxic skin. Every mutation shows up on
-> your animal.
->
-> 🌊 **A LIVING OCEAN** — A real food chain, caves to hide in, treasure, biomes from the reef to the abyssal trench,
-> and parasites that build a colony inside you!
->
-> 👑 **COLOSSAL BOSSES** — Kraken, Megalodon, Leviathan and the dreaded Titanacon, who can swallow you whole.
->
-> Play offline in short runs with simple touch controls. Optional rewarded videos and in-app purchases; everything
-> can be earned by playing.
+- **Title:** Rogue Fish: Larva to Legend
+- **Short description:** Pixel roguelike survival: evolve a fish from larva to legend & devour the ocean
+- **Full description:** a de COPY.md, seção 2.
 
 ---
 

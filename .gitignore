@@ -11,3 +11,6 @@ builds/*.idsig
 *.keystore
 *.jks
 *.bundle
+
+# temporary audio written while encoding marketing videos
+docs/marketing/*.wav
