@@ -66,7 +66,7 @@ func open(p_mode: String, p_extra := {}) -> void:
 		"mutation":
 			_title.text = "CRESCIMENTO!"
 			_title.add_theme_color_override("font_color", UIKit.GREEN)
-			_subtitle.text = "Você virou %s. Escolha uma mutação:" % DB.STAGE_NAMES[game.player.stage].to_upper()
+			_subtitle.text = "Você virou %s. Escolha uma mutação:" % Evolutions.stage_name(game.player.species, game.player.stage).to_upper()
 			if extra.get("boss_food", false):
 				_title.text = "ALIMENTO DO CHEFE!"
 				_subtitle.text = "Uma mutação rara aguarda. Escolha:"

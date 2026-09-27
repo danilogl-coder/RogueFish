@@ -22,7 +22,7 @@ func _ready() -> void:
 	var sp := Control.new()
 	sp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(sp)
-	top.add_child(UIKit.label("%s  NV %d  %s" % [DB.format_time(game.time), game.level, DB.STAGE_NAMES[game.player.stage].to_upper()], 8, UIKit.DIM))
+	top.add_child(UIKit.label("%s  NV %d  %s" % [DB.format_time(game.time), game.level, Evolutions.stage_name(game.player.species, game.player.stage).to_upper()], 8, UIKit.DIM))
 	_tabs = UIKit.hbox(4)
 	v.add_child(_tabs)
 	for t in [["STATUS", "_show_status"], ["ARSENAL", "_show_arsenal"], ["SINERGIAS", "_show_synergies"], ["ECOSSISTEMA", "_show_ecosystem"], ["OPÇÕES", "_show_options"]]:

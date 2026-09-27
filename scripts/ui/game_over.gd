@@ -58,7 +58,7 @@ func show_result(r: Dictionary) -> void:
 	grid.add_theme_constant_override("v_separation", 4)
 	body.add_child(grid)
 	var rows := [
-		["Tempo", DB.format_time(r.time)], ["Nível", str(r.level)], ["Fase", DB.STAGE_NAMES[r.stage]],
+		["Tempo", DB.format_time(r.time)], ["Nível", str(r.level)], ["Fase", Evolutions.stage_name(game.player.species, r.stage)],
 		["Ciclo", str(r.cycle)], ["Abates", str(r.kills)], ["Chefes", str(r.bosses)],
 		["Pérolas", "+%d" % r.pearls], ["Bônus", "+%d" % r.bonus],
 	]

@@ -58,6 +58,11 @@ var _sting_t := 0.0
 var _current_t := 0.0
 var _regen_acc := 0.0
 var _trail_t := 0.0
+var _pulse_t := 0.0          ## pulse / jet locomotion: time to the next stroke
+var _straight_t := 0.0       ## slither: seconds swimming in a straight line
+var _last_dir := Vector2.ZERO
+var on_floor := false        ## walkers / crawlers standing on the sea floor
+var stroke := 0.0            ## 1 right after a pulse/jet stroke, decays (visuals)
 
 
 func setup(p_species: String) -> void:
@@ -110,6 +115,9 @@ func recalc() -> void:
 	s.bite_damage *= 1.0 + 0.4 * stage
 	s.light += stage * 10.0
 	s.magnet += stage * 4.0
+	# the way this life stage moves (crawlers are sturdier, plankton is elusive)
+	var mv := Evolutions.move(species, stage)
+	s.armor += float(mv.get("armor", 0.0))
 	radius = DB.STAGE_RADIUS[stage]
 	# attributes
 	var a := attributes
@@ -303,21 +311,27 @@ func _physics_process(delta: float) -> void:
 	if _dash_t > 0.0:
 		pass
 	elif _lunge_t <= 0.0:
-		var target_v := input_dir * spd
-		var accel := 820.0 if input_dir != Vector2.ZERO else 420.0
-		vel = vel.move_toward(target_v, accel * delta)
+		_move(delta, spd)
+	stroke = maxf(0.0, stroke - delta * 3.0)
 	position += vel * delta
 	if container != null and is_instance_valid(container):
 		position = container.clamp_point(position, radius)
 	else:
 		position.x = clampf(position.x, radius, DB.WORLD_W - radius)
 		position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.floor_at(position.x) - radius)
+		on_floor = position.y >= DB.floor_at(position.x) - radius - 1.5
+		if on_floor and vel.y > 0.0:
+			vel.y = 0.0
 	if absf(input_dir.x) > 0.15 and _lunge_t <= 0.0:
 		facing = signf(input_dir.x)
 	# visuals
 	var puff := 1.25 if buffs.has("inflado") else 1.0
-	visual.scale = Vector2(facing * puff, puff)
+	# pulse / jet strokes squash and stretch the body
+	visual.scale = Vector2(facing * puff * (1.0 + stroke * 0.12), puff * (1.0 - stroke * 0.1))
 	var tilt := clampf(vel.y / maxf(st.speed, 1.0), -1.0, 1.0) * 0.32
+	if on_floor and bool(Evolutions.move(species, stage).get("floor", false)):
+		# walkers follow the slope of the ground instead of pitching
+		tilt = atan2(DB.floor_at(position.x + 6.0) - DB.floor_at(position.x - 6.0), 12.0) * facing
 	visual.rotation = lerpf(visual.rotation, tilt * facing, 1.0 - pow(0.001, delta))
 	var frame := 0
 	if _bite_anim > 0.0:
@@ -549,10 +563,58 @@ func bite_cooldown_ratio() -> float:
 
 
 # ----------------------------------------------------------------- damage
+## Locomotion of the current life stage (see Evolutions.MOVES).
+func _move(delta: float, spd: float) -> void:
+	var mv := Evolutions.move(species, stage)
+	var top: float = spd * float(mv.speed)
+	var has_input := input_dir.length() > 0.2
+	if container != null:
+		# inside the titan everyone just swims
+		vel = vel.move_toward(input_dir * spd, (820.0 if has_input else 420.0) * delta)
+		return
+	if mv.has("pulse"):
+		# strokes: a strong kick, then a glide that slows down (jellyfish, squid)
+		_pulse_t -= delta
+		vel = vel.move_toward(Vector2.ZERO, float(mv.drag) * delta)
+		if has_input and _pulse_t <= 0.0:
+			_pulse_t = float(mv.pulse)
+			vel = vel * 0.3 + input_dir.normalized() * top * float(mv.kick)
+			stroke = 1.0
+		elif not has_input:
+			# idle jellyfish sink slowly, idle squid hover
+			vel.y = move_toward(vel.y, 14.0 if Evolutions.move_id(species, stage) == "pulse" else 0.0, 30.0 * delta)
+		return
+	if bool(mv.get("floor", false)):
+		# walkers and crawlers: gravity keeps them on the bottom, holding up
+		# lets them swim/climb a little
+		var accel: float = float(mv.accel) if has_input else float(mv.drag)
+		vel.x = move_toward(vel.x, input_dir.x * top, accel * delta)
+		if input_dir.y < -0.3:
+			vel.y = move_toward(vel.y, input_dir.y * top * float(mv.climb), accel * 0.6 * delta)
+		else:
+			vel.y = move_toward(vel.y, 260.0 + maxf(0.0, input_dir.y) * top, 520.0 * delta)
+		return
+	var target := input_dir * top
+	if Evolutions.move_id(species, stage) == "drift":
+		# plankton rides a slow current
+		target += Vector2(sin(_t * 0.7) * 16.0, cos(_t * 0.9) * 10.0)
+	if mv.has("straight") and has_input:
+		var d := input_dir.normalized()
+		_straight_t = _straight_t + delta if d.dot(_last_dir) > 0.96 else 0.0
+		_last_dir = d
+		target *= 1.0 + float(mv.straight) * clampf(_straight_t / 1.2, 0.0, 1.0)
+	var acc: float = float(mv.accel) if has_input else float(mv.drag)
+	vel = vel.move_toward(target, acc * delta)
+
+
 func take_damage(amount: float, source) -> void:
 	if not alive or _invuln > 0.0:
 		return
 	amount = traits.incoming(amount, source)
+	var evade := float(Evolutions.move(species, stage).get("evade", 0.0))
+	if evade > 0.0 and randf() < evade:
+		game.float_text(position + Vector2(0, -16), "À DERIVA!", Color("c8e8ff"), 8)
+		amount = 0.0
 	if amount <= 0.0:
 		_invuln = 0.3
 		return
@@ -720,7 +782,13 @@ func grow_to(new_stage: int) -> void:
 	recalc()
 	hp = minf(st.max_hp, hp + st.max_hp * 0.25)
 	visual.set_look(species, stage, mutations)
-	game.float_text(position + Vector2(0, -30), DB.STAGE_NAMES[stage].to_upper() + "!", Color("ffbf45"), 16)
+	game.float_text(position + Vector2(0, -30), Evolutions.stage_name(species, stage).to_upper() + "!", Color("ffbf45"), 16)
+	var old_move := Evolutions.move_id(species, stage - 1)
+	var mv := Evolutions.move(species, stage)
+	if Evolutions.move_id(species, stage) != old_move:
+		game.hud.toast("%s — novo movimento: %s. %s" % [Evolutions.stage_desc(species, stage), mv.name, mv.desc], Color("7ae0ff"))
+	else:
+		game.hud.toast(Evolutions.stage_desc(species, stage), Color("ffd76a"))
 	game.fx("fx/explosion", position, 12.0, 2.5, Color("5ee0ff"))
 	game.shake(5.0)
 	Sfx.play("evolve")

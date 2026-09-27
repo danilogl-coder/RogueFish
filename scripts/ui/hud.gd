@@ -330,7 +330,7 @@ func _process(_delta: float) -> void:
 
 func _refresh_inventory() -> void:
 	var p: Player = game.player
-	stage_label.text = DB.STAGE_NAMES[p.stage].to_upper()
+	stage_label.text = Evolutions.stage_name(p.species, p.stage).to_upper()
 	for c in inv_box.get_children():
 		c.queue_free()
 	for id in p.weapons:
