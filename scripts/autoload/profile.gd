@@ -52,7 +52,7 @@ func load_game() -> void:
 		data = _read(SAVE_PATH + ".bak")
 	if data.is_empty():
 		return
-	pearls = int(data.get("pearls", 0))
+	pearls = maxi(0, int(data.get("pearls", 0)))
 	upgrades = data.get("upgrades", {})
 	unlocked = data.get("unlocked", ["dourado"])
 	selected_species = data.get("selected_species", "dourado")
@@ -99,7 +99,8 @@ func save_game() -> void:
 		f.close()
 		var dir := DirAccess.open("user://")
 		if dir:
-			if FileAccess.file_exists(SAVE_PATH):
+			# keep the last good save as backup (never back up a broken one)
+			if not _read(SAVE_PATH).is_empty():
 				dir.copy(SAVE_PATH, SAVE_PATH + ".bak")
 			if dir.rename(tmp, SAVE_PATH) != OK:
 				dir.remove(SAVE_PATH)

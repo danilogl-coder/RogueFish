@@ -75,6 +75,11 @@ func _ready() -> void:
 			for i in int(a.split("=")[1]):
 				inf.add("m", game.player.position, "")
 			inf.add("f", game.player.position, "")
+		if a.begins_with("--stage="):
+			await get_tree().process_frame
+			var target := int(a.split("=")[1])
+			game.level = DB.STAGE_LEVELS[target]
+			game.player.grow_to(target)
 		if a.begins_with("--boss="):
 			var n := int(a.split("=")[1])
 			await get_tree().process_frame
