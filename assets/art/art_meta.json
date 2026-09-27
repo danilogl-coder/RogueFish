@@ -1428,9 +1428,9 @@
   "creatures/crab": {
    "act": 2,
    "frames": 6,
-   "h": 20,
+   "h": 22,
    "swim": 4,
-   "w": 28
+   "w": 36
   },
   "creatures/golden": {
    "act": 4,
@@ -1442,23 +1442,23 @@
   "creatures/isopod": {
    "act": 2,
    "frames": 6,
-   "h": 13,
+   "h": 14,
    "swim": 4,
-   "w": 22
+   "w": 24
   },
   "creatures/jellyfish": {
    "act": 2,
    "frames": 6,
-   "h": 30,
+   "h": 32,
    "swim": 4,
-   "w": 22
+   "w": 24
   },
   "creatures/kraken_head": {
    "act": 2,
    "frames": 6,
-   "h": 84,
+   "h": 88,
    "swim": 4,
-   "w": 80
+   "w": 84
   },
   "creatures/kraken_segment": {
    "frames": 4,
@@ -1501,9 +1501,9 @@
   "creatures/otter": {
    "act": 2,
    "frames": 6,
-   "h": 18,
+   "h": 20,
    "swim": 4,
-   "w": 40
+   "w": 42
   },
   "creatures/pilot": {
    "act": 4,
@@ -1543,9 +1543,9 @@
   "creatures/sea_cucumber": {
    "act": 2,
    "frames": 6,
-   "h": 12,
+   "h": 13,
    "swim": 4,
-   "w": 26
+   "w": 28
   },
   "creatures/shark": {
    "act": 4,
@@ -1557,37 +1557,37 @@
   "creatures/shrimp": {
    "act": 2,
    "frames": 6,
-   "h": 13,
+   "h": 14,
    "swim": 4,
-   "w": 18
+   "w": 20
   },
   "creatures/snail": {
    "act": 2,
    "frames": 6,
-   "h": 15,
+   "h": 16,
    "swim": 4,
-   "w": 18
+   "w": 20
   },
   "creatures/squid": {
    "act": 2,
    "frames": 6,
-   "h": 18,
+   "h": 20,
    "swim": 4,
-   "w": 34
+   "w": 36
   },
   "creatures/turtle": {
    "act": 2,
    "frames": 6,
    "h": 32,
    "swim": 4,
-   "w": 48
+   "w": 50
   },
   "creatures/urchin": {
    "act": 2,
    "frames": 6,
-   "h": 18,
+   "h": 20,
    "swim": 4,
-   "w": 18
+   "w": 20
   },
   "env/anemone": {
    "frames": 4,

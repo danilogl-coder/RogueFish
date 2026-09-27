@@ -100,7 +100,6 @@ def cave_front():
     w, h = 128, 72
     X, Y = grid(w, h)
     nz = noise2(X, Y, 9.0, 3)
-    ang = np.arctan2(Y - h, X - w / 2)
     outer = ((X - w / 2) / (62.0 + 3.0 * nz)) ** 2 + ((Y - h) / (70.0 + 3.0 * nz)) ** 2 <= 1.0
     inner = ((X - w / 2) / 40.0) ** 2 + ((Y - h) / 50.0) ** 2 <= 1.0
     # stalactites hanging from the arch

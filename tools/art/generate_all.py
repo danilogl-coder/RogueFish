@@ -17,12 +17,11 @@ sys.path.insert(0, HERE)
 from PIL import Image  # noqa: E402
 import pixel  # noqa: E402
 import player  # noqa: E402
-import creatures  # noqa: E402
+import critters  # noqa: E402
 import fishes  # noqa: E402
 import env  # noqa: E402
 import fx  # noqa: E402
 import ui  # noqa: E402
-import creatures2  # noqa: E402
 import props  # noqa: E402
 import fx2  # noqa: E402
 import terrain  # noqa: E402
@@ -71,7 +70,7 @@ def main():
 
     for name, (sw, act) in ANIM.items():
         FRAME_COUNT[name] = sw + act
-    groups = [("creatures", {**creatures.ALL, **creatures2.ALL, **fishes.ALL}, creatures.NF), ("env", {**env.ALL, **props.ALL}, 1),
+    groups = [("creatures", {**critters.ALL, **fishes.ALL}, 6), ("env", {**env.ALL, **props.ALL}, 1),
               ("fx", {**fx.ALL, **fx2.ALL}, 1), ("ui", ui.ALL, 1)]
     for gname, table, default_frames in groups:
         if not want(gname):

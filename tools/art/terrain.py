@@ -368,7 +368,6 @@ def paint_details(front, cols, ctop, fy0, slope, near_site):
     rng = np.random.default_rng(int(cols[0]) + 5)
     weights = biome_weights(cols.astype(float))
     for i in range(cw):
-        x = int(cols[i])
         if abs(slope[i]) > 1.1:
             continue
         b = max(weights, key=lambda k: weights[k][i])
