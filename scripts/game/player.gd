@@ -42,6 +42,7 @@ var visual: PlayerVisual
 var _t := 0.0
 var _invuln := 0.0
 var _bite_cd := 0.0
+const BITE_ANIM := 0.26  ## bite animation length (4 frames: open, gape, snap, recover)
 var _bite_anim := 0.0
 var _lunge_t := 0.0
 var _since_attack := 9.0
@@ -294,10 +295,10 @@ func _physics_process(delta: float) -> void:
 	visual.rotation = lerpf(visual.rotation, tilt * facing, 1.0 - pow(0.001, delta))
 	var frame := 0
 	if _bite_anim > 0.0:
-		frame = 4 if _bite_anim > 0.1 else 5
+		frame = visual.swim_frames + Art.act_frame(1.0 - _bite_anim / BITE_ANIM, visual.act_frames)
 	else:
-		var swim_fps := 5.0 + vel.length() / maxf(st.speed, 1.0) * 7.0
-		frame = int(_t * swim_fps) % 4
+		var swim_fps := (5.0 + vel.length() / maxf(st.speed, 1.0) * 7.0) * visual.swim_frames / 4.0
+		frame = int(_t * swim_fps) % visual.swim_frames
 	visual.set_frame(frame)
 	visual.flash(_invuln > 0.45 and _invuln < 0.8)
 	if buffs.has("frenzy"):
@@ -413,7 +414,7 @@ func try_bite() -> void:
 	if not alive or _bite_cd > 0.0 or game.get_tree().paused:
 		return
 	_bite_cd = st.bite_cd
-	_bite_anim = 0.2
+	_bite_anim = BITE_ANIM
 	_since_attack = 0.0
 	var reach: float = (radius * 0.9 + 9.0) * st.bite_reach
 	var dir := Vector2(facing, 0.0)

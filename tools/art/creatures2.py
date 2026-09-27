@@ -1,11 +1,10 @@
-"""Food-web expansion: detritivores, grazers, surface otter, abyss lanternfish and
-the orca mega predator. Same conventions as creatures.py (6 frames: 4 move + 2 action)."""
+"""Food-web expansion: detritivores, grazers and the surface otter.
+Same conventions as creatures.py (6 frames: 4 move + 2 action)."""
 from __future__ import annotations
 
 import math
-from pixel import Canvas, Mat, sheet, rng, col, point_in_poly
-from fish import FishModel, M, set_frame
-from creatures import A, NF, fish_sheet
+from pixel import Canvas, Mat, sheet
+from creatures import A, NF
 
 
 def F(ramp, idx=3, group=None, alpha=255, outline=True):
@@ -125,64 +124,7 @@ def otter():
     return sheet(frames)
 
 
-def lantern_pattern(m, x, y, t, v):
-    if 0.15 < t < 0.85 and abs(v - 0.72) < 0.1 and int(x - m.xt) % 3 == 0:
-        return ("glow", 5)
-    return None
-
-
-def lanternfish():
-    return fish_sheet(18, 11, 12, H=0.42, peak=0.62, q=1.0, body="abyss", belly="ink", fin="abyss",
-                      tail="fork", tail_len=0.42, eye=0.15, eye_ramp="glow", dorsal=0.6, pattern=lantern_pattern)
-
-
-def orca_patch(m, x, y, t, v):
-    # white eye patch and saddle
-    if 0.78 < t < 0.9 and 0.18 < v < 0.42:
-        return ("white", 4)
-    if 0.45 < t < 0.6 and v < 0.12:
-        return ("steel", 3)
-    return None
-
-
-def orca_flukes(c, m):
-    L = m.L
-    xt = m.xt + 2
-
-    def f(x, y):
-        x, y = m.warp(x, y)
-        if x > xt:
-            return False
-        u = (xt - x) / (L * 0.3)
-        if u > 1.0:
-            return False
-        if u < 0.45:
-            half = 2.6 - u * 1.5
-        else:
-            half = 2.0 + 26.0 * (u - 0.45) * (1.25 - u)
-        return abs(y - m.cy) < half and M("black", 3 if y < m.cy else 2, group="fluke")
-    c.paint_fn(f, None)
-
-
-def orca_back(c, m):
-    dorsal = m.fin_poly(0.5, "top", [(0.1, -0.2), (-0.02, 1.25), (0.02, 1.2), (-0.1, -0.2)])
-    m.paint_poly_fin(c, dorsal, ramp="black", base=2, rays=False)
-
-
-def orca_extra(c, m):
-    if m.open > 0:
-        from player import paint_head_piranha
-        paint_head_piranha(c, m)
-
-
-def orca():
-    return fish_sheet(150, 64, 112, H=0.34, peak=0.58, q=1.0, front_e=0.6, body="black", belly="white",
-                      fin="black", eye=0.025, dorsal=0.25, mouth_v=0.66, jaw_open=0.5, belly_v=0.62,
-                      tail=False, back=lambda c, m: (orca_flukes(c, m), orca_back(c, m)),
-                      extra=orca_extra, pattern=orca_patch, cy=38)
-
 
 ALL = {
     "sea_cucumber": sea_cucumber, "isopod": isopod, "urchin": urchin, "otter": otter,
-    "lanternfish": lanternfish, "orca": orca,
 }

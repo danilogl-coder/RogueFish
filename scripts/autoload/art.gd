@@ -2,9 +2,8 @@ extends Node
 ## Access to generated sprites (assets/art) and their metadata.
 
 const META_PATH := "res://assets/art/art_meta.json"
-const PLAYER_LAYERS := ["body", "tail", "fins_back", "fins_front", "head_piranha", "head_sword", "head_lure",
-	"fins_spiky_back", "fins_spiky_front", "fins_wing_back", "fins_wing_front", "fins_volt_back", "fins_volt_front",
-	"skin_armor", "skin_toxic", "skin_glow", "tail_fork", "tail_sting", "tail_eel"]
+## Bite timeline (fraction of the attack): anticipation, full gape, snap, recover.
+const ACT_STEPS := [0.14, 0.52, 0.8]
 
 var meta: Dictionary = {}
 var _tex_cache: Dictionary = {}
@@ -59,6 +58,31 @@ func frames(path: String) -> int:
 	return int(sheet_info(path).frames)
 
 
+## Swim / action frame split of a creature sheet: Vector2i(swim, act).
+## Fish sheets have 6 swim + 4 bite frames; older sheets 4 + 2.
+func anim(path: String) -> Vector2i:
+	var info := sheet_info(path)
+	var n := int(info.frames)
+	if info.has("swim"):
+		return Vector2i(int(info.swim), int(info.get("act", 0)))
+	if n >= 6:
+		return Vector2i(4, 2)
+	return Vector2i(n, 0)
+
+
+## Maps attack progress (0..1) to an action frame offset.
+func act_frame(progress: float, act_count: int) -> int:
+	if act_count <= 0:
+		return 0
+	if act_count == 2:
+		return 0 if progress < 0.6 else 1
+	var i := 0
+	for step in ACT_STEPS:
+		if progress >= step:
+			i += 1
+	return mini(i, act_count - 1)
+
+
 ## Creates a Sprite2D configured for a horizontal sheet.
 func sprite(path: String, centered := true) -> Sprite2D:
 	var s := Sprite2D.new()
@@ -87,8 +111,10 @@ func player_tex(species: String, stage: int) -> Texture2D:
 	return tex("player/%s_%d" % [species, stage])
 
 
-func layer_row(layer: String) -> int:
-	return PLAYER_LAYERS.find(layer)
+## Row of a layer inside a species/stage atlas (row names live in art_meta.json).
+func layer_row(species: String, stage: int, layer: String) -> int:
+	var rows: Array = player_meta(species, stage).get("layers", [])
+	return maxi(0, rows.find(layer))
 
 
 ## Returns the atlas region of a player layer frame.
@@ -96,16 +122,22 @@ func player_region(species: String, stage: int, layer: String, frame: int) -> Re
 	var m := player_meta(species, stage)
 	var fw := float(m.get("frame_w", 46))
 	var fh := float(m.get("frame_h", 32))
-	return Rect2(frame * fw, layer_row(layer) * fh, fw, fh)
+	return Rect2(frame * fw, layer_row(species, stage, layer) * fh, fw, fh)
+
+
+## Swim / bite frame split of the player atlases.
+func player_anim(species: String, stage: int) -> Vector2i:
+	var m := player_meta(species, stage)
+	return Vector2i(int(m.get("swim", 4)), int(m.get("act", 2)))
 
 
 ## Ordered layers (back to front) for a given mutation set {slot: mutation_id}.
+## Head and skin mutations are baked into the body row (the jaw, rostrum or
+## lure are part of the head), tails and fins are separate rows.
 func player_layers(mutations: Dictionary) -> Array:
 	var tail := "tail"
 	var fins_b := "fins_back"
 	var fins_f := "fins_front"
-	var head := ""
-	var skin := ""
 	var t: String = mutations.get("tail", "")
 	if t != "":
 		tail = t
@@ -113,12 +145,11 @@ func player_layers(mutations: Dictionary) -> Array:
 	if fi != "":
 		fins_b = fi + "_back"
 		fins_f = fi + "_front"
-	head = mutations.get("head", "")
-	skin = mutations.get("skin", "")
-	var out := [tail, fins_b, "body"]
-	if skin != "":
-		out.append(skin)
+	var body := "body"
+	var head: String = mutations.get("head", "")
+	var skin: String = mutations.get("skin", "")
 	if head != "":
-		out.append(head)
-	out.append(fins_f)
-	return out
+		body += "+" + head
+	if skin != "":
+		body += "+" + skin
+	return [tail, fins_b, body, fins_f]

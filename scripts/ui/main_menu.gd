@@ -74,6 +74,7 @@ func _build_background() -> void:
 		var s := Sprite2D.new()
 		s.texture = Art.tex("creatures/" + k)
 		s.hframes = Art.frames("creatures/" + k)
+		s.set_meta("swim", Art.anim("creatures/" + k).x)
 		var dir := 1.0 if randf() < 0.5 else -1.0
 		s.flip_h = dir < 0
 		s.modulate = Color(0.55, 0.7, 0.85, 0.8) if k != "golden" else Color.WHITE
@@ -99,7 +100,8 @@ func _process(delta: float) -> void:
 			f.x = w + 60
 		var s: Sprite2D = f.s
 		s.position = Vector2(roundf(f.x), roundf(f.y + sin(_bg_t + f.x * 0.02) * 3.0))
-		s.frame = int(_bg_t * 8.0 + f.y) % mini(4, s.hframes)
+		var swim: int = s.get_meta("swim", 4)
+		s.frame = int(_bg_t * 8.0 * swim / 4.0 + f.y) % swim
 	if _pearls_label:
 		_pearls_label.text = str(Profile.pearls)
 

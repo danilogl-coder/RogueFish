@@ -48,14 +48,14 @@ func _set_inflated(on: bool) -> void:
 	if on:
 		_inflate_t = 3.2
 		sprite.texture = _big_tex
-		sprite.hframes = 4
+		sprite.hframes = Art.frames("creatures/puffer_big")
 		radius = _base_radius * 1.8
 		armor_mult = 0.5
 		contact_damage = float(def.dmg) * 1.4
 		Sfx.play("inflate", -6.0)
 	else:
 		sprite.texture = _small_tex
-		sprite.hframes = 6
+		sprite.hframes = Art.frames("creatures/puffer")
 		radius = _base_radius
 		armor_mult = 1.0
 		contact_damage = float(def.dmg)

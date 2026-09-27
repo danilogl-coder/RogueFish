@@ -1,10 +1,10 @@
-"""Enemy / ecosystem creature sheets. All face right. 6 frames: 4 move + 2 attack."""
+"""Invertebrates, reptiles and non-fish boss parts. All face right. 6 frames: 4 move + 2 action.
+
+Fish (and fish-like bosses) live in fishes.py and use the jaw rig in fishpro.py."""
 from __future__ import annotations
 
 import math
-from pixel import Canvas, Mat, sheet, rng, point_in_poly, col, seg_dist
-from fish import FishModel, M, set_frame, FRAMES
-import player as P
+from pixel import Canvas, Mat, sheet, col
 
 NF = 6
 
@@ -13,140 +13,7 @@ def A(ramp, idx=3, group=None, alpha=255, hl=True):
     return Mat(ramp, idx, auto=True, group=group or ramp, alpha=alpha, hl=hl)
 
 
-# ---------------------------------------------------------------- fish based
-def fish_sheet(w, h, L, extra=None, back=None, front=None, cx=None, cy=None, tail=True, fins=True, **kw):
-    frames = []
-    for i in range(NF):
-        m = FishModel(L, cx if cx is not None else w * 0.5 + L * 0.08, cy if cy is not None else h * 0.5, **kw)
-        set_frame(m, i)
-        c = Canvas(w, h)
-        if tail:
-            m.paint_tail(c)
-        if fins:
-            m.paint_default_back_fins(c)
-        if back:
-            back(c, m)
-        m.paint_body(c)
-        if extra:
-            extra(c, m)
-        img = c.render()
-        c2 = Canvas(w, h)
-        if fins:
-            m.paint_default_front_fins(c2)
-        if front:
-            front(c2, m)
-        img.alpha_composite(c2.render())
-        frames.append(img)
-    return sheet(frames)
 
-
-def bars_pattern(ramp, every, idx=1):
-    def f(m, x, y, t, v):
-        if v < m.belly_v and 0.15 < t < 0.8 and int(x - m.xt) % every < max(1, every // 3):
-            return (ramp, idx)
-        return None
-    return f
-
-
-def spots_pattern(ramp, idx, mod=9, v_max=0.6):
-    def f(m, x, y, t, v):
-        if v < v_max and (int(x) * 5 + int(y) * 11) % mod == 0:
-            return (ramp, idx)
-        return None
-    return f
-
-
-def sardine():
-    return fish_sheet(18, 11, 12, H=0.34, peak=0.62, q=1.2, body="silver", belly="white", fin="silver",
-                      tail="fork", tail_len=0.42, eye=0.12, dorsal=0.7, stripe=("neon", 0.35, 0.45, 0.2, 0.9))
-
-
-def golden():
-    return fish_sheet(20, 12, 13, H=0.36, peak=0.6, q=1.1, body="volt", belly="cream", fin="gold",
-                      tail="fork", tail_len=0.45, eye=0.12, dorsal=0.8, stripe=("gold", 0.36, 0.46, 0.2, 0.9))
-
-
-def pilot():
-    return fish_sheet(14, 9, 9, H=0.4, peak=0.6, body="white", belly="white", fin="neon",
-                      tail="fork", tail_len=0.45, eye=0.12, dorsal=0.6, pattern=bars_pattern("navy", 3, 2))
-
-
-def piranha():
-    return fish_sheet(24, 18, 15, H=0.66, peak=0.58, q=0.9, body="steel", belly="red", fin="steel",
-                      tail="fork", tail_len=0.36, eye=0.1, dorsal=0.7, mouth_v=0.62, jaw_open=0.8,
-                      belly_v=0.58, extra=P.paint_head_piranha)
-
-
-def barracuda():
-    return fish_sheet(50, 14, 34, H=0.24, peak=0.62, q=1.0, front_e=0.95, body="silver", belly="white",
-                      fin="steel", tail="fork", tail_len=0.26, eye=0.06, dorsal=0.9, mouth_v=0.55,
-                      jaw_open=0.4, pattern=bars_pattern("steel", 5, 1), extra=P.paint_head_piranha)
-
-
-def shark_teeth(c, m):
-    # gills
-    for k in range(3):
-        gx = m.xt + m.L * (0.66 + k * 0.035)
-        for yy in range(int(m.top(0.68) + m.H * 0.25), int(m.top(0.68) + m.H * 0.62)):
-            c.pixel(gx, yy + m.warp_offset(gx), col(m.body, 1))
-    if m.open > 0.0:
-        P.paint_head_piranha(c, m)
-
-
-def shark_back(c, m):
-    dorsal = m.fin_poly(0.5, "top", [(0.12, -0.2), (-0.03, 1.0), (0.0, 0.75), (-0.08, -0.2)])
-    m.paint_poly_fin(c, dorsal, ramp=m.body, base=2, rays=False)
-
-
-def shark():
-    return fish_sheet(80, 36, 56, H=0.3, peak=0.6, q=1.1, front_e=0.75, body="shark", belly="white",
-                      fin="shark", tail="fork", tail_len=0.34, eye=0.035, dorsal=0.3, mouth_v=0.7,
-                      jaw_open=0.55, belly_v=0.6, extra=shark_teeth, back=shark_back, cy=20)
-
-
-def puffer():
-    return fish_sheet(24, 20, 15, H=0.8, peak=0.5, q=0.7, front_e=0.45, body="sandy", belly="cream",
-                      fin="orange", tail="round", tail_len=0.3, eye=0.13, dorsal=0.5,
-                      pattern=spots_pattern("brown", 2, 7))
-
-
-def puffer_big():
-    frames = []
-    for i in range(4):
-        w = h = 30
-        c = Canvas(w, h)
-        cx, cy, r = 15, 15, 10.5 + (0.5 if i % 2 else 0)
-        # spikes
-        for k in range(14):
-            a = k / 14 * math.tau + i * 0.1
-            x0, y0 = cx + math.cos(a) * r * 0.8, cy + math.sin(a) * r * 0.8
-            x1, y1 = cx + math.cos(a) * (r + 3.5), cy + math.sin(a) * (r + 3.5)
-            c.line(x0, y0, x1, y1, A("bone", 4, "spike"), 1.4)
-        c.circle(cx, cy, r, A("sandy", 3, "body"))
-        c.ellipse(cx, cy + 4, r * 0.8, r * 0.55, A("cream", 3, "belly"))
-        for k in range(9):
-            a = k * 2.3
-            c.circle(cx - 2 + math.cos(a) * 6, cy - 4 + math.sin(a) * 3, 0.9, Mat("brown", 2, auto=False))
-        c.ellipse(cx + 6, cy - 2, 2.5, 2.5, Mat("white", 4, auto=False, group="eye"))
-        c.pixel(cx + 7, cy - 2, (10, 8, 18, 255))
-        c.pixel(cx + 7, cy - 1, (10, 8, 18, 255))
-        c.line(cx + 4, cy - 5, cx + 8, cy - 4, Mat("brown", 1, auto=False, group="brow"), 1.0)
-        c.ellipse(cx + 9.5, cy + 3, 1.5, 1.2, Mat("ruby", 1, auto=False, group="mouth"))
-        c.poly([(cx - r + 1, cy - 2), (cx - r - 4, cy - 5 + i % 2), (cx - r - 4, cy + 5 - i % 2), (cx - r + 1, cy + 2)], A("orange", 3, "fin"))
-        frames.append(c.render())
-    return sheet(frames)
-
-
-def angler_extra(c, m):
-    P.paint_head_piranha(c, m)
-    P.paint_head_lure(c, m)
-
-
-def angler():
-    return fish_sheet(44, 36, 28, H=0.72, peak=0.66, q=0.8, front_e=0.4, body="abyss", belly="ink",
-                      fin="abyss", tail="round", tail_len=0.3, eye=0.07, eye_ramp="volt", dorsal=0.4,
-                      mouth_v=0.55, jaw_open=0.7, belly_v=0.7, extra=angler_extra, cy=22,
-                      pattern=spots_pattern("violet", 2, 13))
 
 
 # ------------------------------------------------------------- invertebrates
@@ -178,7 +45,6 @@ def shrimp():
         c.line(15, 3.5, 17.5, 0.5 + sway * 0.5, Mat("coral", 4, auto=False, group="ant", outline=False), 0.8)
         c.line(14, 3.5, 11, 0.5, Mat("coral", 4, auto=False, group="ant", outline=False), 0.8)
         img = c.render()
-        from PIL import Image
         img.putpixel((14, 4), (10, 8, 18, 255))
         frames.append(img)
     return sheet(frames)
@@ -273,52 +139,6 @@ def jellyfish():
     return sheet(frames)
 
 
-def moray():
-    frames = []
-    for i in range(NF):
-        w, h = 58, 20
-        c = Canvas(w, h)
-        open_ = i >= 4
-        ph = i * math.pi / 2
-        L = 50
-        pts = []
-        for k in range(26):
-            u = k / 25.0
-            x = 4 + u * L
-            y = 10 + math.sin(u * 7.0 - ph) * 2.6 * (1.0 - u) ** 1.2
-            pts.append((x, y))
-
-        def body(x, y):
-            best = 99
-            bu = 0
-            for k in range(len(pts) - 1):
-                d = seg_dist(x, y, pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1])
-                if d < best:
-                    best, bu = d, k / 25.0
-            rad = 1.0 + 3.6 * min(1.0, bu * 2.2) * (1.0 if bu < 0.9 else (1.0 - (bu - 0.9) * 4))
-            if best <= rad:
-                yc = pts[int(bu * 25)][1]
-                top = y < yc - rad * 0.2
-                spot = (int(x) * 3 + int(y) * 5) % 7 == 0
-                if spot and top:
-                    return Mat("volt", 3, auto=False, group="body")
-                return Mat("moss", 4 if y < yc - rad * 0.5 else (3 if top else 2), auto=False, group="body")
-            if best <= rad + 1.6 and y < pts[min(24, int(bu * 25))][1] and 0.08 < bu < 0.8:
-                return Mat("lime", 2, auto=False, group="fin")
-            return False
-        c.paint_fn(body, None)
-        hx, hy = pts[-1]
-        if open_:
-            c.poly([(hx - 5, hy + 0.5), (hx + 3, hy - 1), (hx + 3, hy + 4)], Mat("ruby", 1, auto=False, group="mouth"), erase=False)
-            for k in range(3):
-                c.pixel(hx - 2 + k * 2, hy, col("bone", 5))
-                c.pixel(hx - 1 + k * 2, hy + 2, col("bone", 5))
-        img = c.render()
-        img.putpixel((int(hx - 3), int(hy - 2)), (255, 240, 120, 255))
-        img.putpixel((int(hx - 2), int(hy - 2)), (10, 8, 18, 255))
-        frames.append(img)
-    return sheet(frames)
-
 
 def squid():
     frames = []
@@ -388,38 +208,7 @@ def turtle():
 
 
 # -------------------------------------------------------------------- bosses
-def boss_shark_extra(c, m):
-    shark_teeth(c, m)
-    # scars
-    for k in range(3):
-        x0 = m.xt + m.L * (0.45 + k * 0.05)
-        y0 = m.top(0.5) + m.H * 0.2
-        c.line(x0, y0 + m.warp_offset(x0), x0 + 5, y0 + 6 + m.warp_offset(x0), Mat("pink", 3, auto=False, group="scar", outline=False), 1.0)
 
-
-def boss_shark_back(c, m):
-    dorsal = m.fin_poly(0.48, "top", [(0.14, -0.2), (0.06, 0.6), (0.04, 0.7), (-0.02, 1.0), (0.01, 0.8), (-0.03, 0.75), (-0.08, -0.2)])
-    m.paint_poly_fin(c, dorsal, ramp=m.body, base=2, rays=False)
-
-
-def boss_shark():
-    return fish_sheet(150, 64, 108, H=0.32, peak=0.6, q=1.1, front_e=0.75, body="navy", belly="white",
-                      fin="navy", tail="fork", tail_len=0.34, eye=0.03, eye_ramp="red", dorsal=0.2,
-                      mouth_v=0.7, jaw_open=0.6, belly_v=0.62, extra=boss_shark_extra,
-                      back=boss_shark_back, cy=36)
-
-
-def boss_angler_extra(c, m):
-    P.paint_head_piranha(c, m)
-    P.paint_head_lure(c, m)
-    P.paint_skin_glow(c, m)
-
-
-def boss_angler():
-    return fish_sheet(130, 100, 80, H=0.78, peak=0.66, q=0.8, front_e=0.4, body="abyss", belly="ink",
-                      fin="violet", tail="round", tail_len=0.3, eye=0.05, eye_ramp="volt", dorsal=0.6,
-                      mouth_v=0.52, jaw_open=0.75, belly_v=0.7, extra=boss_angler_extra, cy=60,
-                      pattern=spots_pattern("violet", 2, 13))
 
 
 def kraken_head():
@@ -480,29 +269,6 @@ def kraken_segment():
     return sheet(frames)
 
 
-def leviathan_head():
-    frames = []
-    for i in range(NF):
-        w, h = 60, 44
-        m = FishModel(64, 22, 26, H=0.36, peak=0.35, q=0.8, front_e=0.8, body="navy", belly="cyan",
-                      fin="cyan", eye=0.035, eye_ramp="volt", mouth_v=0.62, jaw_open=0.55, belly_v=0.7, ped=0.9)
-        set_frame(m, i)
-        m.phase = 0.0
-        c = Canvas(w, h)
-        hx0 = m.xt + m.L * 0.62
-        c.poly([(hx0, m.top(0.66) + 2), (hx0 - 14, m.top(0.66) - 12 + (i % 2)), (hx0 + 4, m.top(0.7) + 1)], A("bone", 4, "horn"))
-        m.paint_body(c)
-        P.paint_head_piranha(c, m)
-        for k in range(5):
-            x = 2 + k * 7
-            t = m.t_of(x)
-            y0 = m.top(t) + 1
-            c.line(x, y0, x + 3, y0 + m.H * 0.3, Mat("volt", 4, auto=False, group="stripe", outline=False), 1.2)
-        mane = m.fin_poly(0.3, "top", [(-0.3, -0.2), (-0.25, 0.4 + 0.05 * (i % 2)), (-0.1, 0.25), (0.0, 0.45), (0.12, 0.3), (0.2, -0.2)])
-        m.paint_poly_fin(c, mane, ramp="cyan", base=3)
-        frames.append(c.render())
-    return sheet(frames)
-
 
 def leviathan_segment():
     frames = []
@@ -522,11 +288,6 @@ def leviathan_segment():
 
 
 ALL = {
-    "sardine": sardine, "golden": golden, "pilot": pilot, "piranha": piranha,
-    "barracuda": barracuda, "shark": shark, "puffer": puffer, "puffer_big": puffer_big,
-    "angler": angler, "shrimp": shrimp, "snail": snail, "crab": crab, "jellyfish": jellyfish,
-    "moray": moray, "squid": squid, "turtle": turtle,
-    "boss_shark": boss_shark, "boss_angler": boss_angler, "kraken_head": kraken_head,
-    "kraken_segment": kraken_segment, "leviathan_head": leviathan_head,
-    "leviathan_segment": leviathan_segment,
+    "shrimp": shrimp, "snail": snail, "crab": crab, "jellyfish": jellyfish, "squid": squid, "turtle": turtle,
+    "kraken_head": kraken_head, "kraken_segment": kraken_segment, "leviathan_segment": leviathan_segment,
 }

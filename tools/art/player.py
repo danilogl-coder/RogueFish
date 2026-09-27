@@ -1,53 +1,170 @@
-"""Player fish atlases: one PNG per species/stage, one row per layer.
+"""Player fish atlases: one PNG per species/stage, one row per layer, 10 frames.
 
-Row order (see LAYERS) is mirrored in scripts/data/player_art.gd.
+Frames: 0-5 swim, 6-9 bite (see fishpro.FRAMES).
+Rows (see LAYERS, also stored in art_meta.json):
+  * body variants: every head mutation x skin mutation is rendered as a whole
+    body, so the jaw, teeth, rostrum or lure are part of the head itself and
+    open with it (no overlays on top of a closed mouth);
+  * tails and fins stay separate rows so any combination can be assembled.
 """
 from __future__ import annotations
 
 import math
-from pixel import Canvas, sheet, stack_rows, rng, point_in_poly, col
-from fish import FishModel, M, set_frame, FRAMES
+
+import numpy as np
+from PIL import Image
+
+import fishpro as FP
+from fishpro import Fish, Layer, recolor, bill_shape, lure_shape, lure_detail, lure_screen
+from pro import poly_mask, seg_dist
 
 STAGE_LEN = [20, 28, 36, 46, 58]
+HEADS = ["", "head_piranha", "head_sword", "head_lure"]
+SKINS = ["", "skin_armor", "skin_toxic", "skin_glow"]
+
+
+def body_key(head: str, skin: str) -> str:
+    k = "body"
+    if head:
+        k += "+" + head
+    if skin:
+        k += "+" + skin
+    return k
+
+
+BODY_ROWS = [body_key(hd, sk) for hd in HEADS for sk in SKINS]
+TAIL_ROWS = ["tail", "tail_fork", "tail_sting", "tail_eel"]
+FIN_ROWS = ["fins_back", "fins_front", "fins_spiky_back", "fins_spiky_front", "fins_wing_back",
+            "fins_wing_front", "fins_volt_back", "fins_volt_front"]
+LAYERS = BODY_ROWS + TAIL_ROWS + FIN_ROWS
+
+
+# ------------------------------------------------------------------ patterns
+def _hash(a, b, seed=0):
+    v = np.sin(a * 12.9898 + b * 78.233 + seed * 37.719) * 43758.5453
+    return v - np.floor(v)
+
+
+def neon_pattern(fish, f):
+    t, v = f["t"], f["v"]
+    body = f["body"]
+    recolor(f, body & (v > 0.5) & (v < 0.84) & (t < 0.55) & (t > 0.04), "red")
+    stripe = body & (v > 0.3) & (v < 0.46) & (t > 0.16) & (t < 0.93)
+    recolor(f, stripe, "cyan", shift=1, lo=3)
+
+
+def spots(fish, f, ramp, cell=0.085, rad=(0.018, 0.034), zone=None, seed=1, shift=0, density=0.75):
+    """Organic spots in body space (they ride on the jaw when it opens)."""
+    c = max(2.5, cell * fish.L)
+    sx, sy = f["sx"], f["sy"]
+    gx, gy = np.floor((sx - fish.xt) / c), np.floor((sy - fish.cy) / c)
+    ox, oy = _hash(gx, gy, seed), _hash(gy, gx, seed + 7)
+    rr = (rad[0] + (rad[1] - rad[0]) * _hash(gx, gy, seed + 3)) * fish.L
+    keep = _hash(gx, gy, seed + 11) < density
+    cxs = fish.xt + (gx + 0.2 + 0.6 * ox) * c
+    cys = fish.cy + (gy + 0.2 + 0.6 * oy) * c
+    d = np.hypot(sx - cxs, (sy - cys) * 1.1)
+    msk = f["body"] & keep & (d <= np.maximum(0.6, rr))
+    if zone is not None:
+        msk &= zone
+    recolor(f, msk, ramp, shift=shift)
+    return msk
+
+
+def garoupa_pattern(fish, f):
+    zone = (f["v"] < 0.78) & (f["t"] > 0.05)
+    spots(fish, f, "brown", zone=zone, seed=3, shift=-1)
+    spots(fish, f, "sandy", cell=0.11, rad=(0.012, 0.02), zone=zone & (f["v"] < 0.6), seed=9, density=0.5)
+    # darker saddle bands on the back
+    band = f["body"] & (f["v"] < 0.4) & (np.sin((f["t"] * 5.5) * math.pi) > 0.55) & (f["t"] < 0.7)
+    f["lay"].shift(band, -1, lo=2)
+
 
 SPECIES = {
-    "dourado": dict(H=0.58, peak=0.56, q=1.0, body="gold", belly="cream", fin="flame",
-                    tail="veil", tail_len=0.55, eye=0.1, dorsal=1.0),
-    "neon": dict(H=0.4, peak=0.6, q=1.1, body="neon", belly="white", fin="glow",
-                 tail="fork", tail_len=0.42, eye=0.1, dorsal=0.8, fin_alpha=235,
-                 stripe=("cyan", 0.28, 0.44, 0.18, 0.96), front_e=0.6),
-    "garoupa": dict(H=0.56, peak=0.52, q=0.9, body="olive", belly="sandy", fin="brown",
-                    tail="round", tail_len=0.36, eye=0.075, mouth_v=0.64, jaw_open=0.75,
-                    dorsal=0.8, front_e=0.5),
+    "dourado": dict(H=0.58, peak=0.56, q=1.0, front_e=0.45, body="gold", belly="cream", fin="flame",
+                    tail="veil", tail_len=0.55, eye=0.1, eye_ramp="iris_gold",
+                    dorsal=("round", 0.36, 0.72, 0.55), anal=("soft", 0.16, 0.34, 0.3), pectoral=(0.22, 0.13),
+                    pelvic=0.2, mouth=dict(v=0.58, corner_t=0.77, corner_v=0.64, open=0.85)),
+    "neon": dict(H=0.42, peak=0.6, q=1.1, front_e=0.55, body="neon", belly="white", fin="silver", fin_alpha=225,
+                 tail="fork", tail_len=0.42, eye=0.11, eye_ramp="iris_cyan", dorsal=("tri", 0.42, 0.6, 0.55),
+                 anal=("long", 0.16, 0.42, 0.28), pectoral=(0.2, 0.1), pelvic=0.16, pattern=neon_pattern,
+                 belly_v=0.64, mouth=dict(v=0.55, corner_t=0.8, corner_v=0.6, open=0.8)),
+    "garoupa": dict(H=0.56, peak=0.52, q=0.9, front_e=0.42, body="olive", belly="sandy", fin="brown",
+                    tail="round", tail_len=0.36, eye=0.075, eye_ramp="iris_red", dorsal=("spiny", 0.3, 0.74, 0.4),
+                    anal=("round", 0.14, 0.3, 0.3), pectoral=(0.24, 0.15), pelvic=0.22, pattern=garoupa_pattern,
+                    mouth=dict(v=0.62, corner_t=0.72, corner_v=0.66, open=0.8, under=0.03, chin=0.2,
+                               lips="sandy", teeth="peg", teeth_n=4, teeth_len=0.03)),
 }
 
 
-def neon_pattern(m, x, y, t, v):
-    if v > 0.5 and t < 0.55 and v < m.belly_v + 0.12:
-        return ("red", 3 if v < 0.58 else 2)
-    return None
+# --------------------------------------------------------------- mutations
+def piranha_mouth(m):
+    m = dict(m)
+    m.update(corner_t=min(m.get("corner_t", 0.8), 0.73), corner_v=0.66, open=1.0, under=0.07, chin=0.26,
+             teeth="triangle", teeth_n=5, teeth_len=0.06, closed_teeth=True, jaw_ramp="red", lips=None)
+    return m
 
 
-def garoupa_pattern(m, x, y, t, v):
-    r = rng(int(x) * 131 + int(y) * 71)
-    h = (int(x) * 7 + int(y) * 13) % 11
-    if v < m.belly_v and h == 0:
-        return ("brown", 2)
-    if v < m.belly_v and h == 5 and r.random() < 0.6:
-        return ("sandy", 3)
-    return None
+def skin_armor(fish, f):
+    t, v = f["t"], f["v"]
+    lay = f["lay"]
+    zone = f["body"] & (t > 0.1) & (t < 0.78) & (v < 0.64)
+    seg = max(3.0, fish.L * 0.12)
+    k = (f["sx"] - fish.xt) / seg
+    row2 = v >= 0.32
+    kk = np.where(row2, (k + 0.5) % 1.0, k % 1.0) * seg
+    recolor(f, zone, "steel", shift=0, lo=2)
+    lay.shift(zone & (kk >= 1.0) & (kk < 2.0), +1, hi=5)
+    lay.shift(zone & (kk > seg - 1.5), -1, lo=2)
+    hgt = fish.bottom(t) - fish.top(t)
+    seam = zone & ((kk < 1.0) | (np.abs(v - 0.32) * hgt < 0.55) | (np.abs(v - 0.64) * hgt < 0.55))
+    lay.paint(seam, "steel", 1)
+    f["armor_zone"] = zone
 
 
-PATTERNS = {"neon": neon_pattern, "garoupa": garoupa_pattern}
+def skin_armor_detail(fish, st, f, lay):
+    if fish.L < 26:
+        return
+    seg = max(3.0, fish.L * 0.12)
+    X, Y = f["x"], f["y"]
+    for i in range(12):
+        tx = 0.1 + (i + 0.5) * seg / fish.L
+        if tx > 0.74:
+            break
+        ry = float(fish.section_y(tx, 0.14))
+        rx = fish.xt + tx * fish.L
+        lay.paint((np.abs(X - rx) < 0.5) & (np.abs(Y - ry) < 0.5) & f["up"], "steel", 6)
 
-LAYERS = [
-    "body", "tail", "fins_back", "fins_front",
-    "head_piranha", "head_sword", "head_lure",
-    "fins_spiky_back", "fins_spiky_front", "fins_wing_back", "fins_wing_front",
-    "fins_volt_back", "fins_volt_front",
-    "skin_armor", "skin_toxic", "skin_glow",
-    "tail_fork", "tail_sting", "tail_eel",
-]
+
+def skin_toxic(fish, f):
+    zone = (f["t"] > 0.08) & (f["v"] < 0.9)
+    spots(fish, f, "poison", cell=0.12, rad=(0.028, 0.045), zone=zone, seed=21, density=0.8)
+    spots(fish, f, "lime", cell=0.16, rad=(0.018, 0.03), zone=zone & (f["v"] < 0.7), seed=33, density=0.55, shift=1)
+
+
+def skin_toxic_detail(fish, st, f, lay):
+    # glossy tops on the warts
+    lime = next((i for i, r in enumerate(lay.ramps) if r is FP.PAL["lime"]), -1)
+    if lime < 0:
+        return
+    m = lay.mat == lime
+    above = np.pad(m, ((1, 0), (0, 0)))[:-1, :]
+    top_px = m & ~above
+    lay.paint(top_px & (np.roll(top_px, 1, axis=1)), "lime", 6)
+
+
+def skin_glow_detail(fish, st, f, lay):
+    t, v = f["t"], f["v"]
+    body = f["body"]
+    hgt = fish.bottom(t) - fish.top(t)
+    line = body & (np.abs(v - 0.5) * hgt < 0.55) & (t > 0.08) & (t < 0.7)
+    lay.paint(line, "glow", 5)
+    step = max(3.0, fish.L / 7.0)
+    xi = (f["sx"] - fish.xt)
+    dots = body & (np.abs(v - 0.74) * hgt < 0.6) & ((xi % step) < 1.0) & (t > 0.12) & (t < 0.72)
+    lay.paint(dots, "glow", 6)
+    dots2 = body & (np.abs(v - 0.22) * hgt < 0.6) & (((xi + step / 2) % step) < 1.0) & (t > 0.2) & (t < 0.66)
+    lay.paint(dots2, "glow", 5)
 
 
 def canvas_size(L):
@@ -56,396 +173,254 @@ def canvas_size(L):
     return w + (w % 2), h + (h % 2)
 
 
-def make_model(species, L, w, h):
-    kw = dict(SPECIES[species])
-    m = FishModel(L, w * 0.5 + L * 0.12, h * 0.52, **kw)
-    m.pattern = PATTERNS.get(species)
-    return m
+def make_fish(species, L, w, h, head="", skin=""):
+    spec = dict(SPECIES[species])
+    pat = spec.pop("pattern", None)
+    if head == "head_piranha":
+        spec["mouth"] = piranha_mouth(spec["mouth"])
+    patterns = [pat] if pat else []
+    if skin == "skin_armor":
+        patterns.append(skin_armor)
+    elif skin == "skin_toxic":
+        patterns.append(skin_toxic)
+
+    def pattern(fish, f):
+        for fn in patterns:
+            fn(fish, f)
+    spec["pattern"] = pattern if patterns else None
+    fish = Fish(L, w * 0.5 + L * 0.12, h * 0.52, **spec)
+    if head == "head_sword":
+        fish.extra_shapes.append(bill_shape(length=0.36))
+    elif head == "head_lure":
+        fish.extra_shapes.append(lure_shape(stalk_ramp=spec["body"]))
+        fish.extras.append(lure_detail())
+    if skin == "skin_armor":
+        fish.extras.append(skin_armor_detail)
+    elif skin == "skin_toxic":
+        fish.extras.append(skin_toxic_detail)
+    elif skin == "skin_glow":
+        fish.extras.append(skin_glow_detail)
+    return fish
 
 
-# --------------------------------------------------------------- mutations
-def body_mask_fn(m):
-    def f(x, y):
-        x, y = m.warp(x, y)
-        kind, sx, sy = m.classify(x, y)
-        if kind in ("upper", "lower"):
-            return sx, sy
-        return None
-    return f
+# ------------------------------------------------------------ fin mutations
+def fins_spiky_back(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    pts = fish.fin_pts(("spiny", 0.28, 0.8, 0.62), "top", st)
+    fish.paint_fin(lay, x, y, pts, "coral", 3, rays=False)
+    # bone spines along the spiky edge
+    n = len(pts) // 2
+    outer = pts[n:][::-1]
+    for i in range(0, n, 4):
+        (ax, ay), (bx, by) = pts[i], outer[i]
+        d = seg_dist(x, y, ax, ay, bx, by)
+        lay.paint((d < 0.55) & poly_mask(x, y, pts), "bone", 5)
+    pts2 = fish.fin_pts(("spiny", 0.14, 0.34, 0.36), "bottom", st)
+    fish.paint_fin(lay, x, y, pts2, "coral", 3, rays=False)
+    lay.clean(1)
+    return lay
 
 
-def paint_head_piranha(c, m):
-    # protruding lower jaw + teeth
-    L = m.L
-    my = m.mouth_y
-    hx = m.xt + L * 0.8
-
-    def jaw(x, y):
-        x, y = m.warp(x, y)
-        if m.open > 0 and x > hx:
-            sx, sy = m.to_jaw_space(x, y)
-        else:
-            sx, sy = x, y
-        t = m.t_of(sx)
-        if 0.78 < t < 1.07 and my + 0.3 <= sy <= my + max(2.0, m.H * 0.16) * (1.0 - max(0.0, t - 0.95) * 4):
-            return M("red", 2 if sy > my + 1.5 else 3, group="jaw")
-        return False
-    c.paint_fn(jaw, None)
-    n = max(3, int(L / 7))
-    tw = max(1.0, L * 0.035)
-    for i in range(n):
-        t = 0.84 + i * (0.16 / n)
-        tx = m.xt + t * L
-
-        def tooth_up(x, y, tx=tx):
-            x, y = m.warp(x, y)
-            return point_in_poly(x, y, [(tx - tw, my - 0.2), (tx + tw, my - 0.2), (tx + 0.2, my + tw * 1.9)]) and M("bone", 4, group="tooth")
-
-        def tooth_dn(x, y, tx=tx):
-            x, y = m.warp(x, y)
-            if m.open > 0 and x > hx:
-                x, y = m.to_jaw_space(x, y)
-            return point_in_poly(x, y, [(tx - tw + 1, my + 0.8), (tx + tw + 1, my + 0.8), (tx + 1.2, my - tw * 1.5)]) and M("bone", 5, group="tooth")
-        c.paint_fn(tooth_up, None)
-        if m.open > 0 or i % 2 == 0:
-            c.paint_fn(tooth_dn, None)
+def fins_spiky_front(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    bx, by = fish.pectoral_root()
+    ang = math.pi * 0.86 + 0.28 * math.sin(st["phase"] + 1.0) + st["pect"] * 0.5
+    ln = fish.p["pectoral"][0] * fish.L * 1.1
+    poly = fish.fan_poly(bx, by, ang, ln, fish.p["pectoral"][1] * fish.L)
+    fish.paint_fin(lay, x, y, poly, "coral", 4, root=(bx, by))
+    tx, ty = bx + math.cos(ang) * ln * 1.25, by + math.sin(ang) * ln * 1.25
+    d = seg_dist(x, y, bx + math.cos(ang) * ln * 0.3, by + math.sin(ang) * ln * 0.3, tx, ty)
+    lay.paint(d < max(0.55, fish.L * 0.014), "bone", 5)
+    lay.clean(1)
+    fish._contact_shadow(lay, f)
+    return lay
 
 
-def paint_head_sword(c, m):
-    L = m.L
-    y0 = m.mouth_y - max(1.0, m.H * 0.12)
-    x0 = m.xn - L * 0.1
-    ln = L * 0.36
-    thick = max(1.6, m.H * 0.16)
-
-    def f(x, y):
-        x, y = m.warp(x, y)
-        u = (x - x0) / ln
-        if u < 0.0 or u > 1.0:
-            return False
-        half = thick * (1.0 - u) * 0.5 + 0.35
-        if abs(y - y0) > half:
-            return False
-        stripe = int((x - x0) + (y - y0) * 1.5) % 4 == 0
-        idx = 4 if y < y0 else 3
-        if stripe:
-            idx -= 1
-        return M("bone", idx, group="sword")
-    c.paint_fn(f, None)
+def fins_wing_back(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    fish.paint_fin(lay, x, y, fish.fin_pts(("soft", 0.42, 0.66, 0.35), "top", st), fish.p["fin"], 3)
+    bx, by = fish.pectoral_root(0.64, 0.5)
+    ang = math.pi * 1.1 - 0.35 * math.sin(st["phase"] + 0.4)
+    poly = fish.fan_poly(bx, by, ang, fish.L * 0.55, fish.L * 0.22)
+    fish.paint_fin(lay, x, y, poly, "neon", 3, root=(bx, by))
+    lay.clean(1)
+    return lay
 
 
-def lure_pts(m):
-    L, H = m.L, m.H
-    sway = math.sin(m.phase) * L * 0.02
-    base = (m.xt + L * 0.78, m.top(0.78) + 0.5)
-    mid = (m.xt + L * 0.95, m.top(0.78) - H * 0.55 + sway)
-    tip = (m.xn + L * 0.14, m.top(0.78) - H * 0.35 + sway * 1.5)
-    return base, mid, tip
+def fins_wing_front(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    bx, by = fish.pectoral_root(0.66, 0.56)
+    ang = math.pi * 1.02 + 0.42 * math.sin(st["phase"] + 1.0) + st["pect"] * 0.4
+    poly = fish.fan_poly(bx, by, ang, fish.L * 0.6, fish.L * 0.24)
+    fish.paint_fin(lay, x, y, poly, "cyan", 4, root=(bx, by), alpha=235)
+    lay.clean(1)
+    fish._contact_shadow(lay, f)
+    return lay
 
 
-def paint_head_lure(c, m):
-    base, mid, tip = lure_pts(m)
-    pts = []
-    for i in range(9):
-        t = i / 8.0
-        x = (1 - t) ** 2 * base[0] + 2 * (1 - t) * t * mid[0] + t * t * tip[0]
-        y = (1 - t) ** 2 * base[1] + 2 * (1 - t) * t * mid[1] + t * t * tip[1]
-        pts.append((x, y))
-    c.curve(pts, M("abyss", 3, group="stalk"), width=max(1.0, m.L * 0.035), warp=None)
-    r = max(1.6, m.L * 0.065)
-    c.circle(tip[0], tip[1] + r * 0.6, r, M("glow", 3, group="bulb"))
-    c.circle(tip[0] - r * 0.25, tip[1] + r * 0.35, r * 0.5, M("glow", 5, group="bulb2"))
+def fins_volt_back(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    fish.paint_fin(lay, x, y, fish.fin_pts(("zig", 0.28, 0.74, 0.5), "top", st), "volt", 3)
+    fish.paint_fin(lay, x, y, fish.fin_pts(("zig", 0.16, 0.44, 0.34), "bottom", st), "volt", 3)
+    lay.clean(1)
+    return lay
 
 
-def spike_list(m, t0, t1, n, side, length):
-    out = []
-    for i in range(n):
-        t = t0 + (t1 - t0) * (i / max(1, n - 1))
-        x = m.xt + t * m.L
-        by = m.top(t) if side == "top" else m.bottom(t)
-        ln = length * (0.75 + 0.25 * math.sin(i / max(1, n - 1) * math.pi))
-        d = -1 if side == "top" else 1
-        out.append((x, by, ln, d))
-    return out
+def fins_volt_front(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    bx, by = fish.pectoral_root()
+    ang = math.pi * 0.86 + 0.28 * math.sin(st["phase"] + 1.0) + st["pect"] * 0.5
+    poly = fish.fan_poly(bx, by, ang, fish.p["pectoral"][0] * fish.L * 1.1, fish.p["pectoral"][1] * fish.L)
+    fish.paint_fin(lay, x, y, poly, "cyan", 4, root=(bx, by))
+    lay.clean(1)
+    fish._contact_shadow(lay, f)
+    # sparks: small bright crosses that hop around every frame (emissive, no outline)
+    rng = np.random.default_rng(int(st["phase"] * 1000) + int(fish.L))
+    X, Y = f["X"], f["Y"]
+    for _ in range(max(2, int(fish.L / 11))):
+        t = rng.uniform(0.25, 0.75)
+        sx = fish.xt + t * fish.L
+        sy = float(fish.top(t)) - rng.uniform(1.0, fish.H * 0.55)
+        px, py = fish.to_screen(sx, sy, st)
+        px, py = math.floor(px), math.floor(py)
+        c = (np.floor(X) == px) & (np.floor(Y) == py)
+        arm = ((np.abs(np.floor(X) - px) == 1) & (np.floor(Y) == py)) | ((np.abs(np.floor(Y) - py) == 1) & (np.floor(X) == px))
+        lay.paint(arm & ~lay.mask, "volt", 5, outline=False)
+        lay.paint(c, "volt", 6, outline=False)
+    return lay
 
 
-def paint_spikes(c, m, spikes, ramp="bone", tip="red"):
-    w = max(1.4, m.L * 0.05)
-    for x, by, ln, d in spikes:
-        pts = [(x - w, by + d * 1.5), (x + w * 0.6, by + d * 1.5), (x - ln * 0.35, by + d * ln)]
-
-        def f(px, py, pts=pts, by=by, ln=ln, d=d):
-            px, py = m.warp(px, py)
-            if point_in_poly(px, py, pts):
-                k = abs(py - by) / max(1.0, ln)
-                if k > 0.62:
-                    return M(tip, 3, group="spiketip")
-                return M(ramp, 4 if px < pts[0][0] + w * 0.8 else 3, group="spike")
-            return False
-        c.paint_fn(f, None)
-
-
-def paint_fins_spiky_back(c, m):
-    # webbed membrane + spines
-    mem = m.fin_poly(0.3, "top", [(-0.05, -0.2), (0.05, 0.3), (0.45, 0.3), (0.5, -0.2)])
-    m.paint_poly_fin(c, mem, ramp="coral", base=2)
-    paint_spikes(c, m, spike_list(m, 0.3, 0.78, max(3, int(m.L / 8)), "top", m.H * 0.55))
-    paint_spikes(c, m, spike_list(m, 0.42, 0.56, 2, "bottom", m.H * 0.35))
-
-
-def paint_fins_spiky_front(c, m):
-    pts = m.pectoral_pts(length=0.26, width=0.12)
-    m.paint_poly_fin(c, pts, ramp="coral", base=3)
-    x, y = pts[2]
-
-    def f(px, py):
-        px, py = m.warp(px, py)
-        return math.hypot(px - x, py - y) < max(1.0, m.L * 0.03) and M("bone", 5, group="sp")
-    c.paint_fn(f, None)
-
-
-def paint_fins_wing_back(c, m):
-    pts = m.pectoral_pts(length=0.62, width=0.24, angle_extra=-0.55)
-    m.paint_poly_fin(c, pts, ramp="neon", base=2, alpha=230)
-    dorsal = m.fin_poly(0.42, "top", [(-0.08, -0.2), (0.02, 0.25), (0.18, 0.2), (0.24, -0.2)])
-    m.paint_poly_fin(c, dorsal)
-
-
-def paint_fins_wing_front(c, m):
-    m.flap = 0.6
-    pts = m.pectoral_pts(length=0.62, width=0.2, angle_extra=0.05)
-    m.flap = 0.0
-    m.paint_poly_fin(c, pts, ramp="cyan", base=4, alpha=205)
-
-
-def zigzag_fin(m, t0, t1, side, height, teeth):
-    pts = []
-    base_pts = []
-    for i in range(teeth * 2 + 1):
-        t = t0 + (t1 - t0) * i / (teeth * 2)
-        k = math.sin(i / (teeth * 2) * math.pi)
-        h = height * (0.35 + 0.65 * k) * (1.0 if i % 2 else 0.55)
-        pts.append((t - t0, h))
-    pts = [(0.0, -0.2)] + pts + [(t1 - t0, -0.2)]
-    return m.fin_poly(t0, side, pts)
-
-
-def paint_fins_volt_back(c, m):
-    m.paint_poly_fin(c, zigzag_fin(m, 0.28, 0.72, "top", 0.42, 4), ramp="volt", base=3)
-    m.paint_poly_fin(c, zigzag_fin(m, 0.18, 0.5, "bottom", 0.3, 3), ramp="volt", base=2)
-
-
-def paint_fins_volt_front(c, m):
-    m.paint_poly_fin(c, m.pectoral_pts(length=0.3, width=0.16), ramp="cyan", base=4)
-    r = rng(int(m.phase * 100) + int(m.L))
-    for _ in range(max(2, int(m.L / 10))):
-        t = r.uniform(0.25, 0.75)
-        x = m.xt + t * m.L
-        y = m.top(t) - r.uniform(1, m.H * 0.5)
-        c.pixel(x, y + m.warp_offset(x), (255, 250, 170, 255))
-        c.pixel(x + 1, y + m.warp_offset(x) - 1, (170, 250, 255, 255))
-
-
-def skin_painter(m, fn):
-    mask = body_mask_fn(m)
-
-    def f(x, y):
-        r = mask(x, y)
-        if r is None:
-            return False
-        sx, sy = r
-        t = m.t_of(sx)
-        v = (sy - m.top(t)) / max(0.001, m.bottom(t) - m.top(t))
-        return fn(sx, sy, t, v)
-    return f
-
-
-def paint_skin_armor(c, m):
-    seg = max(3.0, m.L * 0.12)
-
-    def fn(x, y, t, v):
-        if v > 0.62 or t < 0.12 or t > 0.83:
-            return False
-        k = (x - m.xt) / seg
-        kk = k - math.floor(k)
-        row = 0 if v < 0.3 else 1
-        if row == 1:
-            kk = (k + 0.5) - math.floor(k + 0.5)
-        if kk < 0.14:
-            return M("steel", 1, group="plate")
-        if abs(v - 0.3) < 0.03:
-            return M("steel", 1, group="plate")
-        idx = 4 if kk < 0.35 else (3 if kk < 0.8 else 2)
-        if v < 0.1:
-            idx = 5
-        return M("steel", idx, group="plate")
-    c.paint_fn(skin_painter(m, fn), None)
-    # rivets
-    for i in range(int(0.7 * m.L / seg)):
-        x = m.xt + m.L * 0.15 + i * seg + seg * 0.5
-        t = m.t_of(x)
-        if t > 0.8:
-            break
-        y = m.top(t) + (m.bottom(t) - m.top(t)) * 0.16
-        c.pixel(x, y + m.warp_offset(x), col("steel", 5))
-
-
-def paint_skin_toxic(c, m):
-    spots = []
-    r = rng(99 + int(m.L))
-    for _ in range(int(m.L * 0.28)):
-        spots.append((r.uniform(0.12, 0.9), r.uniform(0.08, 0.7), r.uniform(0.6, 1.0) * max(1.0, m.L * 0.045), r.random() < 0.25))
-
-    def fn(x, y, t, v):
-        for st, sv, sr, wart in spots:
-            sx = m.xt + st * m.L
-            sy = m.top(st) + (m.bottom(st) - m.top(st)) * sv
-            d = math.hypot(x - sx, y - sy)
-            if d <= sr:
-                if wart:
-                    return M("lime", 4 if d < sr * 0.5 else 3, group="wart")
-                return M("poison", 3 if d < sr * 0.6 else 2, group="spot")
-        return False
-    c.paint_fn(skin_painter(m, fn), None)
-
-
-def paint_skin_glow(c, m):
-    step = max(3, int(m.L / 7))
-
-    def fn(x, y, t, v):
-        if t < 0.1 or t > 0.82:
-            return False
-        xi = int(x - m.xt)
-        if abs(v - 0.48) < 0.045:
-            return M("glow", 3, group="line")
-        if xi % step == 0 and abs(v - 0.7) < 0.07:
-            return M("glow", 5, group="dot")
-        if (xi + step // 2) % step == 0 and abs(v - 0.22) < 0.06 and 0.2 < t < 0.7:
-            return M("glow", 4, group="dot")
-        return False
-    c.paint_fn(skin_painter(m, fn), None)
-
-
-def paint_tail_fork(c, m):
-    old = m.tail_len
-    m.tail_len = m.L * 0.6
-    m.paint_tail(c, kind="fork", ramp="navy" if m.body != "neon" else "violet")
-    m.tail_len = old
-
-
-def paint_tail_sting(c, m):
-    L = m.L
-    x0 = m.xt + 2
-    pts = []
-    n = 10
-    for i in range(n + 1):
-        t = i / n
-        pts.append((x0 - t * L * 0.75, m.cy + math.sin(t * 2.2 + m.phase) * L * 0.05 * t))
-    width = max(1.2, m.H * m.ped * 1.6)
-
-    for i in range(n):
-        a, b = pts[i], pts[i + 1]
-        w = width * (1.0 - i / n * 0.75)
-
-        def f(x, y, a=a, b=b, w=w):
-            x, y = m.warp(x, y)
-            from pixel import seg_dist
-            if seg_dist(x, y, a[0], a[1], b[0], b[1]) <= w / 2:
-                return M("poison", 3 if y < (a[1] + b[1]) / 2 else 2, group="whip")
-            return False
-        c.paint_fn(f, None)
-    tx, ty = pts[-1]
-    bw = max(2.0, L * 0.08)
-
-    def barb(x, y):
-        x, y = m.warp(x, y)
-        return point_in_poly(x, y, [(tx + 2, ty - bw * 0.7), (tx - bw * 1.6, ty), (tx + 2, ty + bw * 0.7)]) and M("lime", 4, group="barb")
-    c.paint_fn(barb, None)
-    # small side fins at base
-    fin = [(x0, m.cy - m.H * 0.1), (x0 - L * 0.18, m.cy - m.H * 0.4), (x0 - L * 0.12, m.cy)]
-    m.paint_poly_fin(c, fin, ramp="poison", base=3)
-    fin2 = [(x0, m.cy + m.H * 0.1), (x0 - L * 0.18, m.cy + m.H * 0.4), (x0 - L * 0.12, m.cy)]
-    m.paint_poly_fin(c, fin2, ramp="poison", base=2)
-
-
-def paint_tail_eel(c, m):
-    L = m.L
-    x0 = m.xt + 2
-    ln = L * 0.7
-    base_h = m.H * m.ped * 1.1
-
-    def f(x, y):
-        x, y = m.warp(x, y)
-        if x > x0:
-            return False
-        u = (x0 - x) / ln
-        if u > 1.0:
-            return False
-        wave = math.sin(u * 5.0 - m.phase * 1.0) * L * 0.03 * u
-        yc = m.cy + wave
-        h_top = base_h * (1.0 - u * 0.8)
-        h_bot = base_h * (1.0 - u * 0.8) + L * 0.12 * math.sin(u * math.pi) * (1 - u * 0.3)
-        if yc - h_top <= y <= yc + h_bot:
-            if y > yc + h_top * 0.6:
-                stripe = int((x0 - x) / max(2.0, L * 0.07)) % 2 == 0
-                return M("volt", 4 if stripe else 2, group="ribbon")
-            return M(m.body, 3 if y < yc else 2, group="eelbody")
-        return False
-    c.paint_fn(f, None)
-
-
-PAINTERS = {
-    "head_piranha": paint_head_piranha,
-    "head_sword": paint_head_sword,
-    "head_lure": paint_head_lure,
-    "fins_spiky_back": paint_fins_spiky_back,
-    "fins_spiky_front": paint_fins_spiky_front,
-    "fins_wing_back": paint_fins_wing_back,
-    "fins_wing_front": paint_fins_wing_front,
-    "fins_volt_back": paint_fins_volt_back,
-    "fins_volt_front": paint_fins_volt_front,
-    "skin_armor": paint_skin_armor,
-    "skin_toxic": paint_skin_toxic,
-    "skin_glow": paint_skin_glow,
-    "tail_fork": paint_tail_fork,
-    "tail_sting": paint_tail_sting,
-    "tail_eel": paint_tail_eel,
+FIN_PAINTERS = {
+    "fins_spiky_back": fins_spiky_back, "fins_spiky_front": fins_spiky_front,
+    "fins_wing_back": fins_wing_back, "fins_wing_front": fins_wing_front,
+    "fins_volt_back": fins_volt_back, "fins_volt_front": fins_volt_front,
 }
 
 
-def render_layer(species, stage, layer):
-    L = STAGE_LEN[stage]
-    w, h = canvas_size(L)
-    frames = []
-    for i in range(len(FRAMES)):
-        m = make_model(species, L, w, h)
-        set_frame(m, i)
-        c = Canvas(w, h)
-        if layer == "body":
-            m.paint_body(c)
-        elif layer == "tail":
-            m.paint_tail(c)
-        elif layer == "fins_back":
-            m.paint_default_back_fins(c)
-        elif layer == "fins_front":
-            m.paint_default_front_fins(c)
-        else:
-            PAINTERS[layer](c, m)
-        frames.append(c.render())
-    return sheet(frames)
+# ----------------------------------------------------------- tail mutations
+def tail_fork(fish, w, h, x, y, st, f):
+    ramp = "violet" if fish.p["body"] == "neon" else "navy"
+    return fish.render_tail(w, h, x, y, st, f, kind="fork", ramp=ramp, tail_len=0.62)
 
 
-def render_atlas(species, stage):
-    rows = [render_layer(species, stage, ly) for ly in LAYERS]
+def _whip_points(fish, st, length, n=14, amp=0.05):
+    x0 = fish.xt + 1.5
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        pts.append((x0 - t * length * fish.L, fish.cy + math.sin(t * 2.4 - st["phase"]) * fish.L * amp * t))
+    return pts
+
+
+def tail_sting(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    L = fish.L
+    pts = _whip_points(fish, st, 0.78)
+    width = max(1.2, fish.H * fish.p["ped"] * 1.5)
+    n = len(pts) - 1
+    whip = np.zeros(x.shape, dtype=bool)
+    tone = np.zeros(x.shape, dtype=np.int32)
+    for i in range(n):
+        (ax, ay), (bx, by) = pts[i], pts[i + 1]
+        wd = width * (1.0 - i / n * 0.72) * 0.5
+        d = seg_dist(x, y, ax, ay, bx, by)
+        seg = d <= wd
+        whip |= seg
+        tone = np.where(seg, np.where(y < (ay + by) / 2 - wd * 0.3, 4, 3), tone)
+    lay.paint(whip, "poison", tone)
+    # spots along the whip
+    lay.shift(whip & (((np.floor(x) + np.floor(y)) % 4) == 0), -1, lo=2)
+    tx, ty = pts[-1]
+    (ax, ay) = pts[-2]
+    dx, dy = tx - ax, ty - ay
+    dl = max(1e-6, math.hypot(dx, dy))
+    dx, dy = dx / dl, dy / dl
+    bw = max(1.6, L * 0.075)
+    barb = [(tx - dy * bw * 0.8, ty + dx * bw * 0.8), (tx + dx * bw * 1.8, ty + dy * bw * 1.8), (tx + dy * bw * 0.8, ty - dx * bw * 0.8)]
+    bm = poly_mask(x, y, barb)
+    lay.paint(bm, "lime", np.where(y < ty, 5, 4))
+    # small fins at the base
+    x0 = fish.xt + 1.5
+    for sgn in (-1, 1):
+        fin = [(x0, fish.cy + sgn * fish.H * 0.08), (x0 - L * 0.2, fish.cy + sgn * fish.H * 0.42),
+               (x0 - L * 0.12, fish.cy + sgn * fish.H * 0.05)]
+        fish.paint_fin(lay, x, y, fin, "poison", 3 if sgn < 0 else 2, rays=False)
+    lay.clean(1)
+    return lay
+
+
+def tail_eel(fish, w, h, x, y, st, f):
+    lay = Layer(w, h)
+    L = fish.L
+    x0 = fish.xt + 2
+    ln = L * 0.72
+    base_h = fish.H * fish.p["ped"] * 1.1
+    u = (x0 - x) / ln
+    inside_u = (u >= 0) & (u <= 1)
+    wave = np.sin(u * 5.0 - st["phase"]) * L * 0.035 * u
+    yc = fish.cy + wave
+    h_top = base_h * (1.0 - u * 0.8)
+    h_bot = base_h * (1.0 - u * 0.8)
+    rib = L * 0.13 * np.sin(np.clip(u, 0, 1) * math.pi) * (1 - u * 0.3)
+    body = inside_u & (y >= yc - h_top) & (y <= yc + h_bot)
+    ribbon = inside_u & ~body & (((y > yc + h_bot) & (y <= yc + h_bot + rib)) | ((y < yc - h_top) & (y >= yc - h_top - rib * 0.55)))
+    lay.paint(body, fish.p["body"], np.where(y < yc, 4, 3))
+    stripe = (np.floor((x0 - x) / max(2.0, L * 0.07)) % 2) == 0
+    lay.paint(ribbon, "volt", np.where(stripe, 5, 3))
+    lay.clean(1)
+    return lay
+
+
+TAIL_PAINTERS = {"tail_fork": tail_fork, "tail_sting": tail_sting, "tail_eel": tail_eel}
+
+
+# ------------------------------------------------------------------ atlas
+def render_atlas(species, stage, progress=None):
     L = STAGE_LEN[stage]
     w, h = canvas_size(L)
-    m = make_model(species, L, w, h)
-    base, mid, tip = lure_pts(m)
+    rows = {name: [] for name in LAYERS}
+    lure = []
+    for i in range(FP.N_FRAMES):
+        st = FP.frame_state(i)
+        base = make_fish(species, L, w, h)
+        X, Y = FP.grid(w, h)
+        x, y = base.to_fish(X, Y, st)
+        f = base._body_fields(x, y, st)
+        f["X"], f["Y"] = X, Y
+        rows["tail"].append(base.render_tail(w, h, x, y, st, f).to_image())
+        rows["fins_back"].append(base.render_fins_back(w, h, x, y, st, f).to_image())
+        rows["fins_front"].append(base.render_fins_front(w, h, x, y, st, f).to_image())
+        for name, fn in TAIL_PAINTERS.items():
+            rows[name].append(fn(base, w, h, x, y, st, f).to_image())
+        for name, fn in FIN_PAINTERS.items():
+            rows[name].append(fn(base, w, h, x, y, st, f).to_image())
+        for head in HEADS:
+            for skin in SKINS:
+                fish = make_fish(species, L, w, h, head, skin)
+                lay = fish.render(w, h, st, parts=("body",))["body"]
+                rows[body_key(head, skin)].append(lay.to_image())
+                if head == "head_lure" and skin == "":
+                    lx, ly = lure_screen(fish, st)
+                    lure.append([round(lx, 1), round(ly, 1)])
+    sheet = Image.new("RGBA", (w * FP.N_FRAMES, h * len(LAYERS)))
+    for r, name in enumerate(LAYERS):
+        for c, im in enumerate(rows[name]):
+            sheet.alpha_composite(im, (c * w, r * h))
+    base = make_fish(species, L, w, h)
     meta = dict(
-        frame_w=w, frame_h=h, frames=len(FRAMES), layers=LAYERS,
-        center=[round(m.cx, 1), round(m.cy, 1)],
-        mouth=[round(m.xn, 1), round(m.mouth_y, 1)],
-        lure=[round(tip[0], 1), round(tip[1] + max(1.6, L * 0.065) * 0.6, 1)],
-        length=L, height=round(m.H, 1),
+        frame_w=w, frame_h=h, frames=FP.N_FRAMES, swim=FP.SWIM_N, act=FP.BITE_N, layers=LAYERS,
+        center=[round(base.cx, 1), round(base.cy, 1)],
+        mouth=[round(base.lip[0], 1), round(base.lip[1], 1)],
+        lure=lure, length=L, height=round(base.H, 1),
     )
-    return stack_rows(rows), meta
+    return sheet, meta
+
+
+def compose_frame(sheet, meta, layers, frame):
+    """Composite a set of rows for one frame (app icon, previews)."""
+    w, h = meta["frame_w"], meta["frame_h"]
+    out = Image.new("RGBA", (w, h))
+    for name in layers:
+        r = meta["layers"].index(name)
+        out.alpha_composite(sheet.crop((frame * w, r * h, frame * w + w, r * h + h)))
+    return out

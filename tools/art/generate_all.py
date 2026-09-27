@@ -18,6 +18,7 @@ from PIL import Image  # noqa: E402
 import pixel  # noqa: E402
 import player  # noqa: E402
 import creatures  # noqa: E402
+import fishes  # noqa: E402
 import env  # noqa: E402
 import fx  # noqa: E402
 import ui  # noqa: E402
@@ -29,9 +30,12 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(ROOT, "assets", "art")
 
 # frames per sheet for everything that is not a single image
+# (swim, action) frame split for animated creature sheets; the rest use 4 + 2
+ANIM = dict(fishes.ANIM)
+
 FRAME_COUNT = {
-    # creatures
-    "puffer_big": 4, "kraken_segment": 4, "leviathan_segment": 4,
+    # creatures (fish sheets report their own counts through fishes.ANIM)
+    "kraken_segment": 4, "leviathan_segment": 4,
     # env
     "surface": 4, "anemone": 4, "seagrass": 4, "kelp": 4, "plankton": 4, "thicket": 2,
     "chest": 2, "clam": 3, "tube_worms": 4, "glow_mushroom": 2,
@@ -64,7 +68,9 @@ def main():
                 meta["player"][f"{species}_{stage}"] = m
                 print("player", species, stage, img.size)
 
-    groups = [("creatures", {**creatures.ALL, **creatures2.ALL}, creatures.NF), ("env", {**env.ALL, **env2.ALL}, 1),
+    for name, (sw, act) in ANIM.items():
+        FRAME_COUNT[name] = sw + act
+    groups = [("creatures", {**creatures.ALL, **creatures2.ALL, **fishes.ALL}, creatures.NF), ("env", {**env.ALL, **env2.ALL}, 1),
               ("fx", {**fx.ALL, **fx2.ALL}, 1), ("ui", ui.ALL, 1)]
     for gname, table, default_frames in groups:
         if not want(gname):
@@ -73,7 +79,11 @@ def main():
             img = fn()
             n = FRAME_COUNT.get(name, default_frames)
             save(img, f"{gname}/{name}.png")
-            meta["sheets"][f"{gname}/{name}"] = {"frames": n, "w": img.size[0] // n, "h": img.size[1]}
+            info = {"frames": n, "w": img.size[0] // n, "h": img.size[1]}
+            if gname == "creatures" and name not in ("kraken_segment", "leviathan_segment"):
+                sw, act = ANIM.get(name, (4, 2))
+                info.update(swim=sw, act=act)
+            meta["sheets"][f"{gname}/{name}"] = info
             print(gname, name, img.size)
 
     if want("icons"):
@@ -98,12 +108,8 @@ def main():
 def make_app_icons():
     """Launcher / store icons: legacy 192, adaptive 432 fg+bg, store 512."""
     import math
-    L = player.STAGE_LEN[2]
-    fw, fh = player.canvas_size(L)
-    fish = None
-    for ly in ["tail", "fins_back", "body", "skin_glow", "head_lure", "fins_front"]:
-        row = player.render_layer("dourado", 2, ly).crop((0, 0, fw, fh))
-        fish = row if fish is None else Image.alpha_composite(fish, row)
+    sheet, pmeta = player.render_atlas("dourado", 2)
+    fish = player.compose_frame(sheet, pmeta, ["tail", "fins_back", "body+head_lure+skin_glow", "fins_front"], 0)
     fish = fish.crop(fish.getbbox())
 
     def background(size):

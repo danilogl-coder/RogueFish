@@ -128,11 +128,12 @@ func _animate(delta: float) -> void:
 	sprite.flip_h = false
 	sprite.rotation = vel.angle()
 	sprite.flip_v = vel.x < 0.0
+	_sync_anim()
 	if attack_anim > 0.0:
-		attack_anim -= delta
-		sprite.frame = 4
+		attack_anim = maxf(0.0, attack_anim - delta)
+		sprite.frame = _swim_n + Art.act_frame(attack_progress(), _act_n) if _act_n > 0 else 0
 	else:
-		sprite.frame = int(anim_t * anim_fps) % 4
+		sprite.frame = int(anim_t * anim_fps * _swim_n / 4.0) % _swim_n
 
 
 func _draw() -> void:

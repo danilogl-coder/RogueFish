@@ -36,7 +36,8 @@ func _draw() -> void:
 	var tex := Art.player_tex(species, stage)
 	var fw := float(m.frame_w) * pixel_scale
 	var fh := float(m.frame_h) * pixel_scale
-	var frame := int(_t * 7.0) % 4
+	var swim := Art.player_anim(species, stage).x
+	var frame := int(_t * 7.0 * swim / 4.0) % swim
 	var bob := roundf(sin(_t * 2.2) * pixel_scale) if animate else 0.0
 	var pos := (size - Vector2(fw, fh)) * 0.5 + Vector2(0, bob)
 	if flip:

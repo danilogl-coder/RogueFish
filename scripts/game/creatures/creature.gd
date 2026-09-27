@@ -41,7 +41,17 @@ var facing := 1.0
 var sprite: Sprite2D
 var anim_t := 0.0
 var anim_fps := 8.0
-var attack_anim := 0.0
+## Seconds left of the attack animation. Setting a new, longer value starts a
+## bite: its length is remembered so the 4 bite frames span the whole attack.
+var attack_anim := 0.0:
+	set(v):
+		if v > attack_anim + 0.001:
+			_attack_len = v
+		attack_anim = v
+var _attack_len := 0.25
+var _anim_tex: Texture2D
+var _swim_n := 4
+var _act_n := 2
 var state := "idle"
 var state_t := 0.0
 var home := Vector2.ZERO
@@ -306,13 +316,35 @@ func _animate(delta: float) -> void:
 	if sprite:
 		sprite.flip_h = facing < 0.0
 	anim_t += delta
-	var n: int = sprite.hframes if sprite else 1
-	if attack_anim > 0.0 and n >= 6:
-		attack_anim -= delta
-		sprite.frame = 4 if attack_anim > 0.1 else 5
-	elif sprite and n > 1:
-		var fps := anim_fps * clampf(0.6 + vel.length() / maxf(speed, 1.0), 0.6, 2.0)
-		sprite.frame = int(anim_t * fps) % mini(4, n)
+	var attacking := attack_anim > 0.0
+	if attacking:
+		attack_anim = maxf(0.0, attack_anim - delta)
+	if sprite == null:
+		return
+	_sync_anim()
+	if attacking and _act_n > 0:
+		sprite.frame = _swim_n + Art.act_frame(attack_progress(), _act_n)
+	elif sprite.hframes > 1:
+		# sheets with more swim frames play proportionally faster (same tail-beat rate)
+		var fps := anim_fps * clampf(0.6 + vel.length() / maxf(speed, 1.0), 0.6, 2.0) * _swim_n / 4.0
+		sprite.frame = int(anim_t * fps) % _swim_n
+
+
+## 0 when an attack starts, 1 when its animation ends.
+func attack_progress() -> float:
+	return 1.0 - clampf(attack_anim / maxf(_attack_len, 0.01), 0.0, 1.0)
+
+
+## Reads the swim/action frame split of the current sheet (sprites can swap
+## textures, e.g. the inflating puffer).
+func _sync_anim() -> void:
+	if sprite.texture == _anim_tex:
+		return
+	_anim_tex = sprite.texture
+	var path := _anim_tex.resource_path.trim_prefix("res://assets/art/").trim_suffix(".png")
+	var an := Art.anim(path)
+	_swim_n = clampi(an.x, 1, maxi(1, sprite.hframes))
+	_act_n = an.y if _swim_n + an.y <= sprite.hframes else 0
 
 
 func _contact(_delta: float) -> void:
