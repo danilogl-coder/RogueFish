@@ -258,7 +258,7 @@ func _process(_delta: float) -> void:
 			phase_label.text = "CHEFE!"
 			phase_bar.value = 1.0
 			phase_label.add_theme_color_override("font_color", UIKit.PURPLE)
-	stealth_icon.visible = p.is_hidden or p.stealth < 0.98
+	stealth_icon.visible = (p.is_hidden and not p.swallowed) or p.stealth < 0.98
 	stealth_bar.visible = stealth_icon.visible
 	stealth_bar.value = p.stealth
 	stealth_icon.modulate = Color.WHITE if p.is_hidden else Color(1, 1, 1, 0.4)

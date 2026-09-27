@@ -27,18 +27,18 @@ func _setup() -> void:
 	sprite = Art.sprite("creatures/titanacon")
 	sprite.scale = Vector2(SPRITE_SCALE, SPRITE_SCALE)
 	add_child(sprite)
-	radius = 58.0
+	radius = 96.0
 	speed = 80.0
 	anim_fps = 4.0
 	armor_mult = OUTER_ARMOR
 	state = "enter"
-	_head = add_part(40.0, contact_damage)
-	_tail = add_part(28.0, contact_damage * 0.5)
+	_head = add_part(62.0, contact_damage)
+	_tail = add_part(46.0, contact_damage * 0.5)
 
 
 ## Where the mouth opens (world space).
 func mouth_pos() -> Vector2:
-	return position + Vector2(facing * 138.0, 8.0)
+	return position + Vector2(facing * 250.0, 16.0)
 
 
 func lost_player() -> bool:
@@ -53,11 +53,10 @@ func think(delta: float) -> void:
 	var p: Player = game.player
 	_place_parts()
 	if stomach != null:
-		# digesting: drifts heavily, rumbling
-		vel *= pow(0.2, delta)
-		wander(delta, speed * 0.25)
-		if randf() < delta * 0.6:
-			game.shake(1.5)
+		# digesting: it keeps roaming the ocean with you inside, rumbling
+		_roam(delta)
+		if randf() < delta * 0.5:
+			game.shake(1.2)
 		return
 	_cooldown -= delta
 	_summon_t -= delta
@@ -68,7 +67,7 @@ func think(delta: float) -> void:
 				_go("cruise")
 		"cruise":
 			var side := -1.0 if p.position.x < position.x else 1.0
-			var want := p.position + Vector2(-side * 260.0, -20.0)
+			var want := p.position + Vector2(-side * 470.0, -20.0)
 			seek(want, speed, 160.0, delta)
 			facing = side
 			if enraged and _summon_t <= 0.0:
@@ -88,9 +87,9 @@ func think(delta: float) -> void:
 			var k := clampf(state_t / 2.0, 0.0, 1.0)
 			var pull := lerpf(110.0, 300.0 if enraged else 260.0, k)
 			var to := mouth - p.position
-			if p.alive and to.length() < 640.0:
+			if p.alive and to.length() < 720.0:
 				p.position += to.normalized() * pull * delta
-				if to.length() < 34.0:
+				if to.length() < 60.0:
 					armor_mult = 1.0
 					game.swallow_player(self)
 					_go("digest")
@@ -128,6 +127,19 @@ func think(delta: float) -> void:
 				_go("cruise")
 
 
+var _roam_target := Vector2.INF
+
+
+## Swims between far-apart points of the map (turning around as it goes).
+func _roam(delta: float) -> void:
+	if _roam_target == Vector2.INF or position.distance_to(_roam_target) < 120.0 or state_t > 14.0:
+		var x := clampf(position.x + randf_range(500.0, 1100.0) * (1.0 if randf() < 0.5 else -1.0), 450.0, DB.WORLD_W - 450.0)
+		var y := randf_range(260.0, DB.floor_at(x) - 180.0)
+		_roam_target = Vector2(x, y)
+		state_t = 0.0
+	seek(_roam_target, speed * 1.1, 90.0, delta)
+
+
 func _go(s: String) -> void:
 	state = s
 	state_t = 0.0
@@ -142,8 +154,8 @@ func _place_parts() -> void:
 	var biting := stomach == null and state == "charge"
 	_head.contact_damage = contact_damage if biting else 0.0
 	_tail.contact_damage = contact_damage * 0.4 if state in ["cruise", "charge"] else 0.0
-	_head.position = position + Vector2(facing * 105.0, 4.0)
-	_tail.position = position + Vector2(-facing * 128.0, 0.0)
+	_head.position = position + Vector2(facing * 190.0, 6.0)
+	_tail.position = position + Vector2(-facing * 280.0, 0.0)
 
 
 func take_damage(amount: float, info := {}) -> float:
@@ -213,11 +225,11 @@ func _draw() -> void:
 		return
 	# water streaks rushing into the mouth
 	var m := mouth_pos() - position
-	for i in 16:
+	for i in 20:
 		var a := i * 0.39 + anim_t * 0.3
 		var ph := fmod(anim_t * 1.8 + i * 0.29, 1.0)
-		var dist := lerpf(230.0, 30.0, ph)
+		var dist := lerpf(320.0, 40.0, ph)
 		var dir := Vector2.from_angle(a)
 		var from := m + dir * dist
-		var to := m + dir * (dist - 26.0)
+		var to := m + dir * (dist - 34.0)
 		draw_line(from, to, Color(0.7, 0.95, 1.0, 0.25 + 0.45 * ph), 1.0)

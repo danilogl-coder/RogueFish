@@ -87,7 +87,10 @@ func act_frame(progress: float, act_count: int) -> int:
 func sprite(path: String, centered := true) -> Sprite2D:
 	var s := Sprite2D.new()
 	s.texture = tex(path)
-	s.hframes = maxi(1, frames(path))
+	var info := sheet_info(path)
+	var rows := int(info.get("rows", 1))
+	s.vframes = rows
+	s.hframes = maxi(1, ceili(float(frames(path)) / rows))
 	s.centered = centered
 	return s
 

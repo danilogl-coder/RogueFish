@@ -18,6 +18,7 @@ var pearl_chance := 0.0
 var is_boss := false
 var boss_id := ""
 var is_wave := false
+var inside_titan := false    ## lives inside the Titanacon (only these reach a swallowed player)
 var elite := false
 var provoked := false
 var swallowable := true
@@ -343,15 +344,16 @@ func _sync_anim() -> void:
 	_anim_tex = sprite.texture
 	var path := _anim_tex.resource_path.trim_prefix("res://assets/art/").trim_suffix(".png")
 	var an := Art.anim(path)
-	_swim_n = clampi(an.x, 1, maxi(1, sprite.hframes))
-	_act_n = an.y if _swim_n + an.y <= sprite.hframes else 0
+	var total := sprite.hframes * sprite.vframes
+	_swim_n = clampi(an.x, 1, maxi(1, total))
+	_act_n = an.y if _swim_n + an.y <= total else 0
 
 
 func _contact(_delta: float) -> void:
 	if not hostile_now() or contact_damage <= 0.0 or _contact_cd > 0.0:
 		return
 	var p: Player = game.player
-	if not p.alive:
+	if not p.alive or p.swallowed != inside_titan:
 		return
 	var lim := radius + p.radius
 	if position.distance_squared_to(p.position) <= lim * lim:

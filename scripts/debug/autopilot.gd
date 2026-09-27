@@ -139,7 +139,7 @@ func _physics_process(delta: float) -> void:
 	if p.swallowed and game.stomach != null:
 		# inside the Titanacon: go for the organs, stay out of the acid
 		var bo := INF
-		for og in game.stomach.organs:
+		for og in game.stomach.organ_nodes():
 			if is_instance_valid(og):
 				var d2: float = og.position.distance_squared_to(p.position)
 				if d2 < bo:

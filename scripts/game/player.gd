@@ -28,7 +28,7 @@ var facing := 1.0
 var radius := 7.0
 var is_hidden := false
 var swallowed := false     ## inside the Titanacon
-var arena := Rect2()       ## movement bounds while swallowed
+var container               ## Stomach while swallowed (keeps you inside the moving titan)
 var stealth := 1.0
 var revives := 0
 var hit_log: Array = []  # recent hits (debug / analytics)
@@ -291,9 +291,8 @@ func _physics_process(delta: float) -> void:
 		var accel := 820.0 if input_dir != Vector2.ZERO else 420.0
 		vel = vel.move_toward(target_v, accel * delta)
 	position += vel * delta
-	if arena.has_area():
-		position.x = clampf(position.x, arena.position.x, arena.end.x)
-		position.y = clampf(position.y, arena.position.y, arena.end.y)
+	if container != null and is_instance_valid(container):
+		position = container.clamp_point(position, radius)
 	else:
 		position.x = clampf(position.x, radius, DB.WORLD_W - radius)
 		position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.floor_at(position.x) - radius)
@@ -345,7 +344,7 @@ func add_buff(buff_name: String, seconds: float) -> void:
 
 func _regen(delta: float) -> void:
 	var r: float = st.regen
-	if is_hidden:
+	if is_hidden and not swallowed:
 		r += 2.0
 	if r <= 0.0 or hp >= st.max_hp:
 		return
@@ -357,6 +356,9 @@ func _regen(delta: float) -> void:
 
 
 func _hide_logic(delta: float) -> void:
+	if swallowed:
+		is_hidden = true  # the ocean outside can't see you inside the titan
+		return
 	var inside: bool = game.world.hideout_at(position) != null
 	var danger: bool = game.director.phase != "explore"
 	if inside and _since_attack > 0.8 and stealth > 0.0:

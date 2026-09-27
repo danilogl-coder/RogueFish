@@ -59,7 +59,7 @@ foge soltando nuvem).
 2. **Kraken das Marés**: tentáculos golpeiam áreas marcadas e soltam rajadas de tinta; na fúria, golpes duplos e lulas.
 3. **Rainha Abissal**: escurece o oceano, some e reaparece para morder, anéis de orbes teleguiados.
 4. **Leviatã Elétrico**: serpente segmentada, mergulhos, bolas elétricas e corpo eletrificado.
-5. **Titanacon, o Devorador**: um titã blindado tão grande que suga o mar e **engole você**. Por fora, as placas
+5. **Titanacon, o Devorador**: um titã blindado enorme (ocupa quase a tela) que suga o mar e **engole você**. Ele continua nadando pelo oceano com você dentro, e o interior aparece em "raio-x" em tempo real. Por fora, as placas
    ósseas quase não sentem dano; por dentro você ataca os **órgãos vitais** (coração e glândulas de ácido)
    enquanto **parasitas** os defendem, o ácido do estômago queima e a digestão corrói sua vida. Causando dano
    suficiente por dentro, ele **te cospe** para fora e fica atordoado. Repita até derrubá-lo.

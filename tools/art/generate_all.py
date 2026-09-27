@@ -80,7 +80,10 @@ def main():
             img = fn()
             n = FRAME_COUNT.get(name, default_frames)
             save(img, f"{gname}/{name}.png")
-            info = {"frames": n, "w": img.size[0] // n, "h": img.size[1]}
+            rows = int(img.info.get("rows", 1))
+            info = {"frames": n, "w": img.size[0] // -(-n // rows), "h": img.size[1] // rows}
+            if rows > 1:
+                info["rows"] = rows
             if gname == "creatures" and name not in ("kraken_segment", "leviathan_segment"):
                 sw, act = ANIM.get(name, (4, 2))
                 info.update(swim=sw, act=act)

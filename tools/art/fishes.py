@@ -20,14 +20,14 @@ from player import spots
 N = FP.N_FRAMES
 
 
-def sheet(L, extra_shapes=(), extras=(), parts=("tail", "fins_back", "body", "fins_front"), **kw):
+def sheet(L, extra_shapes=(), extras=(), parts=("tail", "fins_back", "body", "fins_front"), rows=1, **kw):
     """Auto-sized sheet centred on the body (see fishpro.auto_sheet)."""
     def make(cx, cy):
         f = Fish(L, cx, cy, **kw)
         f.extra_shapes.extend(extra_shapes)
         f.extras.extend(extras)
         return f
-    return FP.auto_sheet(make, L, parts=parts)
+    return FP.auto_sheet(make, L, parts=parts, rows=rows)
 
 
 # ------------------------------------------------------------------ patterns
@@ -350,13 +350,54 @@ def titan_glow(fish, st, f, lay):
 
 
 def titanacon():
-    return sheet(150, H=0.42, peak=0.62, q=0.8, front_e=0.5, top_ratio=0.52, ped=0.2, hump=0.1, hump_t=0.72,
+    # colossal: rendered at 260 px (x2 in game), frames in 2 rows to fit mobile texture limits
+    return sheet(260, rows=2, H=0.42, peak=0.62, q=0.8, front_e=0.5, top_ratio=0.52, ped=0.2, hump=0.1, hump_t=0.72,
                  body="titan", belly="titanbelly", fin="titan", tail="lunate", tail_len=0.34, eye=0.024,
                  eye_ramp="iris_red", eye_t=0.86, eye_v=0.3, dorsal=("spiny", 0.4, 0.62, 0.5),
                  anal=("tri", 0.2, 0.28, 0.3), pectoral=(0.2, 0.1), pelvic=0.08, gill=False, backshade=0.22,
                  belly_v=0.64, wag=0.6, pattern=titan_armor, extras=(titan_glow,),
                  mouth=dict(v=0.62, corner_t=0.66, corner_v=0.64, sag=0.04, open=1.0, teeth="triangle", teeth_n=6,
                             teeth_len=0.04, tongue=True))
+
+
+# Body cavity seen through the "x-ray" while the player is inside (in sprite pixels,
+# relative to the body centre; the game scales it like the boss sprite).
+CAVITY = dict(cx=-4.0, cy=6.0, rx=78.0, ry=40.0)
+
+
+def titan_inside():
+    """Stomach cavity drawn over the Titanacon's body when it swallows you."""
+    import props
+    from pro import ramp
+    c = CAVITY
+    w, h = int(c["rx"] * 2 + 8), int(c["ry"] * 2 + 8)
+    X, Y = np.meshgrid(np.arange(w) + 0.5, np.arange(h) + 0.5)
+    ex, ey = w / 2.0, h / 2.0
+    nz = props.noise2(X, Y, 9.0, 21)
+    r = ((X - ex) / c["rx"]) ** 2 + ((Y - ey) / c["ry"]) ** 2
+    r = r * (1.0 + 0.06 * nz)
+    cav = r <= 1.0
+    lay = Layer(w, h)
+    dark = ramp("#5a1a2e", dark=0.3)
+    flesh = FP.PAL["flesh"]
+    fold = np.sin((Y + 5 * np.sin(X / 13.0) + 4 * nz) / 4.5)
+    val = (1.0 - r) * 0.9 + fold * 0.1
+    tone = FP.band(val, (0.12, 0.3, 0.5, 0.75))
+    lay.paint(cav, dark, np.clip(tone, 1, 4))
+    lay.paint(cav & (val > 0.55), flesh, np.clip(tone - 2, 1, 3))
+    lay.shift(cav & (fold > 0.9) & (val > 0.25), +1, hi=4)
+    # ribs seen from inside
+    for k in range(5):
+        rx = ex - c["rx"] * 0.66 + k * c["rx"] * 0.33
+        d = np.abs(np.hypot((X - rx) / 9.0, (Y - (ey - c["ry"] * 0.95)) / 16.0) - 1.0) * 9.0
+        lay.paint(cav & (d < 1.4) & (Y < ey), FP.PAL["bone"], np.where(d < 0.6, 4, 2))
+    # acid pool in the belly
+    acid = cav & (Y > ey + c["ry"] * 0.55 + np.sin(X / 7.0))
+    lay.paint(acid, FP.PAL["acid"], np.where(Y < ey + c["ry"] * 0.62, 5, 3))
+    # thick fleshy rim so the cut-away reads as the inside of the body wall
+    rim = cav & (r > 0.86)
+    lay.paint(rim, dark, 1)
+    return lay.to_image(outline=True)
 
 
 def parasite():
@@ -379,8 +420,10 @@ ALL = {
     "puffer": puffer, "puffer_big": puffer_big, "barracuda": barracuda, "shark": shark, "angler": angler,
     "orca": orca, "moray": moray, "boss_shark": boss_shark, "boss_angler": boss_angler,
     "leviathan_head": leviathan_head, "titanacon": titanacon, "parasite": parasite,
+    "titan_inside": titan_inside,
 }
 
 # swim / action frame counts per sheet (default for this module: 6 swim + 4 bite)
 ANIM = {name: (FP.SWIM_N, FP.BITE_N) for name in ALL}
 ANIM["puffer_big"] = (4, 0)
+ANIM["titan_inside"] = (1, 0)

@@ -34,8 +34,6 @@ const CreatureScripts := {
 	"boss_titanacon": preload("res://scripts/game/bosses/boss_titanacon.gd"),
 	"parasite": preload("res://scripts/game/creatures/parasite.gd"),
 }
-## The inside of the Titanacon lives far to the right of the ocean map.
-const STOMACH_RECT := Rect2(7000, 300, 640, 360)
 const MAX_CREATURES := 240
 const MAX_PICKUPS := 260
 
@@ -458,20 +456,19 @@ var stomach: Stomach = null
 func swallow_player(b: Creature) -> void:
 	if stomach != null or not player.alive:
 		return
+	# the stomach is part of the titan: it keeps swimming with you inside
 	stomach = Stomach.new()
 	stomach.game = self
 	stomach.boss = b
-	stomach.rect = STOMACH_RECT
-	add_child(stomach)
+	b.add_child(stomach)
 	b.stomach = stomach
 	player.swallowed = true
-	player.arena = STOMACH_RECT.grow(-player.radius)
-	player.position = STOMACH_RECT.position + Vector2(44, 150)
-	player.vel = Vector2(90, 0)
+	player.container = stomach
+	player.position = stomach.to_world(Vector2(stomach.RADII.x * 0.6, 0))
+	player.vel = Vector2(-80.0 * b.facing, 0)
 	player.grant_invuln(1.0)
-	camera.set_arena(STOMACH_RECT)
-	darkness.extra = 0.3
-	darkness.tint_target = Color(0.16, 0.0, 0.03)
+	darkness.extra = 0.22
+	darkness.tint_target = Color(0.14, 0.0, 0.03)
 	hud.banner("ENGOLIDO!", "Destrua os órgãos vitais por dentro", Color("ff5c4c"))
 	Sfx.play("boss_roar")
 	shake(10.0)
@@ -483,9 +480,10 @@ func spit_player(b: Creature, boss_died := false) -> void:
 	if stomach == null:
 		return
 	player.swallowed = false
-	player.arena = Rect2()
+	player.container = null
+	player.is_hidden = false
 	var dir := Vector2(b.facing, -0.25).normalized()
-	var out: Vector2 = b.mouth_pos() + dir * 40.0
+	var out: Vector2 = b.mouth_pos() + dir * 70.0
 	out.x = clampf(out.x, 40.0, DB.WORLD_W - 40.0)
 	out.y = clampf(out.y, DB.SURFACE_Y + 30.0, DB.floor_at(out.x) - 30.0)
 	player.position = out
@@ -494,7 +492,6 @@ func spit_player(b: Creature, boss_died := false) -> void:
 	stomach.teardown()
 	stomach = null
 	b.stomach = null
-	camera.clear_arena()
 	darkness.extra = 0.15
 	darkness.tint_target = Color(0.06, 0.0, 0.08)
 	burst(out, [2, 6, 0], 18, 120.0, 0.8)
@@ -773,7 +770,7 @@ func _boss_evasion(delta: float) -> void:
 	if boss == null or not is_instance_valid(boss) or boss.dead:
 		_boss_evade = 0.0
 		return
-	if player.is_hidden:
+	if player.is_hidden and not player.swallowed:
 		_boss_evade += delta
 		if _boss_evade >= 12.0 and boss.has_method("give_up"):
 			boss.give_up()

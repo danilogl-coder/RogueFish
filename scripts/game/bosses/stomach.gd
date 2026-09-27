@@ -1,39 +1,77 @@
 class_name Stomach
 extends Node2D
-## Inside the Titanacon. A closed arena far from the ocean map: the heart and
-## two acid glands are the only targets that hurt the titan, parasites guard
-## them, the acid pool at the bottom burns and slow digestion wears you down.
+## The Titanacon's stomach, seen through an "x-ray" cut-away of its body while
+## it keeps swimming around the ocean. This node is a child of the boss, so the
+## cavity follows every move; the player, the organs and the parasites inside
+## are carried along each frame and kept inside the cavity ellipse.
 
-const ACID_DEPTH := 38.0
+const PIXEL := 2.0                        ## same pixel scale as the boss sprite
+const CENTER := Vector2(-8, 12)           ## cavity centre relative to the boss (facing right)
+const RADII := Vector2(156, 80)
+const ACID_Y := 44.0                      ## below this (relative to the centre) is acid
 
 var game
-var boss                 # the Titanacon (Creature)
-var rect := Rect2()
-var organs: Array = []
+var boss                                  # the Titanacon
+var organs: Array = []                    # [{node, offset}]
 var parasites: Array = []
 var _spawn_t := 1.2
 var _digest_t := 2.5
 var _acid_t := 0.0
 var _t := 0.0
+var _last_pos := Vector2.ZERO
+var _last_facing := 1.0
+var _inside: Sprite2D
 
 
 func _ready() -> void:
-	z_index = -30
-	z_as_relative = false
-	var bg := Sprite2D.new()
-	bg.texture = Art.tex("env/stomach")
-	bg.centered = false
-	bg.position = rect.position
-	add_child(bg)
-	var o := rect.position
-	_add_organ("organ_heart", o + Vector2(320, 112), 30.0, 2.4, 1.6)
-	_add_organ("organ_gland", o + Vector2(92, 226), 20.0, 1.6, 1.4)
-	_add_organ("organ_gland", o + Vector2(550, 206), 20.0, 1.6, 1.4)
+	z_index = 1
+	_inside = Sprite2D.new()
+	_inside.texture = Art.tex("creatures/titan_inside")
+	_inside.scale = Vector2(PIXEL, PIXEL)
+	add_child(_inside)
+	_last_pos = boss.position
+	_last_facing = boss.facing
+	_place()
+	_add_organ("organ_heart", Vector2(6, -34), 26.0, 2.4, 1.4)
+	_add_organ("organ_gland", Vector2(-112, 18), 18.0, 1.6, 1.2)
+	_add_organ("organ_gland", Vector2(104, 10), 18.0, 1.6, 1.2)
 	for i in 3:
 		_spawn_parasite()
 
 
-func _add_organ(sheet: String, pos: Vector2, r: float, share: float, sc: float) -> void:
+# ------------------------------------------------------------- geometry
+func _place() -> void:
+	position = Vector2(CENTER.x * boss.facing, CENTER.y)
+	_inside.scale.x = PIXEL * boss.facing
+
+
+## World position of a point given relative to the cavity centre (facing right).
+func to_world(rel: Vector2) -> Vector2:
+	return boss.position + Vector2((CENTER.x + rel.x) * boss.facing, CENTER.y + rel.y)
+
+
+func to_rel(world: Vector2) -> Vector2:
+	var l: Vector2 = world - boss.position
+	return Vector2(l.x * boss.facing - CENTER.x, l.y - CENTER.y)
+
+
+## Keeps a body of radius r inside the cavity ellipse.
+func clamp_point(world: Vector2, r: float) -> Vector2:
+	var rel := to_rel(world)
+	var rx := maxf(8.0, RADII.x - r)
+	var ry := maxf(8.0, RADII.y - r)
+	var k := (rel.x / rx) * (rel.x / rx) + (rel.y / ry) * (rel.y / ry)
+	if k > 1.0:
+		rel /= sqrt(k)
+	return to_world(rel)
+
+
+func acid_line() -> float:
+	return to_world(Vector2(0, ACID_Y + sin(_t * 1.3) * 3.0)).y
+
+
+# --------------------------------------------------------------- contents
+func _add_organ(sheet: String, rel: Vector2, r: float, share: float, sc: float) -> void:
 	var og := Organ.new()
 	og.game = game
 	og.owner_boss = boss
@@ -41,11 +79,16 @@ func _add_organ(sheet: String, pos: Vector2, r: float, share: float, sc: float) 
 	og.sprite_scale = sc
 	og.radius = r
 	og.damage_share = share
-	og.position = pos
+	og.z_index = 2
+	og.position = to_world(rel)
 	game.layer_creatures.add_child(og)
 	game.creatures.append(og)
 	boss.parts.append(og)
-	organs.append(og)
+	organs.append({"node": og, "rel": rel})
+
+
+func organ_nodes() -> Array:
+	return organs.map(func(o): return o.node).filter(func(n): return is_instance_valid(n))
 
 
 func max_parasites() -> int:
@@ -53,36 +96,46 @@ func max_parasites() -> int:
 
 
 func _spawn_parasite() -> void:
-	# they crawl out of the stomach wall around the organs they protect
-	var guard: Node2D = organs[randi() % organs.size()]
-	var a := randf() * TAU
-	var pos: Vector2 = guard.position + Vector2.from_angle(a) * 60.0
-	pos.x = clampf(pos.x, rect.position.x + 20, rect.end.x - 20)
-	pos.y = clampf(pos.y, rect.position.y + 20, rect.end.y - ACID_DEPTH - 20)
-	var c: Creature = game.spawn_creature("parasite", pos, {"wave": true, "force": true})
+	var o: Dictionary = organs[randi() % organs.size()]
+	var rel: Vector2 = o.rel + Vector2.from_angle(randf() * TAU) * 50.0
+	var c: Creature = game.spawn_creature("parasite", clamp_point(to_world(rel), 10.0), {"wave": true, "force": true})
 	if c:
-		c.arena = rect.grow(-6)
-		c.guard = guard
+		c.container = self
+		c.guard = o.node
+		c.inside_titan = true
+		c.z_index = 2
 		parasites.append(c)
-		game.burst(pos, [2, 6], 5, 40.0, 0.5)
+		game.burst(c.position, [2, 6], 5, 40.0, 0.5)
 
 
-func acid_line() -> float:
-	return rect.end.y - ACID_DEPTH + sin(_t * 1.3) * 3.0
-
-
+# ------------------------------------------------------------------ tick
 func _physics_process(delta: float) -> void:
 	_t += delta
 	var p: Player = game.player
+	# carry everything inside along with the titan (and mirror it when it turns)
+	var d: Vector2 = boss.position - _last_pos
+	var turned: bool = boss.facing != _last_facing
+	var bodies: Array = [p]
+	parasites = parasites.filter(func(c): return is_instance_valid(c) and not c.dead)
+	bodies.append_array(parasites)
+	for b in bodies:
+		b.position += d
+		if turned:
+			b.position.x = boss.position.x - (b.position.x - boss.position.x)
+	_last_pos = boss.position
+	_last_facing = boss.facing
+	_place()
+	for o in organs:
+		if is_instance_valid(o.node):
+			o.node.position = to_world(o.rel)
 	if not p.alive:
 		return
-	parasites = parasites.filter(func(c): return is_instance_valid(c) and not c.dead)
 	_spawn_t -= delta
 	if _spawn_t <= 0.0:
 		_spawn_t = 3.2 if boss.enraged else 4.2
 		if parasites.size() < max_parasites():
 			_spawn_parasite()
-	# acid pool at the bottom
+	# acid pool in the belly
 	if p.position.y > acid_line():
 		_acid_t -= delta
 		if _acid_t <= 0.0:
@@ -98,12 +151,12 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# acid bubbles rising from the pool
-	for i in 14:
-		var x := rect.position.x + fmod(i * 47.0 + _t * 9.0 * (1 + i % 3), rect.size.x)
+	# acid bubbles rising from the pool (local space follows the flip)
+	for i in 10:
+		var x := -RADII.x * 0.8 + fmod(i * 37.0 + _t * 8.0 * (1 + i % 3), RADII.x * 1.6)
 		var ph := fmod(_t * 0.6 + i * 0.37, 1.0)
-		var y := rect.end.y - 8.0 - ph * 70.0
-		draw_circle(Vector2(x, y), 1.5 + (i % 2), Color(0.75, 0.95, 0.35, 0.8 * (1.0 - ph)))
+		var y := ACID_Y + 20.0 - ph * 50.0
+		draw_circle(Vector2(x * boss.facing, y), 1.5 + (i % 2), Color(0.75, 0.95, 0.35, 0.8 * (1.0 - ph)))
 
 
 ## Frees everything that lives in here (the player was spat out).
@@ -112,13 +165,9 @@ func teardown() -> void:
 		if is_instance_valid(c):
 			c.dead = true
 			c.queue_free()
-	for og in organs:
-		if is_instance_valid(og):
-			og.dead = true
-			og.queue_free()
-			boss.parts.erase(og)
-	for pk in game.pickups:
-		# loot dropped inside is flushed out with you
-		if is_instance_valid(pk) and rect.has_point(pk.position):
-			pk.position = game.player.position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
+	for o in organs:
+		if is_instance_valid(o.node):
+			o.node.dead = true
+			o.node.queue_free()
+			boss.parts.erase(o.node)
 	queue_free()

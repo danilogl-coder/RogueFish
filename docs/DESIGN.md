@@ -37,7 +37,7 @@ mas nunca tira nada do jogador).
   no espírito de Everything is Crab, onde você joga com os animais que evoluiu.
 - **Titanacon** inverte a luta: em vez de fugir do chefe, o objetivo é **ser engolido**. Por fora as
   placas reduzem o dano a 12% (30% com a boca aberta); ao sugar o mar ele puxa o jogador para a boca. Dentro do estômago
-  (uma arena fechada) só o **coração** e as **glândulas de ácido** ferem o titã, os **parasitas**
+  (visto em raio-x, preso ao corpo do titã, que continua nadando pelo mapa) só o **coração** e as **glândulas de ácido** ferem o titã, os **parasitas**
   os protegem, o **ácido** no fundo queima e a **digestão** tira vida aos poucos. Com 25% da vida dele
   tirados por dentro, ele cospe o jogador e fica atordoado (vulnerável) por alguns segundos.
 

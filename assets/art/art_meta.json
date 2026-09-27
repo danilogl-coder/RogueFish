@@ -3861,12 +3861,20 @@
    "swim": 4,
    "w": 36
   },
+  "creatures/titan_inside": {
+   "act": 0,
+   "frames": 1,
+   "h": 88,
+   "swim": 1,
+   "w": 164
+  },
   "creatures/titanacon": {
    "act": 4,
    "frames": 10,
-   "h": 132,
+   "h": 228,
+   "rows": 2,
    "swim": 6,
-   "w": 244
+   "w": 420
   },
   "creatures/turtle": {
    "act": 2,

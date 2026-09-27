@@ -957,7 +957,7 @@ def lure_screen(fish, st):
     return fish.to_screen(cx, cy, st)
 
 
-def auto_sheet(make, L, parts=("tail", "fins_back", "body", "fins_front"), frames=None, margin=1, post=None):
+def auto_sheet(make, L, parts=("tail", "fins_back", "body", "fins_front"), frames=None, margin=1, post=None, rows=1):
     """Renders every frame on a roomy canvas and crops them all to the same box
     centred on the body centre, so the sprite origin is the fish's centre (the
     game can mirror it without the body jumping) and nothing gets clipped."""
@@ -985,7 +985,9 @@ def auto_sheet(make, L, parts=("tail", "fins_back", "body", "fins_front"), frame
     hw = max(cx - x0, x1 - cx) + margin
     hh = max(cy - y0, y1 - cy) + margin
     w, h = hw * 2, hh * 2
-    sheet = Image.new("RGBA", (w * len(imgs), h))
+    cols = -(-len(imgs) // rows)
+    sheet = Image.new("RGBA", (w * cols, h * rows))
     for k, im in enumerate(imgs):
-        sheet.alpha_composite(im.crop((cx - hw, cy - hh, cx + hw, cy + hh)), (k * w, 0))
+        sheet.alpha_composite(im.crop((cx - hw, cy - hh, cx + hw, cy + hh)), ((k % cols) * w, (k // cols) * h))
+    sheet.info["rows"] = rows
     return sheet
