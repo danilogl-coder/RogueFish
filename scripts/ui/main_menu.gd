@@ -10,6 +10,9 @@ var _layers: Array = []
 var _screen: Control
 var _main: Control
 var _pearls_label: Label
+var _video_btn: Button
+var _video_hint: Label
+var _video_t := 0.0
 
 
 func _ready() -> void:
@@ -20,6 +23,10 @@ func _ready() -> void:
 	_build_background()
 	_build_main()
 	Sfx.play_music("menu")
+	Billing.purchased.connect(func(_id: String):
+		Sfx.play_stinger("fusion")
+		if _screen != null and _store_cat == "iap":
+			_show_store())
 	if Profile.daily_available() > 0 and not Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--menu") or a.begins_with("--sp-") or a.begins_with("--store")):
 		_show_daily.call_deferred()
 	for a in OS.get_cmdline_user_args():
@@ -51,6 +58,14 @@ func _ready() -> void:
 
 
 # ------------------------------------------------------------- background
+func _refresh_video_btn() -> void:
+	if _video_btn == null:
+		return
+	_video_btn.disabled = not Ads.can_show("pearls")
+	_video_btn.text = ("VÍDEO +%d" if not Profile.vip else "VIP +%d") % int(Offers.VIDEOS.pearls.reward)
+	_video_hint.text = Ads.status_text("pearls")
+
+
 func _build_background() -> void:
 	var bg := TextureRect.new()
 	bg.texture = Art.tex("env/bg_backdrop")
@@ -120,6 +135,10 @@ func _process(delta: float) -> void:
 		s.frame = int(_bg_t * 8.0 * swim / 4.0 + f.y) % swim
 	if _pearls_label:
 		_pearls_label.text = str(Profile.pearls)
+	_video_t -= delta
+	if _video_t <= 0.0:
+		_video_t = 1.0
+		_refresh_video_btn()
 
 
 func _notification(what: int) -> void:
@@ -217,6 +236,28 @@ func _build_main() -> void:
 	pr.add_child(UIKit.icon_rect("pearl", 16))
 	_pearls_label = UIKit.label(str(Profile.pearls), 16, UIKit.WHITE)
 	pr.add_child(_pearls_label)
+	# rewarded video: free pearls
+	var reward := int(Offers.VIDEOS.pearls.reward)
+	_video_btn = UIKit.button("+%d" % reward, "GoldButton", 0, "play")
+	_video_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_video_btn.offset_left = -120
+	_video_btn.offset_right = -8
+	_video_btn.offset_top = 30
+	_video_btn.tooltip_text = "Veja um vídeo e ganhe %d pérolas" % reward
+	_video_btn.pressed.connect(func():
+		Ads.show_rewarded("pearls", func():
+			Profile.add_pearls(reward)
+			Profile.save_game()
+			Sfx.play("level_up")
+			_refresh_video_btn()))
+	_main.add_child(_video_btn)
+	_video_hint = UIKit.label("", 8, Color("c8fbff"), HORIZONTAL_ALIGNMENT_RIGHT)
+	_video_hint.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_video_hint.offset_left = -160
+	_video_hint.offset_right = -8
+	_video_hint.offset_top = 56
+	_main.add_child(_video_hint)
+	_refresh_video_btn()
 	# records
 	var rec := UIKit.label("RECORDE %s  |  VITÓRIAS %d  |  CHEFES %d" % [DB.format_time(float(Profile.records.best_time)), int(Profile.records.wins), int(Profile.records.bosses)], 8, Color("c8fbff"))
 	rec.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
@@ -529,7 +570,7 @@ func _show_store() -> void:
 			_store_cat = cid
 			_show_store())
 		tabs.add_child(tb)
-	var hint := {"pack": "Novos conteúdos para o oceano. Bichos de expansão entram na lista de personagens.",
+	var hint := {"iap": "Pérolas, o Pacote Inicial e o Passe VIP. Tudo também pode ser ganho jogando.", "pack": "Novos conteúdos para o oceano. Bichos de expansão entram na lista de personagens.",
 		"relic": "Relíquias mudam para sempre como as partidas funcionam.",
 		"tide": "Equipe UMA maré: ela vale para todas as partidas (requer Rosa-dos-Ventos).",
 		"mode": "Ligue quantos modos quiser: mais difícil, mais pérolas."}
@@ -543,9 +584,49 @@ func _show_store() -> void:
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(grid)
+	if _store_cat == "iap":
+		for id in Offers.PRODUCTS:
+			if id == "starter" and Billing.owned(id):
+				continue
+			grid.add_child(_offer_card(id))
+		return
 	for id in Shop.ITEMS:
 		if Shop.ITEMS[id].cat == _store_cat:
 			grid.add_child(_store_card(id))
+
+
+## Real-money product card.
+func _offer_card(id: String) -> Control:
+	var d: Dictionary = Offers.PRODUCTS[id]
+	var owned := Billing.owned(id)
+	var p := PanelContainer.new()
+	p.theme_type_variation = "Card_legend" if id in ["vip", "starter"] else "Card_rare"
+	p.custom_minimum_size = Vector2(192, 102)
+	var v := UIKit.vbox(2)
+	p.add_child(v)
+	var h := UIKit.hbox(4)
+	v.add_child(h)
+	h.add_child(UIKit.icon_rect(d.icon, 16))
+	h.add_child(UIKit.label(String(d.name).to_upper(), 8, UIKit.GOLD))
+	if String(d.tag) != "":
+		var tag := UIKit.label(d.tag, 8, UIKit.GREEN)
+		tag.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		h.add_child(tag)
+	var desc := UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 180)
+	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(desc)
+	var b: Button
+	if owned and not bool(d.consumable):
+		b = UIKit.button("ADQUIRIDO", "", 0, "check")
+		b.disabled = true
+	else:
+		b = UIKit.button(Billing.price_text(id), "GoldButton", 0, "")
+		b.disabled = not Billing.can_buy(id)
+		b.pressed.connect(func(): Billing.buy(id))
+	b.add_theme_font_size_override("font_size", 9)
+	v.add_child(b)
+	return p
 
 
 func _store_card(id: String) -> Control:
@@ -880,11 +961,24 @@ func _show_daily() -> void:
 		bv.add_child(UIKit.label(str(Profile.DAILY_REWARDS[i]), 8, UIKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
 		row.add_child(box)
 	v.add_child(row)
-	var b := UIKit.button("RESGATAR +%d" % amount, "GoldButton", 200, "gift")
-	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var bh := UIKit.hbox(8)
+	bh.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(bh)
+	var b := UIKit.button("RESGATAR +%d" % amount, "", 150, "gift")
 	b.pressed.connect(func():
 		Profile.claim_daily()
 		Sfx.play("level_up")
 		_close_screen()
 		_main.visible = true)
-	v.add_child(b)
+	bh.add_child(b)
+	if Ads.can_show("daily_x2"):
+		var b2 := UIKit.button("VÍDEO: +%d (x2)" % (amount * 2), "GoldButton", 150, "play")
+		b2.pressed.connect(func():
+			Ads.show_rewarded("daily_x2", func():
+				Profile.claim_daily()
+				Profile.add_pearls(amount)
+				Profile.save_game()
+				Sfx.play("level_up")
+				_close_screen()
+				_main.visible = true))
+		bh.add_child(b2)

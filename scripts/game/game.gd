@@ -679,7 +679,34 @@ func on_player_died() -> void:
 	Engine.time_scale = 0.35
 	await get_tree().create_timer(0.9, true, false, true).timeout
 	Engine.time_scale = 1.0
-	_end_run(false)
+	if not _ad_revived and Ads.remaining("revive") > 0:
+		_offer_continue()
+	else:
+		_end_run(false)
+
+
+var _ad_revived := false
+
+
+## "Continue?" screen: one revive per run for a rewarded video.
+func _offer_continue() -> void:
+	get_tree().paused = true
+	hud.controls.release_all()
+	_menu_open = true
+	hud.visible = false
+	var g := GameOverMenu.new()
+	g.game = self
+	menus.add_child(g)
+	g.show_continue(func():
+		_ad_revived = true
+		g.queue_free()
+		hud.visible = true
+		revive_player()
+		Sfx.play_music("game")
+		hud.toast("DE VOLTA AO MAR!", Color("5ee0ff")),
+		func():
+			g.queue_free()
+			_end_run(false))
 
 
 func on_victory() -> void:
@@ -712,7 +739,7 @@ var _finalized := false
 ## Converts the run into pearls/records. Safe to call once.
 func finalize_run(victory: bool) -> Dictionary:
 	var bonus := int(time / 30.0) + level + bosses_killed * 10 + (50 if victory else 0)
-	var mode_mult := 1.0 + mods.pearl_bonus()
+	var mode_mult := 1.0 + mods.pearl_bonus() + (Offers.VIP_PEARL_BONUS if Profile.vip else 0.0)
 	bonus += int((pearls_run + bonus) * (mode_mult - 1.0))
 	var result := {
 		"won": victory, "time": time, "level": level, "kills": kills, "bosses": bosses_killed,

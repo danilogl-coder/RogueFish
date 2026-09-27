@@ -396,18 +396,18 @@ const MUTATIONS := {
 
 # Rogue-lite meta upgrades (bought with pearls between runs)
 const META := {
-	"vitality": {"name": "Vitalidade Ancestral", "icon": "heart", "desc": "+10 PV máx", "max": 5, "cost": [40, 80, 140, 220, 320]},
-	"might": {"name": "Mandíbula Forte", "icon": "fang", "desc": "+6% dano", "max": 5, "cost": [50, 100, 160, 240, 340]},
-	"swift": {"name": "Nado Veloz", "icon": "wave", "desc": "+4% velocidade", "max": 5, "cost": [40, 80, 130, 200, 290]},
-	"scales": {"name": "Escamas Grossas", "icon": "p_shell", "desc": "+1 armadura", "max": 3, "cost": [120, 260, 450]},
-	"magnet": {"name": "Faro de Plâncton", "icon": "p_magnet", "desc": "+15% coleta", "max": 3, "cost": [60, 120, 200]},
-	"wisdom": {"name": "Sabedoria", "icon": "p_brain", "desc": "+6% experiência", "max": 5, "cost": [60, 110, 170, 250, 350]},
-	"luck": {"name": "Sorte do Mar", "icon": "p_luck", "desc": "+10% sorte", "max": 3, "cost": [80, 160, 280]},
-	"reroll": {"name": "Maré da Sorte", "icon": "reroll", "desc": "+1 rerrolagem por partida", "max": 3, "cost": [100, 200, 350]},
-	"regen": {"name": "Regeneração", "icon": "plus", "desc": "+0.2 PV/s", "max": 3, "cost": [90, 180, 300]},
-	"greed": {"name": "Olho de Ouro", "icon": "star", "desc": "+15% pérolas", "max": 4, "cost": [100, 180, 280, 400]},
-	"revive": {"name": "Segunda Chance", "icon": "dna", "desc": "Revive uma vez por partida", "max": 1, "cost": [500]},
-	"choice": {"name": "Visão Ampla", "icon": "eye", "desc": "4 cartas por nível", "max": 1, "cost": [650]},
+	"vitality": {"name": "Vitalidade Ancestral", "icon": "heart", "desc": "+10 PV máx", "max": 5, "cost": [200, 400, 700, 1100, 1600]},
+	"might": {"name": "Mandíbula Forte", "icon": "fang", "desc": "+6% dano", "max": 5, "cost": [250, 500, 800, 1200, 1700]},
+	"swift": {"name": "Nado Veloz", "icon": "wave", "desc": "+4% velocidade", "max": 5, "cost": [200, 400, 650, 1000, 1450]},
+	"scales": {"name": "Escamas Grossas", "icon": "p_shell", "desc": "+1 armadura", "max": 3, "cost": [600, 1300, 2250]},
+	"magnet": {"name": "Faro de Plâncton", "icon": "p_magnet", "desc": "+15% coleta", "max": 3, "cost": [300, 600, 1000]},
+	"wisdom": {"name": "Sabedoria", "icon": "p_brain", "desc": "+6% experiência", "max": 5, "cost": [300, 550, 850, 1250, 1750]},
+	"luck": {"name": "Sorte do Mar", "icon": "p_luck", "desc": "+10% sorte", "max": 3, "cost": [400, 800, 1400]},
+	"reroll": {"name": "Maré da Sorte", "icon": "reroll", "desc": "+1 rerrolagem por partida", "max": 3, "cost": [500, 1000, 1750]},
+	"regen": {"name": "Regeneração", "icon": "plus", "desc": "+0.2 PV/s", "max": 3, "cost": [450, 900, 1500]},
+	"greed": {"name": "Olho de Ouro", "icon": "star", "desc": "+15% pérolas", "max": 4, "cost": [500, 900, 1400, 2000]},
+	"revive": {"name": "Segunda Chance", "icon": "dna", "desc": "Revive uma vez por partida", "max": 1, "cost": [2500]},
+	"choice": {"name": "Visão Ampla", "icon": "eye", "desc": "4 cartas por nível", "max": 1, "cost": [3250]},
 }
 
 

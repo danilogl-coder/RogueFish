@@ -24,6 +24,9 @@ var missions_done: Array = []
 var bestiary: Dictionary = {}       # id -> {"seen": bool, "kills": int}
 var unlocked_weapons: Array = []
 var daily := {"last": "", "streak": 0}
+var ad_log := {"date": "", "counts": {}, "last": {}}   ## rewarded videos watched (see Ads)
+var purchases: Array = []       ## non-consumable products bought (see Billing)
+var vip := false
 
 
 func _ready() -> void:
@@ -56,6 +59,11 @@ func load_game() -> void:
 	bestiary = data.get("bestiary", {})
 	unlocked_weapons = data.get("unlocked_weapons", [])
 	owned = data.get("owned", [])
+	var al: Dictionary = data.get("ad_log", {})
+	if not al.is_empty():
+		ad_log = al
+	purchases = data.get("purchases", [])
+	vip = bool(data.get("vip", false)) or purchases.has("vip")
 	var d: Dictionary = data.get("daily", {})
 	if not d.is_empty():
 		daily = d
@@ -71,7 +79,7 @@ func save_game() -> void:
 		"selected_species": selected_species, "settings": settings, "records": records,
 		"seen_tutorial": seen_tutorial, "stats": stats, "missions_done": missions_done,
 		"bestiary": bestiary, "unlocked_weapons": unlocked_weapons, "daily": daily,
-		"owned": owned,
+		"owned": owned, "ad_log": ad_log, "purchases": purchases, "vip": vip,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:

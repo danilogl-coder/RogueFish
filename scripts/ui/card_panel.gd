@@ -369,7 +369,17 @@ func _close() -> void:
 
 
 func _reroll() -> void:
-	if game.rerolls <= 0 or _done:
+	if _done:
+		return
+	if game.rerolls <= 0:
+		# out of rerolls: one more for a rewarded video
+		_reroll_btn.disabled = true
+		Ads.show_rewarded("reroll", func():
+			_reroll_btn.disabled = false
+			_build_offers()
+			_update_reroll(), func():
+			_reroll_btn.disabled = false
+			_update_reroll())
 		return
 	game.rerolls -= 1
 	_build_offers()
@@ -377,8 +387,12 @@ func _reroll() -> void:
 
 
 func _update_reroll() -> void:
-	_reroll_btn.text = "REROLAR (%d)" % game.rerolls
-	_reroll_btn.visible = game.rerolls > 0
+	if game.rerolls > 0:
+		_reroll_btn.text = "REROLAR (%d)" % game.rerolls
+		_reroll_btn.visible = true
+	else:
+		_reroll_btn.text = "VÍDEO: REROLAR" if not Profile.vip else "REROLAR (VIP)"
+		_reroll_btn.visible = Ads.can_show("reroll")
 
 
 # ------------------------------------------------------------- attributes

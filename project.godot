@@ -26,6 +26,8 @@ DB="*res://scripts/autoload/db.gd"
 Art="*res://scripts/autoload/art.gd"
 Profile="*res://scripts/autoload/profile.gd"
 Sfx="*res://scripts/autoload/audio.gd"
+Ads="*res://scripts/autoload/ads.gd"
+Billing="*res://scripts/autoload/billing.gd"
 
 [display]
 

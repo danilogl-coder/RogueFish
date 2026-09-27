@@ -39,6 +39,47 @@ func show_victory_choice() -> void:
 	Sfx.play("level_up")
 
 
+## Offer a revive for a video, with a countdown that gives up on its own.
+func show_continue(on_revive: Callable, on_give_up: Callable) -> void:
+	var panel := UIKit.center_panel(self, Vector2(340, 170))
+	var v := UIKit.vbox(8)
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(v)
+	v.add_child(UIKit.label("CONTINUAR?", 24, UIKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER))
+	v.add_child(UIKit.label("Volte com metade da vida e uma onda que limpa os inimigos.", 8, UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
+	var timer_bar := UIKit.bar("bar_hp", Vector2(220, 8))
+	timer_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	timer_bar.value = 1.0
+	v.add_child(timer_bar)
+	var h := UIKit.hbox(8)
+	h.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(h)
+	var decided := [false]
+	var watch := UIKit.button("VÍDEO: REVIVER" if not Profile.vip else "REVIVER (VIP)", "GoldButton", 0, "play")
+	var give := UIKit.button("DESISTIR", "", 0, "back")
+	h.add_child(watch)
+	h.add_child(give)
+	var tw := create_tween()
+	tw.tween_property(timer_bar, "value", 0.0, 8.0)
+	tw.finished.connect(func():
+		if not decided[0]:
+			decided[0] = true
+			on_give_up.call())
+	watch.pressed.connect(func():
+		if decided[0]:
+			return
+		decided[0] = true
+		tw.kill()
+		Ads.show_rewarded("revive", on_revive, on_give_up))
+	give.pressed.connect(func():
+		if decided[0]:
+			return
+		decided[0] = true
+		tw.kill()
+		on_give_up.call())
+	UIKit.pop_in(panel)
+
+
 func show_result(r: Dictionary) -> void:
 	var panel := UIKit.center_panel(self, Vector2(400, 280))
 	var v := UIKit.vbox(6)
@@ -70,8 +111,23 @@ func show_result(r: Dictionary) -> void:
 	var total := UIKit.hbox(4)
 	total.alignment = BoxContainer.ALIGNMENT_CENTER
 	total.add_child(UIKit.icon_rect("pearl", 16))
-	total.add_child(UIKit.label("TOTAL: %d   (banco: %d)" % [r.pearls + r.bonus, Profile.pearls], 8, UIKit.GOLD))
+	var total_lbl := UIKit.label("TOTAL: %d   (banco: %d)" % [r.pearls + r.bonus, Profile.pearls], 8, UIKit.GOLD)
+	total.add_child(total_lbl)
 	v.add_child(total)
+	# rewarded video: double what this run earned
+	var earned: int = int(r.pearls) + int(r.bonus)
+	if earned > 0 and Ads.remaining("double") > 0:
+		var dbl := UIKit.button("VÍDEO: DOBRAR +%d PÉROLAS" % earned if not Profile.vip else "VIP: DOBRAR +%d PÉROLAS" % earned, "GoldButton", 0, "pearl")
+		dbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		dbl.pressed.connect(func():
+			dbl.disabled = true
+			Ads.show_rewarded("double", func():
+				Profile.add_pearls(earned)
+				Profile.save_game()
+				Sfx.play("level_up")
+				total_lbl.text = "TOTAL: %d   (banco: %d)" % [earned * 2, Profile.pearls]
+				dbl.text = "PÉROLAS DOBRADAS!", func(): dbl.disabled = false))
+		v.add_child(dbl)
 	if r.time >= float(Profile.records.best_time) - 0.01 and r.time > 30.0:
 		v.add_child(UIKit.label("NOVO RECORDE DE TEMPO!", 8, UIKit.GREEN, HORIZONTAL_ALIGNMENT_CENTER))
 	var h := UIKit.hbox(8)

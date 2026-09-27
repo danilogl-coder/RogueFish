@@ -258,3 +258,8 @@ func _kill_tween(p: AudioStreamPlayer) -> void:
 	if t != null and t.is_valid():
 		t.kill()
 	_tweens.erase(p)
+
+
+## Lowers the music for a while (rewarded videos, cutscenes).
+func duck(seconds: float) -> void:
+	_duck = maxf(_duck, seconds)
