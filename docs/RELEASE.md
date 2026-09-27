@@ -129,7 +129,19 @@ Contas de desenvolvedor pessoais criadas depois de novembro de 2023 precisam faz
 - [ ] Testar em 2 ou 3 celulares reais (um fraco, um médio e um com tela 20:9) pelo teste interno.
 - [ ] Validar as compras num servidor antes de escalar o marketing (veja MONETIZATION.md).
 
-## 9. Depois do lançamento
+## 9. APK para testar no celular
+
+O preset **Android APK** (sem Gradle) gera um APK instalável direto, sem passar pela Play Store:
+
+```bash
+godot --headless --export-release "Android APK" builds/RogueFish.apk
+```
+
+No celular, abra o arquivo e permita *Instalar apps desconhecidos* para o app que abriu o APK (navegador ou
+gerenciador de arquivos). Esse APK é só para teste: ele é assinado com a chave de debug, então o Android não deixa
+atualizar por cima dele com a versão da Play Store. Desinstale o de teste antes.
+
+## 10. Depois do lançamento
 
 - Acompanhe **Android vitals**: travamentos, ANRs e bateria.
 - Toda atualização precisa de um `versionCode` maior.
