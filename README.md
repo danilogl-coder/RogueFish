@@ -16,7 +16,7 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Crescimento do peixe | 5 estágios: Alevino, Juvenil, Adulto, Veterano e Leviatã. Sprite maior, mais vida e mordida; engole criaturas menores inteiras |
 | Nível, status e pontos | XP → nível; cada nível dá 1 ponto de atributo (FOR/VIT/AGI/INS) + escolha de carta |
 | Barra de vida | HUD + barras de vida nos inimigos feridos + barra do chefe |
-| Cartas estilo Vampire Survivors | 7 armas, 11 passivas, 7 evoluções lendárias (arma nv5 + passiva parceira), rerrolagem |
+| Cartas estilo Vampire Survivors | 36 itens, 11 passivas, 7 evoluções lendárias (arma nv5 + passiva parceira), 18 FUSÕES (duas armas nv5 viram uma que sobe até o nível 10), rerrolagem e banimento |
 | Ecossistema planta/herbívoro/predador | Cadeia alimentar completa com ciclo de nutrientes: produtores (kelp, fitoplâncton, quimiossíntese), detritívoros, herbívoros, carnívoros, predadores e a orca (megapredador). Fome, reprodução, carcaças e reciclagem. Veja `docs/DESIGN.md` |
 | Esconderijos | Cavernas e moitas de algas: predadores perdem o rastro, você regenera (limitado pela barra de furtividade) |
 | Pontos de interesse com tempo | Baú (morda 3x), ostra gigante (cura), fenda térmica (+30% dano, guardada por caranguejos) e cardume dourado. Aparecem com timer e setas na borda da tela |
@@ -24,6 +24,38 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Menu inicial, game over, upgrades rogue-lite | `main_menu.gd` (espécies, loja de evolução ancestral, guia, opções, créditos), `game_over.gd`, `pause_menu.gd` |
 | Evoluções que mudam a aparência | 12 mutações em 4 slots (cabeça, nadadeiras, pele e cauda), cada uma com arte própria em todos os estágios e espécies. Cabeça e pele são desenhadas junto do corpo (a Mandíbula de Piranha é a própria mandíbula do peixe) |
 | Sinergias | 6 afinidades (Elétrico, Veneno, Abissal, Coral, Predador, Corrente) com bônus em 2 e 4 itens + 3 combinações cruzadas |
+
+### Marés Profundas (v1.4): a grande expansão
+- **30+ personagens jogáveis**: todo bicho do oceano (peixes, invertebrados, a lontra, a orca, a
+  minhoca, o piolho...) e os chefes vencidos. Cada um tem **atributos**, um **TRAÇO** exclusivo
+  (esquiva, bloqueio, inflar, emboscada, devorar, colônia, jato de tinta...) e um **ITEM ÚNICO**.
+  Como em *Vampire Survivors*, o item só aparece nas cartas depois que você libera o personagem
+  (compra com pérolas, meta de jogo como "derrote 250 piranhas" ou vencendo o chefe).
+- **Aparência que evolui**: cada personagem tem 5 estágios desenhados (barbatanas maiores,
+  cicatrizes, fotóforos no estágio Leviatã; nos invertebrados, pintas, marcas e bioluminescência),
+  e aceita todas as 12 mutações.
+- **Motor de itens por arquétipos** (`scripts/data/arsenal.gd` + `Weapon`): tiro, nova, órbita,
+  aura, chicote, raio, armadilha, bumerangue, ricochete, bote, impacto, invocação, rastro,
+  arremesso, tentáculos, vórtice e feixes giratórios.
+- **FUSÃO**: duas armas específicas no nível 5 viram uma arma fundida (libera um espaço) que sobe
+  até o **nível 10**. Receitas na tela COLEÇÃO; a aba ARSENAL da pausa mostra o que falta.
+- **LOJA DO RECIFE** (`scripts/data/shop.gd`): expansões, relíquias, marés e modos.
+  - Expansões: **Fontes Hidrotermais** (bioma novo, o mapa passa de 4800 m para 6000 m, chaminés em
+    erupção, Caranguejo-Yeti e Verme-Tubo), **Criaturas Luminosas** (Peixe-Víbora e Lula-Vampira) e
+    **Megalodonte** (6º chefe, vira personagem ao ser vencido).
+  - Relíquias: Coroa de Coral (armas até nv 7), Âncora do Banimento, Rosa-dos-Ventos (libera as
+    marés), Âmbar Ancestral, Garrafa de Mensagens, Pérola Negra, Ampulheta Abissal, Olho de Netuno e
+    Caixa de Música (escolha a trilha).
+  - Marés (como as Arcanas): Vermelha, Prata, Negra, Elétrica, Viva e Dourada.
+  - Modos: **Mutante** (variantes Fúria, Tóxico, Blindado, Sombra e Tesouro), **Maré Alta** e
+    **Abismo Invertido**, cada um com bônus de pérolas.
+- **Trilha sonora nova e adaptativa** (`tools/audio/compose_music.py`): a música antiga foi removida.
+  A partida toca duas camadas sincronizadas (calma + tensão) e a camada de tensão sobe com o perigo,
+  o combo e as ondas. Chefes e menu têm temas próprios, e as vinhetas de nível ficam no tom da música.
+- **Correções visuais**: os cardumes do fundo usavam o tamanho de quadro antigo (apareciam cortados)
+  e seguiam a câmera (saíam da água); a ponta da cauda do tubarão se soltava. Todo quadro de sprite
+  agora passa por `tools/art/tidy.py`, que reconecta pontas soltas, e `tools/art/audit_islands.py`
+  audita o resultado.
 
 ### Mundo (v1.1)
 4 biomas com relevo próprio: **Recife de Coral** (raso), **Floresta de Kelp**,

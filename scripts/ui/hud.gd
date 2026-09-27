@@ -119,6 +119,13 @@ func _ready() -> void:
 	phase_bar = UIKit.bar("bar_wave", Vector2(120, 6))
 	phase_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center.add_child(phase_bar)
+	var mods_row := UIKit.hbox(2)
+	mods_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_child(mods_row)
+	if game.mods.tide != "":
+		mods_row.add_child(UIKit.icon_rect(Shop.ITEMS[game.mods.tide].icon, 12))
+	for m in game.mods.modes:
+		mods_row.add_child(UIKit.icon_rect(Shop.ITEMS[m].icon, 12))
 	toast_label = UIKit.label("", 8, UIKit.GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	toast_label.modulate.a = 0.0
 	center.add_child(toast_label)

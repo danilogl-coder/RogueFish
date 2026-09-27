@@ -436,6 +436,8 @@ const MISSIONS := [
 	{"id": "orca", "name": "Matador de Orcas", "desc": "Derrote uma Orca", "stat": "orcas", "target": 1, "pearls": 200},
 	{"id": "boss_evade", "name": "Fantasma", "desc": "Faça um chefe desistir escondido", "stat": "boss_evaded", "target": 1, "pearls": 100},
 	{"id": "survive_10", "name": "Sobrevivente", "desc": "Sobreviva 10 minutos", "stat": "max_time", "target": 600, "pearls": 100},
+	{"id": "fusion_1", "name": "Alquimia Abissal", "desc": "Faça uma FUSÃO de armas", "stat": "fusions", "target": 1, "pearls": 100},
+	{"id": "fusion_5", "name": "Mestre das Fusões", "desc": "Faça 5 fusões", "stat": "fusions", "target": 5, "pearls": 250},
 	{"id": "win", "name": "Dono do Oceano", "desc": "Vença uma partida", "stat": "wins", "target": 1, "pearls": 300},
 	{"id": "bestiary", "name": "Biólogo Marinho", "desc": "Descubra todas as espécies", "stat": "species_seen", "target": 19, "pearls": 200},
 ]

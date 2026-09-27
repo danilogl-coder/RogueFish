@@ -25,7 +25,7 @@ func _ready() -> void:
 	top.add_child(UIKit.label("%s  NV %d  %s" % [DB.format_time(game.time), game.level, DB.STAGE_NAMES[game.player.stage].to_upper()], 8, UIKit.DIM))
 	_tabs = UIKit.hbox(4)
 	v.add_child(_tabs)
-	for t in [["STATUS", "_show_status"], ["SINERGIAS", "_show_synergies"], ["ECOSSISTEMA", "_show_ecosystem"], ["OPÇÕES", "_show_options"]]:
+	for t in [["STATUS", "_show_status"], ["ARSENAL", "_show_arsenal"], ["SINERGIAS", "_show_synergies"], ["ECOSSISTEMA", "_show_ecosystem"], ["OPÇÕES", "_show_options"]]:
 		var b := UIKit.button(t[0])
 		b.pressed.connect(Callable(self, t[1]))
 		_tabs.add_child(b)
@@ -118,6 +118,73 @@ func _show_status() -> void:
 	for slot in DB.MUTATION_SLOTS:
 		var mid: String = p.mutations.get(slot, "")
 		mut.add_child(UIKit.wrap_label(DB.MUTATIONS[mid].name if mid != "" else "- vazio -", 8, UIKit.WHITE if mid != "" else UIKit.DIM, 130))
+
+
+## Items of this run: levels, fusion recipes in reach, the character's trait
+## and the shop modifiers that are active.
+func _show_arsenal() -> void:
+	_clear()
+	var p: Player = game.player
+	var cols := UIKit.hbox(14)
+	_content.add_child(cols)
+	var left := UIKit.vbox(4)
+	left.custom_minimum_size.x = 300
+	cols.add_child(left)
+	left.add_child(UIKit.label("ITENS", 8, UIKit.GOLD))
+	for wid in p.weapons:
+		var w: Weapon = p.weapons[wid]
+		var h := UIKit.hbox(4)
+		h.add_child(UIKit.icon_rect(w.icon_name(), 16))
+		var fused := w.is_fusion()
+		var txt := "%s  NV %d/%d" % [w.display_name(), w.level, DB.weapon_max(wid)]
+		if w.evo != "":
+			txt = "%s  EVOLUÍDA" % w.display_name()
+		h.add_child(UIKit.label(txt, 8, Color("ff8ae0") if fused else (UIKit.GOLD if w.evo != "" else UIKit.WHITE)))
+		left.add_child(h)
+	left.add_child(UIKit.label("FUSÕES POSSÍVEIS", 8, Color("ff8ae0")))
+	var any := false
+	for fid in DB.FUSIONS:
+		var f: Dictionary = DB.FUSIONS[fid]
+		var a: String = f.from[0]
+		var b: String = f.from[1]
+		if p.weapons.has(fid) or not (p.weapons.has(a) or p.weapons.has(b)):
+			continue
+		var need := []
+		for wid2 in f.from:
+			if not p.weapons.has(wid2):
+				need.append("pegar " + DB.WEAPONS[wid2].name)
+			elif p.weapons[wid2].level < DB.MAX_LEVEL:
+				need.append("%s nv %d" % [DB.WEAPONS[wid2].name, DB.MAX_LEVEL])
+		var row := UIKit.hbox(4)
+		row.add_child(UIKit.icon_rect(f.icon, 16))
+		row.add_child(UIKit.wrap_label("%s: %s" % [f.name, "PRONTA! (escolha nas cartas)" if need.is_empty() else "falta " + ", ".join(need)], 8, UIKit.GREEN if need.is_empty() else UIKit.DIM, 270))
+		left.add_child(row)
+		any = true
+	if not any:
+		left.add_child(UIKit.wrap_label("Pegue as duas armas de uma receita (veja COLEÇÃO no menu) e leve ambas ao nível 5.", 8, UIKit.DIM, 280))
+	var right := UIKit.vbox(4)
+	cols.add_child(right)
+	var sp: Dictionary = DB.SPECIES[p.species]
+	right.add_child(UIKit.label(sp.name.to_upper(), 8, UIKit.GOLD))
+	right.add_child(UIKit.label("TRAÇO: " + sp.trait.name.to_upper(), 8, UIKit.GREEN))
+	right.add_child(UIKit.wrap_label(sp.trait.desc, 8, Color("b8c6d8"), 210))
+	if game.mods.tide != "":
+		right.add_child(UIKit.label("MARÉ: " + Shop.ITEMS[game.mods.tide].name.to_upper(), 8, UIKit.CYAN))
+		right.add_child(UIKit.wrap_label(Shop.ITEMS[game.mods.tide].desc, 8, Color("b8c6d8"), 210))
+	for m in game.mods.modes:
+		right.add_child(UIKit.label("MODO: " + Shop.ITEMS[m].name.to_upper(), 8, UIKit.RED))
+	var relics := []
+	for id in Shop.ITEMS:
+		if Shop.ITEMS[id].cat == "relic" and Profile.owns(id):
+			relics.append(id)
+	if not relics.is_empty():
+		right.add_child(UIKit.label("RELÍQUIAS", 8, UIKit.PURPLE))
+		var rr := UIKit.hbox(2)
+		for id in relics:
+			rr.add_child(UIKit.icon_rect(Shop.ITEMS[id].icon, 16))
+		right.add_child(rr)
+	if game.banishes > 0:
+		right.add_child(UIKit.label("BANIMENTOS: %d" % game.banishes, 8, UIKit.DIM))
 
 
 func _show_synergies() -> void:

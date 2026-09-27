@@ -53,6 +53,38 @@ mas nunca tira nada do jogador).
 - Visibilidade: painel de raio-x com o próprio sprite do jogador, piolhos animados, ovos que incham até
   eclodir, anéis nos eventos (entrada, cruzamento, eclosão, troca de sexo, limpeza) e piolhos visíveis no corpo.
 
+### Marés Profundas (v1.4)
+
+**Personagens e itens (Vampire Survivors).** No VS cada personagem começa com sua arma, e as armas
+são liberadas por conquistas; relíquias liberam sistemas (Arcanas, Limit Break) e modos (Hyper,
+Inverse, Endless) aumentam risco e recompensa. Aqui:
+- o **item único** de cada personagem só entra no conjunto de cartas quando ele é liberado. Assim,
+  cada personagem novo também amplia as builds possíveis de todos os outros (motivo para
+  colecionar);
+- os caminhos de desbloqueio misturam **compra** (metas curtas), **metas de jogo** (piranhas,
+  moreias, ouriços, minhocas, dourados, orcas, carcaças, enxames) e **chefes**;
+- a **Coroa de Coral** é o nosso Limit Break (nível 7), a **Rosa-dos-Ventos** libera as Marés
+  (Arcanas) e os modos Mutante, Maré Alta e Abismo Invertido seguem Hyper e Inverse, com bônus de
+  pérolas.
+
+**Fusão.** No VS, a "Union" junta duas armas no nível máximo numa só (ex.: Peachone + Ebony Wings
+= Vandalier). Aqui a fusão aparece como carta lendária assim que as duas armas da receita chegam ao
+nível 5 (sem precisar de baú). A arma fundida libera um espaço e **continua subindo até o nível 10**:
++16% de dano e -3,5% de recarga por nível, +1 quantidade a cada 3 níveis e +1 perfuração a cada 4.
+
+**Música que dá prazer (sem truques abusivos).** A pesquisa sobre música e recompensa mostra que o
+prazer musical nasce da **antecipação e resolução** (dopamina liberada na expectativa e no clímax),
+que trilhas **adaptativas** aumentam o tempo de jogo e que loops curtos cansam. Aplicado:
+- um gancho melódico claro por faixa, repetido e variado (A, A', B, C), com clímax na seção C e
+  virada de bateria + riser voltando ao refrão;
+- **camadas adaptativas**: a camada calma toca sempre e a camada de tensão (bateria, baixo, lead)
+  entra com o perigo, o combo e as ondas, então a música acompanha o momento da partida;
+- sons de recompensa **no tom** da trilha (vinheta de nível em Ré maior) e vinhetas de vitória,
+  derrota e fusão que abaixam a música por instantes;
+- timbres suaves, agudos contidos e loops de 55 a 65 s sem emenda audível, para evitar fadiga.
+Evitamos deliberadamente táticas de manipulação (recompensas enganosas, pressão artificial): o
+objetivo é o jogador sentir prazer em jogar, não ser explorado.
+
 ## 3. Inspirações de Deeeep.io
 
 | Ideia | Aplicação |
@@ -117,4 +149,6 @@ curva de XP) e em `scripts/game/director.gd` (dificuldade por ciclo).
 - Loops de recompensa sem manipulação: [Medium – Rakesh Roy](https://medium.com/@rakeshroyakula/designing-reward-loops-that-keep-players-hooked-without-manipulation-58447c858d4a), [Egmatic – game feel](https://egmatic.com/blog/how-to-make-your-game-feel-good)
 - Everything is Crab: [Steam](https://store.steampowered.com/app/3526710/Everything_is_Crab_The_Animal_Evolution_Roguelite/), [Rogueliker](https://rogueliker.com/everything-is-crab-review/), [TheGamer](https://www.thegamer.com/everything-is-crab-review/), [Wiki](https://everythingiscrab.wiki.gg/wiki/Evolution)
 - Deeeep.io: [Wiki – Mecânicas](https://deeeepio.fandom.com/wiki/Mechanics), [Guia de biomas](https://sites.google.com/view/deeeepio-guide/biomes), [Food & Diet](https://deeeepio.fandom.com/wiki/Food_%26_Diet)
+- Vampire Survivors (evolução, união, relíquias, arcanas, modos): [VS Wiki – Evolution](https://vampire.survivors.wiki/w/Evolution), [Stages e modos](https://vampire.survivors.wiki/w/Stages), [Limit Break](https://vampire.survivors.wiki/w/Limit_Break), [Arcanas](https://vampire-survivors.fandom.com/wiki/Arcanas)
+- Música e recompensa: [PNAS – dopamina e prazer musical](https://www.pnas.org/doi/10.1073/pnas.1811878116), [GameGrin – psicologia da música de jogos](https://www.gamegrin.com/articles/the-psychology-of-game-music-and-why-it-keeps-players-engaged/), [Metacore – som em jogos mobile](https://metacoregames.com/news/hear-me-out-designing-sound-for-mobile-games), [A Sound Effect – fadiga e repetição](https://www.asoundeffect.com/game-audio-immersion/), [Marius Masalar – trilha de Vampire Survivors](https://marius.ink/post/the-vampire-survivors-soundtrack-has-no-business-being-this-good)
 - Ecologia marinha: [NOAA – Aquatic food webs](https://www.noaa.gov/education/resource-collections/marine-life/aquatic-food-webs), [MarineBio – Trophic structure](https://www.marinebio.org/conservation/marine-ecology/trophic-structure/), [Neve marinha (PMC)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8632794/)

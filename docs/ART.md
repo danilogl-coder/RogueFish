@@ -98,6 +98,26 @@ python3 tools/art/generate_all.py player creatures   # grupos: player, creatures
 Para mover uma caverna ou moita, edite `SITES` em `terrain.py` e gere de novo o
 grupo `terrain`: o jogo lê as posições de `terrain.json`.
 
+## 5. Marés Profundas: personagens, itens e limpeza de pixels
+
+- **Pixels soltos**: `tools/art/tidy.py` roda em todo quadro de criatura e atlas do jogador. Blocos
+  pequenos (até 12 px) separados do corpo ou presos só pela quina (como a ponta da cauda do tubarão,
+  cujo filete fino sumia e deixava só o contorno) são religados com uma linha 4-conectada na cor
+  do contorno. Nos atlas do jogador cada camada é analisada junto da silhueta corpo + cauda, então
+  nadadeiras separadas nunca são ligadas entre si. `tools/art/audit_islands.py` lista o que sobrar.
+- **Critters jogáveis em qualquer tamanho** (`tools/art/mobs.py`): os desenhos de `critters.py` são
+  funções de X e Y em "unidades de sprite". Para cada estágio a mesma função é amostrada numa grade
+  mais fina, gerando pixel art de verdade em cada tamanho (sem ampliar pixels). As mutações são
+  peças posicionadas por âncoras medidas em cada quadro (boca, traseira e linha do dorso), e cada
+  estágio acrescenta um visual próprio.
+- **Peixes jogáveis**: novas espécies no renderizador de peixes. Todos crescem com barbatanas mais
+  altas (Adulto), cauda maior e cicatrizes (Veterano) e fotóforos (Leviatã).
+- **Itens**: `tools/art/items.py` desenha 18 folhas de efeito (garra, chicote, mandíbulas, casco,
+  muco, moedas, onda de impacto...) e todos os ícones 16x16. Os ícones de fusão combinam os dois
+  ícones de origem numa diagonal com moldura rosa.
+- **Bioma vulcânico**: `terrain.py` ganhou a crista de basalto das Fontes Hidrotermais, com fendas
+  de magma brilhantes pintadas no próprio solo.
+
 ## Fontes
 
 - Derek Yu, [Pixel Art Tutorial: Basics](https://www.derekyu.com/makegames/pixelart.html) (contornos, selout, AA, clusters)

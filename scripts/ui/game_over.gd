@@ -62,6 +62,8 @@ func show_result(r: Dictionary) -> void:
 		["Ciclo", str(r.cycle)], ["Abates", str(r.kills)], ["Chefes", str(r.bosses)],
 		["Pérolas", "+%d" % r.pearls], ["Bônus", "+%d" % r.bonus],
 	]
+	if float(r.get("mode_mult", 1.0)) > 1.0:
+		rows.append(["Modos", "x%.1f" % float(r.mode_mult)])
 	for row in rows:
 		grid.add_child(UIKit.label(row[0], 8, UIKit.DIM))
 		grid.add_child(UIKit.label(row[1], 8, UIKit.WHITE))

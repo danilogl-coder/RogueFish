@@ -678,6 +678,7 @@ func fuse_weapons(fid: String) -> void:
 	add_child(w)
 	weapons[fid] = w
 	Profile.bump("fusions")
+	Profile.bump("fused_" + fid)
 	Sfx.play_stinger("fusion")
 	game.fx("fx/explosion", position, 14.0, 2.4, Color("ff8ae0"))
 	game.hud.banner("FUSÃO!", f.name, Color("ff8ae0"))

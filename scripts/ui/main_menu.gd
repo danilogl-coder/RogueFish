@@ -33,6 +33,7 @@ func _ready() -> void:
 				"missions": _show_missions()
 				"bestiary": _show_bestiary()
 				"store": _show_store()
+				"collection": _show_collection()
 		if a.begins_with("--sp-view="):
 			_sp_view = a.substr(10)
 			_sp_group = DB.SPECIES[_sp_view].group
@@ -190,6 +191,10 @@ func _build_main() -> void:
 	row2.add_child(bes)
 	var row := UIKit.hbox(5)
 	buttons.add_child(row)
+	var col := UIKit.button("COLEÇÃO", "", 0, "trophy")
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.pressed.connect(_show_collection)
+	row.add_child(col)
 	var how := UIKit.button("GUIA", "", 0, "eye")
 	how.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	how.pressed.connect(_show_guide)
@@ -432,6 +437,80 @@ func _species_details(sp: String) -> Control:
 	return p
 
 
+# ------------------------------------------------------------- collection
+var _col_tab := "items"
+
+
+## Every item (and who brings it into the game) and every fusion recipe.
+func _show_collection() -> void:
+	var have := 0
+	for id in DB.WEAPONS:
+		if not DB.WEAPONS[id].get("fusion", false) and DB.item_unlocked(id):
+			have += 1
+	var total := DB.WEAPONS.size() - DB.FUSIONS.size()
+	var v := _open_screen("COLEÇÃO  %d/%d ITENS" % [have, total], Vector2(612, 0))
+	var tabs := UIKit.hbox(4)
+	v.add_child(tabs)
+	for t in [["items", "ITENS"], ["fusions", "FUSÕES (%d)" % DB.FUSIONS.size()]]:
+		var tid: String = t[0]
+		var b := UIKit.button(t[1], "GoldButton" if tid == _col_tab else "", 0)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func():
+			_col_tab = tid
+			_show_collection())
+		tabs.add_child(b)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(600, 250)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 4)
+	scroll.add_child(grid)
+	if _col_tab == "items":
+		for id in DB.WEAPONS:
+			var w: Dictionary = DB.WEAPONS[id]
+			if w.get("fusion", false):
+				continue
+			var ok := DB.item_unlocked(id)
+			var owner: String = DB.ITEM_OWNER.get(id, "")
+			var p := PanelContainer.new()
+			p.theme_type_variation = "Card_rare" if ok else "Card_common"
+			p.custom_minimum_size = Vector2(194, 44)
+			var h := UIKit.hbox(4)
+			p.add_child(h)
+			var ic := UIKit.icon_rect(w.icon, 16)
+			if not ok:
+				ic.modulate = Color(0.15, 0.18, 0.25)
+			h.add_child(ic)
+			var col := UIKit.vbox(0)
+			h.add_child(col)
+			col.add_child(UIKit.label(w.name.to_upper() if ok else "???", 8, UIKit.WHITE if ok else UIKit.DIM))
+			var src: String = "Item básico" if owner == "" else ("Item de " + DB.SPECIES[owner].name if ok else "Libere: " + DB.SPECIES[owner].name)
+			col.add_child(UIKit.label(src, 8, UIKit.CYAN if ok else UIKit.DIM))
+			grid.add_child(p)
+	else:
+		for fid in DB.FUSIONS:
+			var f: Dictionary = DB.FUSIONS[fid]
+			var known: bool = DB.item_unlocked(f.from[0]) and DB.item_unlocked(f.from[1])
+			var p2 := PanelContainer.new()
+			p2.theme_type_variation = "Card_legend" if Profile.stat("fused_" + fid) > 0 else ("Card_rare" if known else "Card_common")
+			p2.custom_minimum_size = Vector2(194, 54)
+			var v2 := UIKit.vbox(1)
+			p2.add_child(v2)
+			var h2 := UIKit.hbox(4)
+			v2.add_child(h2)
+			h2.add_child(UIKit.icon_rect(f.icon, 16))
+			h2.add_child(UIKit.label(f.name.to_upper() if known else "FUSÃO ???", 8, Color("ff8ae0") if known else UIKit.DIM))
+			var r := UIKit.hbox(2)
+			v2.add_child(r)
+			for wid in f.from:
+				r.add_child(UIKit.icon_rect(DB.WEAPONS[wid].icon, 12))
+			r.add_child(UIKit.label("%s + %s" % [DB.WEAPONS[f.from[0]].name, DB.WEAPONS[f.from[1]].name] if known else "itens ainda bloqueados", 8, Color("b8c6d8")))
+			grid.add_child(p2)
+
+
 # ------------------------------------------------------------------ store
 var _store_cat := "pack"
 
@@ -614,6 +693,9 @@ func _show_guide(start_after := false) -> void:
 		["target", "TITANACON", "O último chefe engole você! Lá dentro, ataque o coração e as glândulas, derrote os parasitas e fuja do ácido no fundo até ele te cuspir."],
 		["dna", "PARASITAS", "Piolhos-do-mar entram pelas brânquias (a Investida os espanta). Com uma fêmea, eles cruzam e a colônia cresce no seu corpo: ela te deixa lento e come XP, mas te salva da morte e, cheia, explode num ENXAME que devora inimigos. Coma camarões-limpadores para se livrar deles."],
 		["skull", "MINHOCA-DO-MAR", "Montinhos de areia com antenas escondem o verme-de-bobbit: ele salta, morde e pode deixar uma larva de piolho em você."],
+		["fish", "PERSONAGENS", "28 bichos jogáveis: compre com pérolas, cumpra metas ou vença chefes. Cada um tem um TRAÇO único e traz um ITEM único que passa a aparecer nas cartas de todas as partidas."],
+		["dna", "FUSÃO", "Leve duas armas de uma receita ao nível 5: surge a carta de FUSÃO. A arma fundida libera um espaço e sobe até o nível 10! Veja as receitas em COLEÇÃO."],
+		["chest", "LOJA", "Gaste pérolas em expansões (bioma novo, bichos, chefe), relíquias, marés e modos de jogo com bônus de pérolas."],
 		["chest", "EVENTOS", "Baús (1, 3 ou 5 prêmios!), ostras gigantes, fendas térmicas e cardumes dourados surgem por tempo limitado."],
 		["pearl", "PÉROLAS", "Guarde pérolas entre partidas: evoluções ancestrais, novas espécies, missões e recompensa diária."],
 	]
@@ -722,10 +804,14 @@ func _show_missions() -> void:
 func _show_bestiary() -> void:
 	var v := _open_screen("BESTIÁRIO")
 	var seen := 0
+	var total := 0
 	for id in DB.CREATURES:
-		if id != "golden" and Profile.bestiary.get(id, {}).get("seen", false):
+		if id == "golden" or not DB.creature_available(id):
+			continue
+		total += 1
+		if Profile.bestiary.get(id, {}).get("seen", false):
 			seen += 1
-	v.add_child(UIKit.label("Espécies descobertas: %d/%d" % [seen, DB.CREATURES.size() - 1], 8, UIKit.DIM))
+	v.add_child(UIKit.label("Espécies descobertas: %d/%d" % [seen, total], 8, UIKit.DIM))
 	var scroll := ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(584, 262)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -736,7 +822,7 @@ func _show_bestiary() -> void:
 	grid.add_theme_constant_override("v_separation", 6)
 	scroll.add_child(grid)
 	var order := ["producer", "detritivore", "herbivore", "carnivore", "predator", "mega"]
-	var ids := DB.CREATURES.keys().filter(func(i): return i != "golden")
+	var ids := DB.CREATURES.keys().filter(func(i): return i != "golden" and DB.creature_available(i))
 	ids.sort_custom(func(a, b): return order.find(DB.CREATURES[a].trophic) < order.find(DB.CREATURES[b].trophic))
 	for id in ids:
 		grid.add_child(_bestiary_card(id))
