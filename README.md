@@ -9,7 +9,7 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 
 | Requisito | Onde |
 |---|---|
-| Peixe animado | `scripts/game/player_visual.gd`: camadas animadas (nado, mordida) |
+| Peixe animado | 6 quadros de nado + 4 de mordida com mandíbula articulada (a boca abre de verdade, com dentes, língua e brânquias). `scripts/game/player_visual.gd` |
 | Movimento por joystick | `scripts/ui/touch_controls.gd`: joystick flutuante no lado esquerdo |
 | Botão de ataque | Botão à direita (segure para morder sem parar), com mira assistida |
 | Background com parallax | `world.gd` (3 camadas + fundo com raios de luz) e `ambient.gd` (neve marinha, cardumes distantes) |
@@ -22,13 +22,18 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Pontos de interesse com tempo | Baú (morda 3x), ostra gigante (cura), fenda térmica (+30% dano, guardada por caranguejos) e cardume dourado. Aparecem com timer e setas na borda da tela |
 | Tempo → Onda → Chefe | `director.gd`: EXPLORAR (timer) → ONDA (horda) → CHEFE. São 4 ciclos; depois da vitória há o modo infinito |
 | Menu inicial, game over, upgrades rogue-lite | `main_menu.gd` (espécies, loja de evolução ancestral, guia, opções, créditos), `game_over.gd`, `pause_menu.gd` |
-| Evoluções que mudam a aparência | 12 mutações em 4 slots (cabeça, nadadeiras, pele e cauda), cada uma com arte própria em todos os estágios e espécies |
+| Evoluções que mudam a aparência | 12 mutações em 4 slots (cabeça, nadadeiras, pele e cauda), cada uma com arte própria em todos os estágios e espécies. Cabeça e pele são desenhadas junto do corpo (a Mandíbula de Piranha é a própria mandíbula do peixe) |
 | Sinergias | 6 afinidades (Elétrico, Veneno, Abissal, Coral, Predador, Corrente) com bônus em 2 e 4 itens + 3 combinações cruzadas |
 
 ### Mundo (v1.1)
 4 biomas com relevo próprio: **Recife de Coral** (raso), **Floresta de Kelp**,
-**Talude Continental** (declive com ressurgência) e **Fossa Abissal** (fontes
+**Talude Continental** (degraus com ressurgência) e **Fossa Abissal** (fontes
 hidrotermais, vermes tubulares, queda de baleia, peixes-lanterna).
+
+O fundo do mar vem de um único mapa de altura (`assets/art/terrain.json`)
+usado tanto pela arte quanto por `DB.floor_at()`: cavernas, moitas, fontes e a
+baleia ficam em prateleiras planas, e a borda da areia é desenhada na frente das
+bases para que nada flutue. Detalhes em `docs/ART.md`.
 
 ### Retenção (v1.1)
 Combo com multiplicador de XP e frenesi, tom do XP que sobe a cada coleta
@@ -62,12 +67,12 @@ foge soltando nuvem).
 ## Estrutura
 
 ```
-scripts/autoload/   DB (dados/balanceamento), Art (sprites + metadados), Profile (save), Sfx (áudio)
+scripts/autoload/   DB (dados/balanceamento + mapa de altura), Art (sprites + metadados), Profile (save), Sfx (áudio)
 scripts/game/       game.gd (orquestra a partida), director.gd (ciclos/ondas/chefes/POIs),
                     player.gd (stats, mordida, mutações, sinergias), weapon.gd (7 armas + evoluções),
                     creatures/ (13 comportamentos), bosses/ (4 chefes), world.gd, poi.gd, ...
 scripts/ui/         HUD, controles de toque, cartas, pausa, game over, menu principal, tema
-tools/art/          gerador de pixel art (Python + Pillow)
+tools/art/          gerador de pixel art (Python + Pillow/NumPy/SciPy)
 tools/audio/        gerador de efeitos e trilhas chiptune
 ```
 
@@ -76,20 +81,25 @@ populações do ecossistema por ciclo, tabelas de ondas, armas por nível, preç
 loja etc.
 
 ## Arte e áudio gerados
-Todos os sprites (peixe em 3 espécies × 5 estágios × 19 camadas, criaturas,
-chefes, cenário, efeitos, UI, ícones e logo) são gerados por código, para manter o
-estilo consistente:
+Todos os sprites (peixe em 3 espécies × 5 estágios × 28 camadas × 10 quadros,
+criaturas, chefes, terreno, cenário, efeitos, UI, ícones e logo) são gerados por
+código, para manter o estilo consistente. A pesquisa de pixel art e as técnicas
+aplicadas (rampas com hue shifting, luz única, contorno seletivo, clusters
+limpos, rig da mandíbula, terreno aterrado) estão em `docs/ART.md`.
 
 ```
-pip install pillow
+pip install pillow numpy scipy
 python3 tools/art/generate_all.py            # tudo
-python3 tools/art/generate_all.py creatures  # só um grupo: player, creatures, env, fx, ui, icons, appicon
+python3 tools/art/generate_all.py creatures  # só um grupo: player, creatures, env, terrain, fx, ui, icons, appicon
 python3 tools/audio/generate_sfx.py          # efeitos + temas do menu e do chefe
 ```
 
-Paletas ficam em `tools/art/pixel.py` (`RAMPS`); formatos dos peixes/espécies em
-`tools/art/player.py` e `tools/art/creatures.py`. Os PNGs também podem ser
-editados à mão no Aseprite (as linhas do atlas do jogador seguem `Art.PLAYER_LAYERS`).
+Rampas de cor ficam em `tools/art/pro.py` (`PAL`); o rig dos peixes em
+`tools/art/fishpro.py`; espécies do jogador em `tools/art/player.py`; peixes
+inimigos em `tools/art/fishes.py`; demais criaturas em `tools/art/critters.py`;
+objetos do cenário em `tools/art/props.py`; o fundo do mar em
+`tools/art/terrain.py`. Os PNGs também podem ser editados à mão no Aseprite (os
+nomes das linhas do atlas do jogador ficam em `art_meta.json`).
 
 Fontes: Pixelify Sans (texto, SIL OFL) e Press Start 2P (números, SIL OFL).
 
