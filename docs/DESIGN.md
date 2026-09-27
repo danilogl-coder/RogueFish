@@ -171,3 +171,37 @@ curva de XP) e em `scripts/game/director.gd` (dificuldade por ciclo).
 - Vampire Survivors (evolução, união, relíquias, arcanas, modos): [VS Wiki – Evolution](https://vampire.survivors.wiki/w/Evolution), [Stages e modos](https://vampire.survivors.wiki/w/Stages), [Limit Break](https://vampire.survivors.wiki/w/Limit_Break), [Arcanas](https://vampire-survivors.fandom.com/wiki/Arcanas)
 - Música e recompensa: [PNAS – dopamina e prazer musical](https://www.pnas.org/doi/10.1073/pnas.1811878116), [GameGrin – psicologia da música de jogos](https://www.gamegrin.com/articles/the-psychology-of-game-music-and-why-it-keeps-players-engaged/), [Metacore – som em jogos mobile](https://metacoregames.com/news/hear-me-out-designing-sound-for-mobile-games), [A Sound Effect – fadiga e repetição](https://www.asoundeffect.com/game-audio-immersion/), [Marius Masalar – trilha de Vampire Survivors](https://marius.ink/post/the-vampire-survivors-soundtrack-has-no-business-being-this-good)
 - Ecologia marinha: [NOAA – Aquatic food webs](https://www.noaa.gov/education/resource-collections/marine-life/aquatic-food-webs), [MarineBio – Trophic structure](https://www.marinebio.org/conservation/marine-ecology/trophic-structure/), [Neve marinha (PMC)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8632794/)
+
+## Ciclos de vida e locomoção
+
+Cada personagem cresce pelos estágios reais da sua espécie (`scripts/data/evolutions.gd`),
+e a arte de cada estágio é desenhada de novo:
+
+- **Peixes** (`tools/art/lifecycle.py`):
+  - larva de vidro com saco vitelino e melanóforos;
+  - alevino com marcas de parr;
+  - juvenil com a coloração própria da espécie (garoupa listrada, piranha pintada, dourado bronze);
+  - adulto;
+  - forma lendária única: Oranda Imperial, Baiacu-Espinho, Piranha-Negra, Moreia-Dragão e outras.
+
+  Tubarões, orca e megalodonte nascem como filhotes, sem fase de larva.
+- **Invertebrados** (`tools/art/beasts6.py`): começam como as larvas reais — zoea e megalopa,
+  véliger, plúteo, auriculária e doliolária, éfira, náuplio e trocófora — e depois assentam como
+  juvenis.
+
+Cada estágio tem um modo de locomoção (`Player._move`):
+
+| Modo | Como se move |
+| --- | --- |
+| Nado | equilibrado |
+| Arrancada | ágil |
+| Cruzeiro | embala devagar e vira o mais rápido |
+| Plâncton | pouco controle e 12% de esquiva |
+| Pulsação | pulsos das águas-vivas |
+| Jato | lulas |
+| Caminhada | preso ao fundo, pula para nadar |
+| Rastejo | preso ao fundo, +2 de armadura |
+| Serpentear | acelera indo reto |
+
+Por isso o mesmo animal joga de forma diferente ao crescer: o caranguejo nada como zoea e anda
+de lado quando adulto, e o pepino-abissal volta a nadar.
