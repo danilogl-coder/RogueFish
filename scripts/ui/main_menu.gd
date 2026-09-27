@@ -234,11 +234,22 @@ func _close_screen() -> void:
 # ---------------------------------------------------------------- species
 func _show_species() -> void:
 	var v := _open_screen("ESCOLHA SEU PEIXE", Vector2(600, 0))
+	# 8 species: a horizontal strip you can drag/scroll (defeated bosses join it)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(600, 236)
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
 	var row := UIKit.hbox(8)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	v.add_child(row)
+	scroll.add_child(row)
+	var sel_index := 0
+	var i := 0
 	for sp in DB.SPECIES:
 		row.add_child(_species_card(sp))
+		if sp == Profile.selected_species:
+			sel_index = i
+		i += 1
+	var target := maxi(0, sel_index * 158 - 220)
+	(func(): scroll.scroll_horizontal = target).call_deferred()
 	var go := UIKit.button("MERGULHAR!", "GoldButton", 200, "play")
 	go.custom_minimum_size.y = 26
 	go.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -252,30 +263,30 @@ func _species_card(sp: String) -> Control:
 	var selected := Profile.selected_species == sp
 	var p := PanelContainer.new()
 	p.theme_type_variation = "Card_legend" if selected else ("Card_rare" if unlocked else "Card_common")
-	p.custom_minimum_size = Vector2(186, 0)
-	var v := UIKit.vbox(4)
+	p.custom_minimum_size = Vector2(150, 0)
+	var v := UIKit.vbox(2)
 	p.add_child(v)
 	v.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD if selected else UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	var prev := FishPreview.new().setup(sp, 1, {}, 2.0)
+	var prev := FishPreview.new().setup(sp, 1, {}, 1.5)
 	prev.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if not unlocked:
 		prev.modulate = Color(0.1, 0.12, 0.2)
 	v.add_child(prev)
-	v.add_child(UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 170))
+	v.add_child(UIKit.wrap_label(d.get("short", d.desc), 8, Color("b8c6d8"), 136))
 	var s: Dictionary = d.stats
-	for stat in [["VIDA", s.max_hp / 140.0, UIKit.RED], ["VELOC.", s.speed / 140.0, UIKit.CYAN], ["MORDIDA", s.bite_damage / 18.0, UIKit.GOLD]]:
+	for stat in [["VIDA", s.max_hp / 180.0, UIKit.RED], ["VELOC.", s.speed / 140.0, UIKit.CYAN], ["MORDIDA", s.bite_damage / 24.0, UIKit.GOLD]]:
 		var h := UIKit.hbox(4)
 		var l := UIKit.label(stat[0], 8, UIKit.DIM)
-		l.custom_minimum_size.x = 64
+		l.custom_minimum_size.x = 60
 		h.add_child(l)
 		var bar := Control.new()
-		bar.custom_minimum_size = Vector2(96, 6)
+		bar.custom_minimum_size = Vector2(70, 6)
 		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		var k: float = clampf(stat[1], 0.0, 1.0)
 		var c: Color = stat[2]
 		bar.draw.connect(func():
-			bar.draw_rect(Rect2(0, 0, 96, 6), Color(0.02, 0.05, 0.1))
-			bar.draw_rect(Rect2(1, 1, 94 * k, 4), c))
+			bar.draw_rect(Rect2(0, 0, 70, 6), Color(0.02, 0.05, 0.1))
+			bar.draw_rect(Rect2(1, 1, 68 * k, 4), c))
 		h.add_child(bar)
 		v.add_child(h)
 	var wrow := UIKit.hbox(4)
@@ -289,6 +300,10 @@ func _species_card(sp: String) -> Control:
 			Profile.selected_species = sp
 			Profile.save_game()
 			_show_species())
+	elif d.has("boss"):
+		b = UIKit.button("DERROTE O CHEFE", "", 0, "lock")
+		b.disabled = true
+		v.add_child(UIKit.wrap_label(DB.BOSSES[d.boss].name, 8, UIKit.PURPLE, 136))
 	else:
 		b = UIKit.button("%d PÉROLAS" % d.price, "", 0, "lock")
 		b.disabled = Profile.pearls < int(d.price)
@@ -389,7 +404,8 @@ func _show_guide(start_after := false) -> void:
 		["skull", "COMBO", "Abates seguidos aumentam o combo e o XP. Com combo 50 você entra em FRENESI."],
 		["crown", "ALFAS", "Inimigos com coroa são Alfas: derrote-os para ganhar Escamas (rerrolagens)."],
 		["hidden", "ESCONDERIJOS", "Cavernas e moitas escondem você e regeneram vida. Fique escondido tempo suficiente e até um CHEFE desiste, deixando seu alimento."],
-		["clock", "CICLOS", "Explore -> a ONDA chega -> o CHEFE aparece. Vença 4 chefes para dominar o oceano."],
+		["clock", "CICLOS", "Explore -> a ONDA chega -> o CHEFE aparece. Vença 5 chefes para dominar o oceano; cada chefe vencido vira uma espécie jogável."],
+		["target", "TITANACON", "O último chefe engole você! Lá dentro, ataque o coração e as glândulas, derrote os parasitas e fuja do ácido no fundo até ele te cuspir."],
 		["chest", "EVENTOS", "Baús (1, 3 ou 5 prêmios!), ostras gigantes, fendas térmicas e cardumes dourados surgem por tempo limitado."],
 		["pearl", "PÉROLAS", "Guarde pérolas entre partidas: evoluções ancestrais, novas espécies, missões e recompensa diária."],
 	]
@@ -536,7 +552,7 @@ func _bestiary_card(id: String) -> Control:
 	v.add_child(UIKit.label(d.name if known else "???", 8, UIKit.GOLD if known else UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	v.add_child(UIKit.label(DB.TROPHIC_NAMES[d.trophic], 8, UIKit.CYAN, HORIZONTAL_ALIGNMENT_CENTER))
 	if known:
-		v.add_child(UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 170))
+		v.add_child(UIKit.wrap_label(d.get("short", d.desc), 8, Color("b8c6d8"), 136))
 		v.add_child(UIKit.label("Abatidos: %d" % int(e.get("kills", 0)), 8, UIKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	return p
 

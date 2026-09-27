@@ -80,6 +80,84 @@ def garoupa_pattern(fish, f):
     f["lay"].shift(band, -1, lo=2)
 
 
+def kraken_pattern(fish, f):
+    spots(fish, f, "coral", cell=0.1, rad=(0.018, 0.03), zone=f["v"] < 0.7, seed=27, shift=1, density=0.6)
+
+
+def kraken_arms(fish, st, x, y):
+    """Arms reaching forward from the head, waving with the swim phase."""
+    L, H = fish.L, fish.H
+    mask = np.zeros(x.shape, dtype=bool)
+    tone = np.zeros(x.shape, dtype=np.int32)
+    for k in range(4):
+        y0 = fish.cy + (k - 1.2) * H * 0.14
+        x0 = fish.xn - 0.1 * L
+        ln = L * (0.3 + 0.05 * (k % 2))
+        d = np.full(x.shape, 99.0)
+        r = np.zeros(x.shape)
+        prev = (x0, y0)
+        for i in range(1, 9):
+            u = i / 8
+            px = x0 + u * ln
+            py = y0 + math.sin(u * 3.2 - st["phase"] + k) * H * 0.12 * u + (k - 1.5) * u * H * 0.12
+            di = seg_dist(x, y, prev[0], prev[1], px, py)
+            closer = di < d
+            r = np.where(closer, max(0.6, H * 0.075 * (1.0 - u * 0.7)), r)
+            d = np.minimum(d, di)
+            prev = (px, py)
+        m = d <= r
+        mask |= m
+        tone = np.where(m, np.where(y < y0, 5, 4) - (k % 2), tone)
+    return mask, "kraken", tone
+
+
+def leviathan_horn(fish, st, x, y):
+    t0 = 0.74
+    bx, by = fish.xt + t0 * fish.L, float(fish.top(t0)) + 1.0
+    pts = [(bx - 1, by), (bx - 0.2 * fish.L, by - fish.H * 0.55), (bx - 0.12 * fish.L, by - fish.H * 0.45), (bx + 3, by + 0.5)]
+    msk = poly_mask(x, y, pts)
+    return msk, "bone", np.where(y < by - fish.H * 0.25, 5, 4)
+
+
+def leviathan_pattern(fish, f):
+    t = f["t"]
+    on = f["body"] & (((t * 12.0) % 1.0) < 0.2) & (t < 0.66) & (f["v"] < 0.6)
+    recolor(f, on, "volt", shift=1, lo=3)
+
+
+def titan_pattern(fish, f):
+    import fishes
+    fishes.titan_armor(fish, f)
+
+
+def shark_extras(fish):
+    import fishes
+    fish.extras.append(fishes.gill_slits(4, 0.66))
+
+
+def titan_extras(fish):
+    import fishes
+    fish.extras.append(fishes.titan_glow)
+
+
+def kraken_extras(fish):
+    fish.extra_shapes.append(kraken_arms)
+
+
+def leviathan_extras(fish):
+    fish.extra_shapes.append(leviathan_horn)
+
+
+def angler_extras(fish):
+    fish.extra_shapes.append(lure_shape(stalk_ramp="abyss"))
+    fish.extras.append(lure_detail())
+
+
+# species with parts that are not mutations (built into the head)
+SPECIES_EXTRAS = {"tubarao": shark_extras, "titanacon": titan_extras, "kraken": kraken_extras,
+                  "leviata": leviathan_extras, "pescadora": angler_extras}
+BUILTIN_LURE = {"pescadora"}
+
 SPECIES = {
     "dourado": dict(H=0.58, peak=0.56, q=1.0, front_e=0.45, body="gold", belly="cream", fin="flame",
                     tail="veil", tail_len=0.55, eye=0.1, eye_ramp="iris_gold",
@@ -94,6 +172,36 @@ SPECIES = {
                     anal=("round", 0.14, 0.3, 0.3), pectoral=(0.24, 0.15), pelvic=0.22, pattern=garoupa_pattern,
                     mouth=dict(v=0.62, corner_t=0.72, corner_v=0.66, open=0.8, under=0.03, chin=0.2,
                                lips="sandy", teeth="peg", teeth_n=4, teeth_len=0.03)),
+    # ---- unlocked by defeating bosses
+    "tubarao": dict(H=0.34, peak=0.6, q=1.1, front_e=0.75, top_ratio=0.5, body="navy", belly="white", fin="navy",
+                    tail="hetero", tail_len=0.4, eye=0.05, eye_ramp="iris_red", dorsal=("shark", 0.44, 0.62, 0.85),
+                    anal=("tri", 0.2, 0.27, 0.3), pectoral=(0.26, 0.1), pelvic=0.1, belly_v=0.58, gill=False,
+                    backshade=0.2, mouth=dict(v=0.9, corner_t=0.76, corner_v=0.8, sag=0.05, open=0.8,
+                                              teeth="triangle", teeth_n=5, teeth_len=0.045, tongue=False)),
+    "kraken": dict(H=0.34, peak=0.72, q=0.55, front_e=0.35, top_ratio=0.5, ped=0.16, body="kraken", belly="coral",
+                   fin="kraken", tail="lunate", tail_len=0.3, eye=0.12, eye_ramp="iris_gold", eye_t=0.8, eye_v=0.4,
+                   dorsal=None, anal=None, pectoral=None, pelvic=0.0, gill=False, pattern=kraken_pattern,
+                   belly_v=0.7, mouth=dict(v=0.66, corner_t=0.88, corner_v=0.66, open=0.8, teeth="peg", teeth_n=2,
+                                          teeth_len=0.05, tongue=False)),
+    "pescadora": dict(H=0.7, peak=0.62, q=0.8, front_e=0.36, body="abyss", belly="ink", fin="violet", tail="round",
+                      tail_len=0.3, eye=0.07, eye_ramp="volt", dorsal=("low", 0.3, 0.52, 0.3),
+                      anal=("round", 0.14, 0.3, 0.25), pectoral=(0.2, 0.13), pelvic=0.0, gloss=False,
+                      pattern=lambda fish, f: spots(fish, f, "violet", cell=0.12, rad=(0.02, 0.035), seed=13),
+                      mouth=dict(v=0.36, corner_t=0.64, corner_v=0.58, sag=0.06, open=0.9, under=0.06, chin=0.3,
+                                 teeth="needle", teeth_n=4, teeth_len=0.1, closed_teeth=True)),
+    "leviata": dict(H=0.3, peak=0.6, q=0.7, front_e=0.7, top_ratio=0.5, ped=0.45, body="navy", belly="cyan",
+                    fin="cyan", tail="point", tail_len=0.42, eye=0.06, eye_ramp="volt",
+                    dorsal=("spiny", 0.12, 0.7, 0.5), anal=("low", 0.1, 0.45, 0.35), pectoral=(0.18, 0.1),
+                    pelvic=0.0, gill=False, belly_v=0.66, wag=1.6, pattern=leviathan_pattern,
+                    mouth=dict(v=0.6, corner_t=0.8, corner_v=0.64, open=0.85, teeth="fang", teeth_n=3,
+                               teeth_len=0.05)),
+    "titanacon": dict(H=0.42, peak=0.62, q=0.8, front_e=0.5, top_ratio=0.52, ped=0.2, hump=0.1, hump_t=0.72,
+                      body="titan", belly="titanbelly", fin="titan", tail="lunate", tail_len=0.34, eye=0.05,
+                      eye_ramp="iris_red", eye_t=0.86, eye_v=0.3, dorsal=("spiny", 0.4, 0.62, 0.5),
+                      anal=("tri", 0.2, 0.28, 0.3), pectoral=(0.2, 0.1), pelvic=0.08, gill=False, backshade=0.2,
+                      belly_v=0.64, pattern=titan_pattern,
+                      mouth=dict(v=0.62, corner_t=0.66, corner_v=0.64, sag=0.04, open=1.0, teeth="triangle",
+                                 teeth_n=4, teeth_len=0.05, tongue=True)),
 }
 
 
@@ -189,9 +297,11 @@ def make_fish(species, L, w, h, head="", skin=""):
             fn(fish, f)
     spec["pattern"] = pattern if patterns else None
     fish = Fish(L, w * 0.5 + L * 0.12, h * 0.52, **spec)
+    if species in SPECIES_EXTRAS:
+        SPECIES_EXTRAS[species](fish)
     if head == "head_sword":
         fish.extra_shapes.append(bill_shape(length=0.36))
-    elif head == "head_lure":
+    elif head == "head_lure" and species not in BUILTIN_LURE:
         fish.extra_shapes.append(lure_shape(stalk_ramp=spec["body"]))
         fish.extras.append(lure_detail())
     if skin == "skin_armor":
@@ -225,8 +335,8 @@ def fins_spiky_front(fish, w, h, x, y, st, f):
     lay = Layer(w, h)
     bx, by = fish.pectoral_root()
     ang = math.pi * 0.86 + 0.28 * math.sin(st["phase"] + 1.0) + st["pect"] * 0.5
-    ln = fish.p["pectoral"][0] * fish.L * 1.1
-    poly = fish.fan_poly(bx, by, ang, ln, fish.p["pectoral"][1] * fish.L)
+    ln = (fish.p["pectoral"] or (0.22, 0.12))[0] * fish.L * 1.1
+    poly = fish.fan_poly(bx, by, ang, ln, (fish.p["pectoral"] or (0.22, 0.12))[1] * fish.L)
     fish.paint_fin(lay, x, y, poly, "coral", 4, root=(bx, by))
     tx, ty = bx + math.cos(ang) * ln * 1.25, by + math.sin(ang) * ln * 1.25
     d = seg_dist(x, y, bx + math.cos(ang) * ln * 0.3, by + math.sin(ang) * ln * 0.3, tx, ty)
@@ -270,7 +380,7 @@ def fins_volt_front(fish, w, h, x, y, st, f):
     lay = Layer(w, h)
     bx, by = fish.pectoral_root()
     ang = math.pi * 0.86 + 0.28 * math.sin(st["phase"] + 1.0) + st["pect"] * 0.5
-    poly = fish.fan_poly(bx, by, ang, fish.p["pectoral"][0] * fish.L * 1.1, fish.p["pectoral"][1] * fish.L)
+    poly = fish.fan_poly(bx, by, ang, (fish.p["pectoral"] or (0.22, 0.12))[0] * fish.L * 1.1, (fish.p["pectoral"] or (0.22, 0.12))[1] * fish.L)
     fish.paint_fin(lay, x, y, poly, "cyan", 4, root=(bx, by))
     lay.clean(1)
     fish._contact_shadow(lay, f)
@@ -411,7 +521,7 @@ def render_atlas(species, stage, progress=None):
         frame_w=w, frame_h=h, frames=FP.N_FRAMES, swim=FP.SWIM_N, act=FP.BITE_N, layers=LAYERS,
         center=[round(base.cx, 1), round(base.cy, 1)],
         mouth=[round(base.lip[0], 1), round(base.lip[1], 1)],
-        lure=lure, length=L, height=round(base.H, 1),
+        lure=lure, lure_builtin=species in BUILTIN_LURE, length=L, height=round(base.H, 1),
     )
     return sheet, meta
 

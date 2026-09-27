@@ -58,6 +58,7 @@ func load_game() -> void:
 	var d: Dictionary = data.get("daily", {})
 	if not d.is_empty():
 		daily = d
+	_retro_unlock_boss_species()
 	if not unlocked.has(selected_species):
 		selected_species = "dourado"
 
@@ -99,7 +100,7 @@ func buy_upgrade(id: String) -> bool:
 
 func buy_species(id: String) -> bool:
 	var price := int(DB.SPECIES[id].price)
-	if unlocked.has(id) or pearls < price:
+	if unlocked.has(id) or pearls < price or DB.SPECIES[id].has("boss"):
 		return false
 	pearls -= price
 	unlocked.append(id)
@@ -151,6 +152,25 @@ func stat(key: String) -> float:
 
 
 ## Adds to a lifetime counter and checks missions. Saved at the end of runs.
+## Defeating a boss unlocks it as a playable species. Returns the species id
+## when it was just unlocked, "" otherwise.
+func unlock_boss_species(boss_id: String) -> String:
+	for sp in DB.SPECIES:
+		if DB.SPECIES[sp].get("boss", "") == boss_id and not unlocked.has(sp):
+			unlocked.append(sp)
+			save_game()
+			return sp
+	return ""
+
+
+## Saves from before this feature: bosses already beaten unlock their species.
+func _retro_unlock_boss_species() -> void:
+	for sp in DB.SPECIES:
+		var b: String = DB.SPECIES[sp].get("boss", "")
+		if b != "" and stat("boss_" + b) >= 1 and not unlocked.has(sp):
+			unlocked.append(sp)
+
+
 func bump(key: String, amount := 1) -> void:
 	stats[key] = stat(key) + amount
 	_check_missions(key)

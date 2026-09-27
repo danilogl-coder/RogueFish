@@ -323,11 +323,62 @@ def leviathan_head():
     return out
 
 
+# --------------------------------------------------------------- titanacon
+def titan_armor(fish, fl):
+    """Bony head armour (like Dunkleosteus): plates with seams, bony jaw blades."""
+    t, v = fl["t"], fl["v"]
+    lay = fl["lay"]
+    head = fl["up"] & (t > 0.63) & (v < 0.66)
+    recolor(fl, head, "armor", shift=0, lo=2)
+    hgt = fish.bottom(t) - fish.top(t)
+    seam = head & ((np.abs(t - 0.72) * fish.L < 0.6) | (np.abs(t - 0.83) * fish.L < 0.6) | (np.abs(v - 0.34) * hgt < 0.6))
+    lay.paint(seam, "armor", 1)
+    lay.shift(head & (np.abs(t - 0.72) * fish.L >= 0.6) & (np.abs(t - 0.72) * fish.L < 1.6), +1, hi=6)
+    lay.shift(head & (np.abs(t - 0.83) * fish.L >= 0.6) & (np.abs(t - 0.83) * fish.L < 1.6), +1, hi=6)
+    recolor(fl, fl["jaw"] & (v < 0.9), "armor", shift=0, lo=2)
+    # scars and dark mottling on the flank
+    spots(fish, fl, "titan", cell=0.07, rad=(0.008, 0.016), zone=fl["body"] & (t < 0.62) & (v < 0.6), seed=41, shift=-1, density=0.5)
+
+
+def titan_glow(fish, st, f, lay):
+    """Row of glowing red vents along the flank (reads well in the dark)."""
+    s = max(3.0, 0.045 * fish.L)
+    on = f["body"] & (np.abs(f["v"] - 0.56) * (fish.bottom(f["t"]) - fish.top(f["t"])) < 0.8)
+    on &= ((f["sx"] - fish.xt) % s) < 1.2
+    on &= (f["t"] > 0.14) & (f["t"] < 0.6)
+    lay.paint(on, "iris_red", 6)
+
+
+def titanacon():
+    return sheet(150, H=0.42, peak=0.62, q=0.8, front_e=0.5, top_ratio=0.52, ped=0.2, hump=0.1, hump_t=0.72,
+                 body="titan", belly="titanbelly", fin="titan", tail="lunate", tail_len=0.34, eye=0.024,
+                 eye_ramp="iris_red", eye_t=0.86, eye_v=0.3, dorsal=("spiny", 0.4, 0.62, 0.5),
+                 anal=("tri", 0.2, 0.28, 0.3), pectoral=(0.2, 0.1), pelvic=0.08, gill=False, backshade=0.22,
+                 belly_v=0.64, wag=0.6, pattern=titan_armor, extras=(titan_glow,),
+                 mouth=dict(v=0.62, corner_t=0.66, corner_v=0.64, sag=0.04, open=1.0, teeth="triangle", teeth_n=6,
+                            teeth_len=0.04, tongue=True))
+
+
+def parasite():
+    """Lamprey-like parasite that lives inside the Titanacon: sucker mouth ringed with teeth."""
+    def pores(fish, st, f, lay):
+        s = max(2.0, 0.06 * fish.L)
+        on = f["up"] & (np.abs(f["v"] - 0.45) * (fish.bottom(f["t"]) - fish.top(f["t"])) < 0.6)
+        on &= ((f["sx"] - fish.xt) % s) < 1.0
+        on &= (f["t"] > 0.66) & (f["t"] < 0.84)
+        lay.paint(on, "black", 1)
+    return sheet(18, H=0.24, peak=0.74, q=0.6, front_e=0.75, ped=0.5, top_ratio=0.5, body="parasite", belly="pink",
+                 fin="parasite", tail="point", tail_len=0.22, eye=0.07, eye_ramp="iris_gold", eye_t=0.88, eye_v=0.35,
+                 dorsal=("low", 0.08, 0.5, 0.4), anal=None, pectoral=None, pelvic=0.0, gill=False, wag=2.0,
+                 extras=(pores,), mouth=dict(v=0.5, corner_t=0.9, corner_v=0.55, open=0.95, teeth="needle",
+                                             teeth_n=3, teeth_len=0.08, tongue=False))
+
+
 ALL = {
     "sardine": sardine, "golden": golden, "pilot": pilot, "lanternfish": lanternfish, "piranha": piranha,
     "puffer": puffer, "puffer_big": puffer_big, "barracuda": barracuda, "shark": shark, "angler": angler,
     "orca": orca, "moray": moray, "boss_shark": boss_shark, "boss_angler": boss_angler,
-    "leviathan_head": leviathan_head,
+    "leviathan_head": leviathan_head, "titanacon": titanacon, "parasite": parasite,
 }
 
 # swim / action frame counts per sheet (default for this module: 6 swim + 4 bite)

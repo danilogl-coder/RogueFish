@@ -608,3 +608,59 @@ def leviathan_segment():
 ALL = {"kraken_head": kraken_head, "kraken_segment": kraken_segment, "leviathan_segment": leviathan_segment,
        "turtle": turtle, "crab": crab, "shrimp": shrimp, "jellyfish": jellyfish, "squid": squid, "snail": snail,
        "otter": otter, "sea_cucumber": sea_cucumber, "isopod": isopod, "urchin": urchin}
+
+
+# ------------------------------------------------------ Titanacon's insides
+def organ_heart():
+    """Vital organ: a beating heart with arteries (4 pulse frames)."""
+    frames = []
+    for i in range(4):
+        w, h = 52, 50
+        X, Y = grid(w, h)
+        k = [1.0, 1.08, 0.94, 1.0][i]
+        lay = Layer(w, h)
+        # arteries rising to the top
+        for ax, bend in ((20, -5), (30, 4), (26, 0)):
+            m, hg = capsule_field(tube(curve_pts((ax, 24), (ax + bend, 12), (ax + bend * 1.6, 1)), 3.6, 2.6), X, Y)
+            shaded(lay, m, hg, ramp("#b03a6a"), gain=1.3)
+        # two lobes + pointed apex
+        lobes = ((((X - 19) / (11 * k)) ** 2 + ((Y - 26) / (10 * k)) ** 2 <= 1.0)
+                 | (((X - 33) / (11 * k)) ** 2 + ((Y - 26) / (10 * k)) ** 2 <= 1.0)
+                 | poly_mask(X, Y, [(9, 29), (43, 29), (26, 29 + 18 * k)]))
+        shaded(lay, lobes, pro.dome_height(lobes), PAL["flesh"], gain=1.1)
+        # veins
+        for pts in (((14, 22), (20, 30), (18, 38)), ((36, 21), (31, 31), (30, 40)), ((26, 20), (26, 30), (24, 42))):
+            d = np.full(X.shape, 99.0)
+            cp = curve_pts(*pts)
+            for j in range(len(cp) - 1):
+                d = np.minimum(d, seg_dist(X, Y, *cp[j], *cp[j + 1]))
+            lay.shift((d < 0.7) & lobes, -2, lo=1)
+        lay.clean(1)
+        # glossy highlight
+        lay.paint((np.hypot(X - 15, Y - 21) < 2.2) & lobes, PAL["flesh"], 6)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+def organ_gland():
+    """Acid gland on the stomach wall (4 pulse frames)."""
+    frames = []
+    for i in range(4):
+        w, h = 36, 36
+        X, Y = grid(w, h)
+        k = [1.0, 1.06, 1.1, 1.04][i]
+        lay = Layer(w, h)
+        stalk = (np.abs(X - 18) < 4) & (Y > 24)
+        lay.paint(stalk, PAL["flesh"], 3)
+        sac = ((X - 18) / (12 * k)) ** 2 + ((Y - 17) / (11 * k)) ** 2 <= 1.0
+        shaded(lay, sac, pro.dome_height(sac), PAL["acid"], gain=1.1)
+        cells = sac & (np.abs(noise2(X, Y, 3.0, 5 + i)) < 0.08)
+        lay.shift(cells, -1, lo=2)
+        lay.paint((np.hypot(X - 14, Y - 12) < 2.0) & sac, PAL["acid"], 6)
+        lay.paint((np.hypot(X - 22, Y - 21) < 1.2) & sac, PAL["acid"], 6)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+ALL.update({"organ_heart": organ_heart, "organ_gland": organ_gland})

@@ -27,6 +27,8 @@ var input_dir := Vector2.ZERO
 var facing := 1.0
 var radius := 7.0
 var is_hidden := false
+var swallowed := false     ## inside the Titanacon
+var arena := Rect2()       ## movement bounds while swallowed
 var stealth := 1.0
 var revives := 0
 var hit_log: Array = []  # recent hits (debug / analytics)
@@ -79,6 +81,10 @@ func recalc() -> void:
 		"bite_reach": 1.0, "lunge": 1.0, "light": 70.0, "chain_bonus": 0, "pearl_mult": 1.0,
 		"bite_crit": 0.0, "kill_heal": 0.0,
 	}
+	# species traits (e.g. the angler's own light, the kraken's long arms)
+	for k in base:
+		if s.has(k):
+			s[k] = base[k]
 	flags = {}
 	# meta progression
 	s.max_hp += 10.0 * Profile.upgrade_level("vitality")
@@ -285,8 +291,12 @@ func _physics_process(delta: float) -> void:
 		var accel := 820.0 if input_dir != Vector2.ZERO else 420.0
 		vel = vel.move_toward(target_v, accel * delta)
 	position += vel * delta
-	position.x = clampf(position.x, radius, DB.WORLD_W - radius)
-	position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.floor_at(position.x) - radius)
+	if arena.has_area():
+		position.x = clampf(position.x, arena.position.x, arena.end.x)
+		position.y = clampf(position.y, arena.position.y, arena.end.y)
+	else:
+		position.x = clampf(position.x, radius, DB.WORLD_W - radius)
+		position.y = clampf(position.y, DB.SURFACE_Y + radius, DB.floor_at(position.x) - radius)
 	if absf(input_dir.x) > 0.15 and _lunge_t <= 0.0:
 		facing = signf(input_dir.x)
 	# visuals

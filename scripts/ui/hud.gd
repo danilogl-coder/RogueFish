@@ -36,6 +36,7 @@ var combo_bar: TextureProgressBar
 var diet_icon: TextureRect
 var biome_lbl: Label
 var evade_bar: TextureProgressBar
+var stomach_bar: TextureProgressBar
 var _combo_seen := 0
 var _biome_tween: Tween
 var _banner_tween: Tween
@@ -165,6 +166,10 @@ func _ready() -> void:
 	evade_bar = UIKit.bar("bar_stealth", Vector2(120, 6))
 	evade_bar.visible = false
 	boss_box.add_child(evade_bar)
+	# inside the Titanacon: how close you are to being spat out
+	stomach_bar = UIKit.bar("bar_hp", Vector2(160, 6))
+	stomach_bar.visible = false
+	boss_box.add_child(stomach_bar)
 
 	# combo meter (right side)
 	combo_box = UIKit.vbox(0)
@@ -286,8 +291,12 @@ func _process(_delta: float) -> void:
 	# boss evasion
 	evade_bar.visible = game.boss != null and game.boss_evade_ratio() > 0.0
 	evade_bar.value = game.boss_evade_ratio()
+	stomach_bar.visible = game.stomach != null
+	if stomach_bar.visible:
+		stomach_bar.value = game.stomach_ratio()
 	if game.boss and is_instance_valid(game.boss):
 		boss_bar.value = game.boss.hp / game.boss.max_hp
+		boss_label.text = ("DENTRO DO TITÃ: ÓRGÃOS %d%%" % int(game.stomach_ratio() * 100.0)) if game.stomach != null else game.boss.boss_name()
 	indicators.queue_redraw()
 
 

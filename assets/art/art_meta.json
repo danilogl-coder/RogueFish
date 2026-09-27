@@ -143,6 +143,7 @@
      7.2
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     35.4,
     16.8
@@ -232,6 +233,7 @@
      8.5
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     48.3,
     22.1
@@ -321,6 +323,7 @@
      9.9
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     61.3,
     27.4
@@ -410,6 +413,7 @@
      11.3
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     77.5,
     33.7
@@ -499,6 +503,7 @@
      12.9
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     96.9,
     41.1
@@ -588,6 +593,7 @@
      7.6
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     35.4,
     17.1
@@ -677,6 +683,7 @@
      9.1
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     48.3,
     22.5
@@ -766,6 +773,7 @@
      10.6
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     61.3,
     27.9
@@ -855,6 +863,7 @@
      12.3
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     77.5,
     34.3
@@ -944,9 +953,910 @@
      14.1
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     96.9,
     41.9
+   ],
+   "swim": 6
+  },
+  "kraken_0": {
+   "act": 4,
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 10,
+   "height": 6.8,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 20,
+   "lure": [
+    [
+     38.2,
+     11.2
+    ],
+    [
+     38.4,
+     11.9
+    ],
+    [
+     38.6,
+     12.4
+    ],
+    [
+     38.6,
+     12.3
+    ],
+    [
+     38.4,
+     11.7
+    ],
+    [
+     38.2,
+     11.1
+    ],
+    [
+     37.2,
+     12.0
+    ],
+    [
+     40.1,
+     12.6
+    ],
+    [
+     39.9,
+     11.6
+    ],
+    [
+     39.2,
+     11.1
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    35.3,
+    17.5
+   ],
+   "swim": 6
+  },
+  "kraken_1": {
+   "act": 4,
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 10,
+   "height": 9.5,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 28,
+   "lure": [
+    [
+     52.3,
+     14.1
+    ],
+    [
+     52.6,
+     15.0
+    ],
+    [
+     52.8,
+     15.8
+    ],
+    [
+     52.8,
+     15.6
+    ],
+    [
+     52.5,
+     14.7
+    ],
+    [
+     52.3,
+     13.9
+    ],
+    [
+     51.3,
+     15.1
+    ],
+    [
+     54.6,
+     15.9
+    ],
+    [
+     53.8,
+     14.6
+    ],
+    [
+     53.3,
+     13.9
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    48.3,
+    23.0
+   ],
+   "swim": 6
+  },
+  "kraken_2": {
+   "act": 4,
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 10,
+   "height": 12.2,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 36,
+   "lure": [
+    [
+     66.4,
+     17.1
+    ],
+    [
+     66.8,
+     18.2
+    ],
+    [
+     67.1,
+     19.2
+    ],
+    [
+     67.0,
+     19.0
+    ],
+    [
+     66.7,
+     17.9
+    ],
+    [
+     66.4,
+     16.9
+    ],
+    [
+     65.4,
+     18.4
+    ],
+    [
+     69.0,
+     19.5
+    ],
+    [
+     67.8,
+     17.7
+    ],
+    [
+     67.4,
+     16.8
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    61.2,
+    28.5
+   ],
+   "swim": 6
+  },
+  "kraken_3": {
+   "act": 4,
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 10,
+   "height": 15.6,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 46,
+   "lure": [
+    [
+     84.0,
+     20.5
+    ],
+    [
+     84.5,
+     22.0
+    ],
+    [
+     84.9,
+     23.3
+    ],
+    [
+     84.8,
+     23.0
+    ],
+    [
+     84.3,
+     21.5
+    ],
+    [
+     84.0,
+     20.3
+    ],
+    [
+     82.0,
+     22.2
+    ],
+    [
+     88.1,
+     23.6
+    ],
+    [
+     87.2,
+     21.4
+    ],
+    [
+     86.0,
+     20.2
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    77.4,
+    35.2
+   ],
+   "swim": 6
+  },
+  "kraken_4": {
+   "act": 4,
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 10,
+   "height": 19.7,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 58,
+   "lure": [
+    [
+     105.2,
+     24.5
+    ],
+    [
+     105.7,
+     26.4
+    ],
+    [
+     106.2,
+     27.9
+    ],
+    [
+     106.1,
+     27.6
+    ],
+    [
+     105.6,
+     25.8
+    ],
+    [
+     105.1,
+     24.2
+    ],
+    [
+     103.1,
+     26.6
+    ],
+    [
+     109.8,
+     28.3
+    ],
+    [
+     108.1,
+     25.5
+    ],
+    [
+     107.1,
+     24.1
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    96.8,
+    42.9
+   ],
+   "swim": 6
+  },
+  "leviata_0": {
+   "act": 4,
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 10,
+   "height": 6.0,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 20,
+   "lure": [
+    [
+     38.2,
+     12.4
+    ],
+    [
+     38.4,
+     13.0
+    ],
+    [
+     38.6,
+     13.6
+    ],
+    [
+     38.6,
+     13.5
+    ],
+    [
+     38.4,
+     12.8
+    ],
+    [
+     38.2,
+     12.3
+    ],
+    [
+     37.2,
+     13.1
+    ],
+    [
+     40.1,
+     13.7
+    ],
+    [
+     39.9,
+     12.8
+    ],
+    [
+     39.2,
+     12.2
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    35.3,
+    16.9
+   ],
+   "swim": 6
+  },
+  "leviata_1": {
+   "act": 4,
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 10,
+   "height": 8.4,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 28,
+   "lure": [
+    [
+     52.3,
+     15.7
+    ],
+    [
+     52.6,
+     16.6
+    ],
+    [
+     52.8,
+     17.3
+    ],
+    [
+     52.8,
+     17.2
+    ],
+    [
+     52.5,
+     16.3
+    ],
+    [
+     52.3,
+     15.5
+    ],
+    [
+     51.3,
+     16.7
+    ],
+    [
+     54.6,
+     17.5
+    ],
+    [
+     53.8,
+     16.2
+    ],
+    [
+     53.3,
+     15.5
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    48.2,
+    22.2
+   ],
+   "swim": 6
+  },
+  "leviata_2": {
+   "act": 4,
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 10,
+   "height": 10.8,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 36,
+   "lure": [
+    [
+     66.4,
+     19.1
+    ],
+    [
+     66.8,
+     20.3
+    ],
+    [
+     67.1,
+     21.3
+    ],
+    [
+     67.0,
+     21.1
+    ],
+    [
+     66.7,
+     19.9
+    ],
+    [
+     66.4,
+     18.9
+    ],
+    [
+     65.4,
+     20.5
+    ],
+    [
+     69.0,
+     21.5
+    ],
+    [
+     67.8,
+     19.8
+    ],
+    [
+     67.4,
+     18.9
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    61.1,
+    27.5
+   ],
+   "swim": 6
+  },
+  "leviata_3": {
+   "act": 4,
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 10,
+   "height": 13.8,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 46,
+   "lure": [
+    [
+     84.0,
+     23.1
+    ],
+    [
+     84.5,
+     24.6
+    ],
+    [
+     84.9,
+     25.9
+    ],
+    [
+     84.8,
+     25.7
+    ],
+    [
+     84.3,
+     24.2
+    ],
+    [
+     84.0,
+     22.9
+    ],
+    [
+     82.0,
+     24.9
+    ],
+    [
+     88.1,
+     26.1
+    ],
+    [
+     87.2,
+     24.1
+    ],
+    [
+     86.0,
+     22.8
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    77.2,
+    33.9
+   ],
+   "swim": 6
+  },
+  "leviata_4": {
+   "act": 4,
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 10,
+   "height": 17.4,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 58,
+   "lure": [
+    [
+     105.2,
+     27.8
+    ],
+    [
+     105.7,
+     29.6
+    ],
+    [
+     106.2,
+     31.2
+    ],
+    [
+     106.1,
+     30.9
+    ],
+    [
+     105.6,
+     29.1
+    ],
+    [
+     105.1,
+     27.5
+    ],
+    [
+     103.1,
+     30.0
+    ],
+    [
+     109.8,
+     31.6
+    ],
+    [
+     108.1,
+     28.9
+    ],
+    [
+     107.1,
+     27.4
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    96.6,
+    41.3
    ],
    "swim": 6
   },
@@ -1033,6 +1943,7 @@
      9.9
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     35.4,
     16.6
@@ -1122,6 +2033,7 @@
      12.2
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     48.3,
     21.8
@@ -1211,6 +2123,7 @@
      14.6
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     61.3,
     27.0
@@ -1300,6 +2213,7 @@
      17.4
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     77.5,
     33.3
@@ -1389,9 +2303,1360 @@
      20.6
     ]
    ],
+   "lure_builtin": false,
    "mouth": [
     96.9,
     40.6
+   ],
+   "swim": 6
+  },
+  "pescadora_0": {
+   "act": 4,
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 10,
+   "height": 14.0,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 20,
+   "lure": [
+    [
+     38.2,
+     4.9
+    ],
+    [
+     38.4,
+     5.6
+    ],
+    [
+     38.6,
+     6.1
+    ],
+    [
+     38.6,
+     6.0
+    ],
+    [
+     38.4,
+     5.4
+    ],
+    [
+     38.2,
+     4.8
+    ],
+    [
+     37.2,
+     5.6
+    ],
+    [
+     40.1,
+     6.4
+    ],
+    [
+     39.9,
+     5.1
+    ],
+    [
+     39.2,
+     4.8
+    ]
+   ],
+   "lure_builtin": true,
+   "mouth": [
+    35.3,
+    14.8
+   ],
+   "swim": 6
+  },
+  "pescadora_1": {
+   "act": 4,
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 10,
+   "height": 19.6,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 28,
+   "lure": [
+    [
+     52.3,
+     5.2
+    ],
+    [
+     52.6,
+     6.1
+    ],
+    [
+     52.8,
+     6.9
+    ],
+    [
+     52.8,
+     6.8
+    ],
+    [
+     52.5,
+     5.8
+    ],
+    [
+     52.3,
+     5.1
+    ],
+    [
+     51.3,
+     6.2
+    ],
+    [
+     54.6,
+     7.3
+    ],
+    [
+     53.8,
+     5.5
+    ],
+    [
+     53.3,
+     5.0
+    ]
+   ],
+   "lure_builtin": true,
+   "mouth": [
+    48.2,
+    19.3
+   ],
+   "swim": 6
+  },
+  "pescadora_2": {
+   "act": 4,
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 10,
+   "height": 25.2,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 36,
+   "lure": [
+    [
+     66.4,
+     5.7
+    ],
+    [
+     66.8,
+     6.9
+    ],
+    [
+     67.1,
+     7.8
+    ],
+    [
+     67.0,
+     7.7
+    ],
+    [
+     66.7,
+     6.5
+    ],
+    [
+     66.4,
+     5.5
+    ],
+    [
+     65.4,
+     6.9
+    ],
+    [
+     69.0,
+     8.3
+    ],
+    [
+     67.8,
+     6.0
+    ],
+    [
+     67.4,
+     5.5
+    ]
+   ],
+   "lure_builtin": true,
+   "mouth": [
+    61.1,
+    23.8
+   ],
+   "swim": 6
+  },
+  "pescadora_3": {
+   "act": 4,
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 10,
+   "height": 32.2,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 46,
+   "lure": [
+    [
+     84.0,
+     6.0
+    ],
+    [
+     84.5,
+     7.5
+    ],
+    [
+     84.9,
+     8.7
+    ],
+    [
+     84.8,
+     8.5
+    ],
+    [
+     84.3,
+     7.0
+    ],
+    [
+     84.0,
+     5.7
+    ],
+    [
+     82.0,
+     7.6
+    ],
+    [
+     88.1,
+     9.3
+    ],
+    [
+     87.2,
+     6.4
+    ],
+    [
+     86.0,
+     5.7
+    ]
+   ],
+   "lure_builtin": true,
+   "mouth": [
+    77.3,
+    29.2
+   ],
+   "swim": 6
+  },
+  "pescadora_4": {
+   "act": 4,
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 10,
+   "height": 40.6,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 58,
+   "lure": [
+    [
+     105.2,
+     6.1
+    ],
+    [
+     105.7,
+     8.0
+    ],
+    [
+     106.2,
+     9.6
+    ],
+    [
+     106.1,
+     9.3
+    ],
+    [
+     105.6,
+     7.4
+    ],
+    [
+     105.1,
+     5.8
+    ],
+    [
+     103.1,
+     8.1
+    ],
+    [
+     109.8,
+     10.4
+    ],
+    [
+     108.1,
+     6.7
+    ],
+    [
+     107.1,
+     5.8
+    ]
+   ],
+   "lure_builtin": true,
+   "mouth": [
+    96.7,
+    35.4
+   ],
+   "swim": 6
+  },
+  "titanacon_0": {
+   "act": 4,
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 10,
+   "height": 8.4,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 20,
+   "lure": [
+    [
+     38.2,
+     9.4
+    ],
+    [
+     38.4,
+     10.1
+    ],
+    [
+     38.6,
+     10.6
+    ],
+    [
+     38.6,
+     10.5
+    ],
+    [
+     38.4,
+     9.9
+    ],
+    [
+     38.2,
+     9.3
+    ],
+    [
+     37.2,
+     10.1
+    ],
+    [
+     40.1,
+     10.8
+    ],
+    [
+     39.9,
+     9.7
+    ],
+    [
+     39.2,
+     9.3
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    35.3,
+    17.0
+   ],
+   "swim": 6
+  },
+  "titanacon_1": {
+   "act": 4,
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 10,
+   "height": 11.8,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 28,
+   "lure": [
+    [
+     52.3,
+     11.5
+    ],
+    [
+     52.6,
+     12.4
+    ],
+    [
+     52.8,
+     13.2
+    ],
+    [
+     52.8,
+     13.1
+    ],
+    [
+     52.5,
+     12.2
+    ],
+    [
+     52.3,
+     11.4
+    ],
+    [
+     51.3,
+     12.6
+    ],
+    [
+     54.6,
+     13.5
+    ],
+    [
+     53.8,
+     12.0
+    ],
+    [
+     53.3,
+     11.4
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    48.3,
+    22.4
+   ],
+   "swim": 6
+  },
+  "titanacon_2": {
+   "act": 4,
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 10,
+   "height": 15.1,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 36,
+   "lure": [
+    [
+     66.4,
+     13.8
+    ],
+    [
+     66.8,
+     15.0
+    ],
+    [
+     67.1,
+     15.9
+    ],
+    [
+     67.0,
+     15.8
+    ],
+    [
+     66.7,
+     14.6
+    ],
+    [
+     66.4,
+     13.6
+    ],
+    [
+     65.4,
+     15.1
+    ],
+    [
+     69.0,
+     16.3
+    ],
+    [
+     67.8,
+     14.4
+    ],
+    [
+     67.4,
+     13.6
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    61.2,
+    27.8
+   ],
+   "swim": 6
+  },
+  "titanacon_3": {
+   "act": 4,
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 10,
+   "height": 19.3,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 46,
+   "lure": [
+    [
+     84.0,
+     16.4
+    ],
+    [
+     84.5,
+     17.8
+    ],
+    [
+     84.9,
+     19.1
+    ],
+    [
+     84.8,
+     18.9
+    ],
+    [
+     84.3,
+     17.4
+    ],
+    [
+     84.0,
+     16.1
+    ],
+    [
+     82.0,
+     18.0
+    ],
+    [
+     88.1,
+     19.5
+    ],
+    [
+     87.2,
+     17.1
+    ],
+    [
+     86.0,
+     16.1
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    77.4,
+    34.2
+   ],
+   "swim": 6
+  },
+  "titanacon_4": {
+   "act": 4,
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 10,
+   "height": 24.4,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 58,
+   "lure": [
+    [
+     105.2,
+     19.2
+    ],
+    [
+     105.7,
+     21.1
+    ],
+    [
+     106.2,
+     22.7
+    ],
+    [
+     106.1,
+     22.4
+    ],
+    [
+     105.6,
+     20.5
+    ],
+    [
+     105.1,
+     18.9
+    ],
+    [
+     103.1,
+     21.3
+    ],
+    [
+     109.8,
+     23.2
+    ],
+    [
+     108.1,
+     20.1
+    ],
+    [
+     107.1,
+     18.8
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    96.8,
+    41.7
+   ],
+   "swim": 6
+  },
+  "tubarao_0": {
+   "act": 4,
+   "center": [
+    25.4,
+    16.6
+   ],
+   "frame_h": 32,
+   "frame_w": 46,
+   "frames": 10,
+   "height": 6.8,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 20,
+   "lure": [
+    [
+     38.2,
+     11.8
+    ],
+    [
+     38.4,
+     12.4
+    ],
+    [
+     38.6,
+     13.0
+    ],
+    [
+     38.6,
+     12.9
+    ],
+    [
+     38.4,
+     12.2
+    ],
+    [
+     38.2,
+     11.7
+    ],
+    [
+     37.2,
+     12.5
+    ],
+    [
+     40.1,
+     13.1
+    ],
+    [
+     39.9,
+     12.2
+    ],
+    [
+     39.2,
+     11.7
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    34.4,
+    17.8
+   ],
+   "swim": 6
+  },
+  "tubarao_1": {
+   "act": 4,
+   "center": [
+    34.4,
+    21.8
+   ],
+   "frame_h": 42,
+   "frame_w": 62,
+   "frames": 10,
+   "height": 9.5,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 28,
+   "lure": [
+    [
+     52.3,
+     14.9
+    ],
+    [
+     52.6,
+     15.8
+    ],
+    [
+     52.8,
+     16.5
+    ],
+    [
+     52.8,
+     16.4
+    ],
+    [
+     52.5,
+     15.5
+    ],
+    [
+     52.3,
+     14.7
+    ],
+    [
+     51.3,
+     15.9
+    ],
+    [
+     54.6,
+     16.7
+    ],
+    [
+     53.8,
+     15.4
+    ],
+    [
+     53.3,
+     14.7
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    46.9,
+    23.5
+   ],
+   "swim": 6
+  },
+  "tubarao_2": {
+   "act": 4,
+   "center": [
+    43.3,
+    27.0
+   ],
+   "frame_h": 52,
+   "frame_w": 78,
+   "frames": 10,
+   "height": 12.2,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 36,
+   "lure": [
+    [
+     66.4,
+     18.1
+    ],
+    [
+     66.8,
+     19.2
+    ],
+    [
+     67.1,
+     20.2
+    ],
+    [
+     67.0,
+     20.0
+    ],
+    [
+     66.7,
+     18.9
+    ],
+    [
+     66.4,
+     17.9
+    ],
+    [
+     65.4,
+     19.4
+    ],
+    [
+     69.0,
+     20.4
+    ],
+    [
+     67.8,
+     18.8
+    ],
+    [
+     67.4,
+     17.8
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    59.5,
+    29.1
+   ],
+   "swim": 6
+  },
+  "tubarao_3": {
+   "act": 4,
+   "center": [
+    54.5,
+    33.3
+   ],
+   "frame_h": 64,
+   "frame_w": 98,
+   "frames": 10,
+   "height": 15.6,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 46,
+   "lure": [
+    [
+     84.0,
+     21.8
+    ],
+    [
+     84.5,
+     23.3
+    ],
+    [
+     84.9,
+     24.6
+    ],
+    [
+     84.8,
+     24.3
+    ],
+    [
+     84.3,
+     22.8
+    ],
+    [
+     84.0,
+     21.6
+    ],
+    [
+     82.0,
+     23.5
+    ],
+    [
+     88.1,
+     24.8
+    ],
+    [
+     87.2,
+     22.7
+    ],
+    [
+     86.0,
+     21.5
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    75.2,
+    35.9
+   ],
+   "swim": 6
+  },
+  "tubarao_4": {
+   "act": 4,
+   "center": [
+    68.0,
+    40.6
+   ],
+   "frame_h": 78,
+   "frame_w": 122,
+   "frames": 10,
+   "height": 19.7,
+   "layers": [
+    "body",
+    "body+skin_armor",
+    "body+skin_toxic",
+    "body+skin_glow",
+    "body+head_piranha",
+    "body+head_piranha+skin_armor",
+    "body+head_piranha+skin_toxic",
+    "body+head_piranha+skin_glow",
+    "body+head_sword",
+    "body+head_sword+skin_armor",
+    "body+head_sword+skin_toxic",
+    "body+head_sword+skin_glow",
+    "body+head_lure",
+    "body+head_lure+skin_armor",
+    "body+head_lure+skin_toxic",
+    "body+head_lure+skin_glow",
+    "tail",
+    "tail_fork",
+    "tail_sting",
+    "tail_eel",
+    "fins_back",
+    "fins_front",
+    "fins_spiky_back",
+    "fins_spiky_front",
+    "fins_wing_back",
+    "fins_wing_front",
+    "fins_volt_back",
+    "fins_volt_front"
+   ],
+   "length": 58,
+   "lure": [
+    [
+     105.2,
+     26.1
+    ],
+    [
+     105.7,
+     28.0
+    ],
+    [
+     106.2,
+     29.6
+    ],
+    [
+     106.1,
+     29.3
+    ],
+    [
+     105.6,
+     27.4
+    ],
+    [
+     105.1,
+     25.8
+    ],
+    [
+     103.1,
+     28.3
+    ],
+    [
+     109.8,
+     29.9
+    ],
+    [
+     108.1,
+     27.2
+    ],
+    [
+     107.1,
+     25.7
+    ]
+   ],
+   "lure_builtin": false,
+   "mouth": [
+    94.0,
+    43.9
    ],
    "swim": 6
   }
@@ -1498,12 +3763,33 @@
    "swim": 6,
    "w": 170
   },
+  "creatures/organ_gland": {
+   "act": 0,
+   "frames": 4,
+   "h": 36,
+   "swim": 4,
+   "w": 36
+  },
+  "creatures/organ_heart": {
+   "act": 0,
+   "frames": 4,
+   "h": 50,
+   "swim": 4,
+   "w": 52
+  },
   "creatures/otter": {
    "act": 2,
    "frames": 6,
    "h": 20,
    "swim": 4,
    "w": 42
+  },
+  "creatures/parasite": {
+   "act": 4,
+   "frames": 10,
+   "h": 12,
+   "swim": 6,
+   "w": 28
   },
   "creatures/pilot": {
    "act": 4,
@@ -1574,6 +3860,13 @@
    "h": 20,
    "swim": 4,
    "w": 36
+  },
+  "creatures/titanacon": {
+   "act": 4,
+   "frames": 10,
+   "h": 132,
+   "swim": 6,
+   "w": 244
   },
   "creatures/turtle": {
    "act": 2,
@@ -1683,6 +3976,11 @@
    "frames": 4,
    "h": 18,
    "w": 18
+  },
+  "env/stomach": {
+   "frames": 1,
+   "h": 360,
+   "w": 640
   },
   "env/surface": {
    "frames": 4,

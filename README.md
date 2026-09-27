@@ -20,7 +20,7 @@ aparência do peixe e enfrenta ondas e chefes até dominar o oceano.
 | Ecossistema planta/herbívoro/predador | Cadeia alimentar completa com ciclo de nutrientes: produtores (kelp, fitoplâncton, quimiossíntese), detritívoros, herbívoros, carnívoros, predadores e a orca (megapredador). Fome, reprodução, carcaças e reciclagem. Veja `docs/DESIGN.md` |
 | Esconderijos | Cavernas e moitas de algas: predadores perdem o rastro, você regenera (limitado pela barra de furtividade) |
 | Pontos de interesse com tempo | Baú (morda 3x), ostra gigante (cura), fenda térmica (+30% dano, guardada por caranguejos) e cardume dourado. Aparecem com timer e setas na borda da tela |
-| Tempo → Onda → Chefe | `director.gd`: EXPLORAR (timer) → ONDA (horda) → CHEFE. São 4 ciclos; depois da vitória há o modo infinito |
+| Tempo → Onda → Chefe | `director.gd`: EXPLORAR (timer) → ONDA (horda) → CHEFE. São 5 ciclos; depois da vitória há o modo infinito |
 | Menu inicial, game over, upgrades rogue-lite | `main_menu.gd` (espécies, loja de evolução ancestral, guia, opções, créditos), `game_over.gd`, `pause_menu.gd` |
 | Evoluções que mudam a aparência | 12 mutações em 4 slots (cabeça, nadadeiras, pele e cauda), cada uma com arte própria em todos os estágios e espécies. Cabeça e pele são desenhadas junto do corpo (a Mandíbula de Piranha é a própria mandíbula do peixe) |
 | Sinergias | 6 afinidades (Elétrico, Veneno, Abissal, Coral, Predador, Corrente) com bônus em 2 e 4 itens + 3 combinações cruzadas |
@@ -59,6 +59,16 @@ foge soltando nuvem).
 2. **Kraken das Marés**: tentáculos golpeiam áreas marcadas e soltam rajadas de tinta; na fúria, golpes duplos e lulas.
 3. **Rainha Abissal**: escurece o oceano, some e reaparece para morder, anéis de orbes teleguiados.
 4. **Leviatã Elétrico**: serpente segmentada, mergulhos, bolas elétricas e corpo eletrificado.
+5. **Titanacon, o Devorador**: um titã blindado tão grande que suga o mar e **engole você**. Por fora, as placas
+   ósseas quase não sentem dano; por dentro você ataca os **órgãos vitais** (coração e glândulas de ácido)
+   enquanto **parasitas** os defendem, o ácido do estômago queima e a digestão corrói sua vida. Causando dano
+   suficiente por dentro, ele **te cospe** para fora e fica atordoado. Repita até derrubá-lo.
+
+### Chefes viram espécies jogáveis
+Derrotar um chefe libera a espécie dele na tela "Escolha seu peixe" (a faixa pode ser arrastada):
+**Tubarão-Rei** (Peixes-Piloto), **Kraken Jovem** (Tinta), **Rainha Abissal** (Sonar, com isca própria),
+**Leviatã** (Pulso Elétrico) e **Titanacon** (Redemoinho). Todas aceitam as 12 mutações, e saves antigos
+liberam na hora os chefes que já foram vencidos.
 
 ## Controles
 - Celular: polegar esquerdo move (joystick flutuante); botão direito morde (segure para repetir).
@@ -70,7 +80,7 @@ foge soltando nuvem).
 scripts/autoload/   DB (dados/balanceamento + mapa de altura), Art (sprites + metadados), Profile (save), Sfx (áudio)
 scripts/game/       game.gd (orquestra a partida), director.gd (ciclos/ondas/chefes/POIs),
                     player.gd (stats, mordida, mutações, sinergias), weapon.gd (7 armas + evoluções),
-                    creatures/ (13 comportamentos), bosses/ (4 chefes), world.gd, poi.gd, ...
+                    creatures/ (14 comportamentos), bosses/ (5 chefes + estômago do Titanacon), world.gd, poi.gd, ...
 scripts/ui/         HUD, controles de toque, cartas, pausa, game over, menu principal, tema
 tools/art/          gerador de pixel art (Python + Pillow/NumPy/SciPy)
 tools/audio/        gerador de efeitos e trilhas chiptune

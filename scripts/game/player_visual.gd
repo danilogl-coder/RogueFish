@@ -52,7 +52,7 @@ func _update_glows(center: Vector2) -> void:
 		glow = null
 	var add_mat := CanvasItemMaterial.new()
 	add_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	if mutations.get("head", "") == "head_lure":
+	if mutations.get("head", "") == "head_lure" or _meta.get("lure_builtin", false):
 		lure_glow = Sprite2D.new()
 		lure_glow.texture = Art.tex("fx/glow")
 		lure_glow.material = add_mat

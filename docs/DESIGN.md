@@ -30,6 +30,17 @@ mas nunca tira nada do jogador).
 | Inimigos Alfa derrubam materiais para rerrolar | Alfas com coroa derrubam **Escamas Alfa** (+1 rerrolagem) |
 | Mutações que mudam o corpo | 12 mutações visuais em 4 slots, com arte própria para cada estágio |
 
+### Chefes jogáveis e o Titanacon (v1.2)
+
+- **Vencer um chefe o transforma em espécie jogável** (Tubarão-Rei, Kraken Jovem, Rainha Abissal, Leviatã,
+  Titanacon). É uma meta-recompensa de longo prazo que dá motivo para voltar e dominar cada chefe,
+  no espírito de Everything is Crab, onde você joga com os animais que evoluiu.
+- **Titanacon** inverte a luta: em vez de fugir do chefe, o objetivo é **ser engolido**. Por fora as
+  placas reduzem o dano a 12% (30% com a boca aberta); ao sugar o mar ele puxa o jogador para a boca. Dentro do estômago
+  (uma arena fechada) só o **coração** e as **glândulas de ácido** ferem o titã, os **parasitas**
+  os protegem, o **ácido** no fundo queima e a **digestão** tira vida aos poucos. Com 25% da vida dele
+  tirados por dentro, ele cospe o jogador e fica atordoado (vulnerável) por alguns segundos.
+
 ## 3. Inspirações de Deeeep.io
 
 | Ideia | Aplicação |

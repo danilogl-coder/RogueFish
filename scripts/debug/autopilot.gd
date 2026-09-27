@@ -109,6 +109,9 @@ func _process(delta: float) -> void:
 			_shot_n += 1
 
 
+var _was_inside := false
+
+
 func _physics_process(delta: float) -> void:
 	if game == null or game.run_over or get_tree().paused:
 		return
@@ -133,6 +136,22 @@ func _physics_process(delta: float) -> void:
 	for poi in game.world.pois:
 		if is_instance_valid(poi) and poi.is_active():
 			target = poi.position + Vector2(0, -12)
+	if p.swallowed and game.stomach != null:
+		# inside the Titanacon: go for the organs, stay out of the acid
+		var bo := INF
+		for og in game.stomach.organs:
+			if is_instance_valid(og):
+				var d2: float = og.position.distance_squared_to(p.position)
+				if d2 < bo:
+					bo = d2
+					target = og.position + Vector2(0, 18)
+		if p.position.y > game.stomach.acid_line() - 20.0:
+			danger += Vector2(0, -1.5)
+		if not _was_inside:
+			print("[autotest] swallowed t=%.0f boss_hp=%d" % [game.time, game.boss.hp if game.boss else 0])
+	elif _was_inside:
+		print("[autotest] spat out t=%.0f boss_hp=%d" % [game.time, game.boss.hp if game.boss else 0])
+	_was_inside = p.swallowed
 	var dir := Vector2.ZERO
 	if danger.length() > 0.25:
 		dir = danger

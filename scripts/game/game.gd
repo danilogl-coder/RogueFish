@@ -31,7 +31,11 @@ const CreatureScripts := {
 	"boss_kraken": preload("res://scripts/game/bosses/boss_kraken.gd"),
 	"boss_angler": preload("res://scripts/game/bosses/boss_angler.gd"),
 	"boss_leviathan": preload("res://scripts/game/bosses/boss_leviathan.gd"),
+	"boss_titanacon": preload("res://scripts/game/bosses/boss_titanacon.gd"),
+	"parasite": preload("res://scripts/game/creatures/parasite.gd"),
 }
+## The inside of the Titanacon lives far to the right of the ocean map.
+const STOMACH_RECT := Rect2(7000, 300, 640, 360)
 const MAX_CREATURES := 240
 const MAX_PICKUPS := 260
 
@@ -103,7 +107,11 @@ func _ready() -> void:
 	player.game = self
 	player.position = Vector2(2350.0, 420.0)
 	layer_player.add_child(player)
-	player.setup(Profile.selected_species)
+	var sp := Profile.selected_species
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--species=") and DB.SPECIES.has(a.substr(10)):
+			sp = a.substr(10)  # debug / screenshots
+	player.setup(sp)
 
 	camera = GameCamera.new()
 	camera.target = player
@@ -422,6 +430,9 @@ func _drop_xp(pos: Vector2, value: int) -> void:
 func _on_boss_killed(b: Creature) -> void:
 	bosses_killed += 1
 	Profile.bump("boss_" + b.boss_id)
+	var new_species := Profile.unlock_boss_species(b.boss_id)
+	if new_species != "":
+		_announce_species.call_deferred(new_species)
 	boss = null
 	boss_changed.emit(null)
 	Sfx.play("boss_die")
@@ -438,6 +449,69 @@ func _on_boss_killed(b: Creature) -> void:
 	player.heal(player.st.max_hp * 0.3)
 	director.on_boss_killed()
 	world.spawn_boss_chest(b.position)
+
+
+# ------------------------------------------------------------ Titanacon
+var stomach: Stomach = null
+
+
+func swallow_player(b: Creature) -> void:
+	if stomach != null or not player.alive:
+		return
+	stomach = Stomach.new()
+	stomach.game = self
+	stomach.boss = b
+	stomach.rect = STOMACH_RECT
+	add_child(stomach)
+	b.stomach = stomach
+	player.swallowed = true
+	player.arena = STOMACH_RECT.grow(-player.radius)
+	player.position = STOMACH_RECT.position + Vector2(44, 150)
+	player.vel = Vector2(90, 0)
+	player.grant_invuln(1.0)
+	camera.set_arena(STOMACH_RECT)
+	darkness.extra = 0.3
+	darkness.tint_target = Color(0.16, 0.0, 0.03)
+	hud.banner("ENGOLIDO!", "Destrua os órgãos vitais por dentro", Color("ff5c4c"))
+	Sfx.play("boss_roar")
+	shake(10.0)
+	hitstop(0.2)
+	Profile.bump("swallowed")
+
+
+func spit_player(b: Creature, boss_died := false) -> void:
+	if stomach == null:
+		return
+	player.swallowed = false
+	player.arena = Rect2()
+	var dir := Vector2(b.facing, -0.25).normalized()
+	var out: Vector2 = b.mouth_pos() + dir * 40.0
+	out.x = clampf(out.x, 40.0, DB.WORLD_W - 40.0)
+	out.y = clampf(out.y, DB.SURFACE_Y + 30.0, DB.floor_at(out.x) - 30.0)
+	player.position = out
+	player.vel = dir * 340.0
+	player.grant_invuln(1.6)
+	stomach.teardown()
+	stomach = null
+	b.stomach = null
+	camera.clear_arena()
+	darkness.extra = 0.15
+	darkness.tint_target = Color(0.06, 0.0, 0.08)
+	burst(out, [2, 6, 0], 18, 120.0, 0.8)
+	if not boss_died:
+		Sfx.play("hit")
+
+
+func stomach_ratio() -> float:
+	if stomach == null or not is_instance_valid(stomach.boss):
+		return 0.0
+	return stomach.boss.stomach_ratio()
+
+
+func _announce_species(sp: String) -> void:
+	await get_tree().create_timer(2.2, false).timeout
+	hud.banner("NOVA ESPÉCIE!", "%s agora é jogável" % DB.SPECIES[sp].name, Color("ffbf45"))
+	Sfx.play("evolve")
 
 
 func add_xp(amount: int) -> void:

@@ -32,6 +32,7 @@ OUT = os.path.join(ROOT, "assets", "art")
 # frames per sheet for everything that is not a single image
 # (swim, action) frame split for animated creature sheets; the rest use 4 + 2
 ANIM = dict(fishes.ANIM)
+ANIM.update({"organ_heart": (4, 0), "organ_gland": (4, 0)})
 
 FRAME_COUNT = {
     # creatures (fish sheets report their own counts through fishes.ANIM)

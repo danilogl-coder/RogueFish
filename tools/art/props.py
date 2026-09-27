@@ -598,3 +598,55 @@ ALL = {
     "anemone": anemone, "seagrass": seagrass, "tube_worms": tube_worms, "glow_mushroom": glow_mushroom,
     "chest": chest, "clam": clam, "kelp": kelp_parts, "thicket": thicket,
 }
+
+
+def stomach():
+    """Inside the Titanacon: fleshy cavity with folds, veins, ribs and an acid pool (640x360)."""
+    w, h = 640, 360
+    X, Y = grid(w, h)
+    flesh = PAL["flesh"]
+    dark = ramp("#5a1a2e", dark=0.3)
+    lay = Layer(w, h)
+    # cavity: brighter in the middle, darker toward the walls
+    cav = ((X - 320) / 360.0) ** 2 + ((Y - 175) / 210.0) ** 2
+    base = np.clip(1.15 - cav, 0, 1)
+    nz = noise2(X, Y, 40.0, 3)
+    # rugae: broad wavy folds of the stomach lining
+    fold = np.sin((Y + 16 * np.sin(X / 47.0) + 18 * nz) / 13.0)
+    val = base * 0.8 + fold * 0.09
+    tone = band(val, (0.2, 0.4, 0.62, 0.85))
+    lay.paint(np.ones_like(X, dtype=bool), dark, np.clip(tone, 1, 4))
+    lay.paint(val > 0.62, flesh, np.clip(tone - 2, 1, 3))
+    ridge = (fold > 0.93) & (val > 0.35)
+    lay.shift(ridge, +1, hi=4)
+    # veins
+    rng = np.random.default_rng(4)
+    for _ in range(14):
+        x0, y0 = rng.uniform(0, w), rng.uniform(0, h * 0.8)
+        pts = [(x0, y0)]
+        a = rng.uniform(0, math.tau)
+        for _ in range(8):
+            a += rng.uniform(-0.6, 0.6)
+            pts.append((pts[-1][0] + math.cos(a) * 16, pts[-1][1] + math.sin(a) * 16))
+        d = np.full(X.shape, 99.0)
+        for j in range(len(pts) - 1):
+            d = np.minimum(d, seg_dist(X, Y, *pts[j], *pts[j + 1]))
+        lay.paint(d < 1.0, ramp("#7a3a8a"), 1)
+    # ribs arching across the ceiling
+    for rx in range(40, 640, 90):
+        d = np.abs(np.hypot((X - rx - 45) / 70.0, (Y - 70) / 70.0) - 1.0) * 70
+        rib = (d < 4.5) & (Y < 60)
+        lay.paint(rib, PAL["bone"], np.where(d < 1.6, 4, 2))
+    # throat opening on the left (where the fish came in)
+    throat = ((X - 0) / 34.0) ** 2 + ((Y - 150) / 60.0) ** 2 <= 1.0
+    lay.paint(throat, PAL["black"], 0)
+    # acid pool
+    surf = 322 + 3 * np.sin(X / 23.0)
+    acid = Y > surf
+    lay.paint(acid, PAL["acid"], np.where(Y < surf + 2, 5, np.where(Y < surf + 12, 3, 2)))
+    bub = acid & (np.hypot((X % 37) - 18, (Y % 13) - 6) < 1.3) & (Y > surf + 4)
+    lay.paint(bub, PAL["acid"], 5)
+    return lay.to_image(outline=False)
+
+
+ALL["stomach"] = stomach

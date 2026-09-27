@@ -67,19 +67,45 @@ const ATTRIBUTE_MAX := 10
 
 const SPECIES := {
 	"dourado": {
-		"name": "Peixe-Dourado", "desc": "Equilibrado e resiliente. Começa com Bolhas.",
+		"name": "Peixe-Dourado", "short": "Equilibrado e resiliente.", "desc": "Equilibrado e resiliente. Começa com Bolhas.",
 		"weapon": "bubble", "price": 0,
 		"stats": {"max_hp": 100.0, "speed": 118.0, "bite_damage": 12.0, "armor": 0.0},
 	},
 	"neon": {
-		"name": "Tetra Neon", "desc": "Rápido e elétrico, porém frágil. Começa com Pulso.",
+		"name": "Tetra Neon", "short": "Rápido, porém frágil.", "desc": "Rápido e elétrico, porém frágil. Começa com Pulso.",
 		"weapon": "pulse", "price": 350,
 		"stats": {"max_hp": 80.0, "speed": 138.0, "bite_damage": 10.0, "armor": 0.0, "cooldown_mult": 0.92},
 	},
 	"garoupa": {
-		"name": "Garoupa", "desc": "Tanque lento com mordida brutal. Começa com Espinhos.",
+		"name": "Garoupa", "short": "Tanque de mordida brutal.", "desc": "Tanque lento com mordida brutal. Começa com Espinhos.",
 		"weapon": "spines", "price": 600,
 		"stats": {"max_hp": 135.0, "speed": 102.0, "bite_damage": 18.0, "armor": 2.0},
+	},
+	# ---- unlocked by defeating each boss (price is ignored, "boss" is the requirement)
+	"tubarao": {
+		"name": "Tubarão-Rei", "short": "Veloz, de mordida larga.", "desc": "Predador veloz de mordida larga. Começa com Peixes-Piloto.",
+		"weapon": "pilot", "price": 0, "boss": "shark_king",
+		"stats": {"max_hp": 125.0, "speed": 130.0, "bite_damage": 20.0, "armor": 1.0, "bite_reach": 1.15},
+	},
+	"kraken": {
+		"name": "Kraken Jovem", "short": "Braços longos e tinta.", "desc": "Braços longos e nuvens de tinta. Começa com Tinta.",
+		"weapon": "ink", "price": 0, "boss": "kraken",
+		"stats": {"max_hp": 120.0, "speed": 114.0, "bite_damage": 15.0, "armor": 1.0, "cooldown_mult": 0.9, "bite_reach": 1.25},
+	},
+	"pescadora": {
+		"name": "Rainha Abissal", "short": "Isca que ilumina o abismo.", "desc": "Sua isca ilumina o abismo e atrai presas. Começa com Sonar.",
+		"weapon": "sonar", "price": 0, "boss": "angler_queen",
+		"stats": {"max_hp": 115.0, "speed": 110.0, "bite_damage": 17.0, "armor": 1.0, "light": 140.0, "crit_chance": 0.12, "magnet": 60.0},
+	},
+	"leviata": {
+		"name": "Leviatã", "short": "Serpente elétrica e dura.", "desc": "Serpente elétrica e resistente. Começa com Pulso Elétrico.",
+		"weapon": "pulse", "price": 0, "boss": "leviathan",
+		"stats": {"max_hp": 145.0, "speed": 126.0, "bite_damage": 16.0, "armor": 2.0},
+	},
+	"titanacon": {
+		"name": "Titanacon", "short": "Titã blindado e lento.", "desc": "Um titã blindado de boca colossal. Lento, mas quase indestrutível. Começa com Redemoinho.",
+		"weapon": "whirl", "price": 0, "boss": "titanacon",
+		"stats": {"max_hp": 175.0, "speed": 98.0, "bite_damage": 23.0, "armor": 3.0, "bite_reach": 1.35},
 	},
 }
 
@@ -129,6 +155,10 @@ const CREATURES := {
 		"xp": 2, "faction": "pred", "script": "piranha", "depth": [0.2, 0.9], "pearl": 0.01,
 		"trophic": "carnivore", "diet": ["prey", "carcass"], "metab": 0.012, "biomes": ["kelp", "slope"],
 		"desc": "Matilha voraz. Ataca em bando."},
+	"parasite": {"name": "Parasita do Titã", "sheet": "parasite", "tier": 1, "hp": 34, "speed": 96, "radius": 7, "dmg": 7,
+		"xp": 3, "faction": "pred", "script": "parasite", "depth": [0.0, 1.0], "pearl": 0.03,
+		"trophic": "carnivore", "diet": [], "metab": 0.0, "biomes": [],
+		"desc": "Lampreia que vive dentro do Titanacon e protege seus órgãos vitais."},
 	"barracuda": {"name": "Barracuda", "sheet": "barracuda", "tier": 2, "hp": 55, "speed": 70, "radius": 8, "dmg": 13,
 		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04,
 		"trophic": "carnivore", "diet": ["prey"], "metab": 0.01, "biomes": ["reef", "slope"],
@@ -182,8 +212,9 @@ const BOSSES := {
 	"kraken": {"name": "Kraken das Marés", "hp": 4300, "script": "boss_kraken", "dmg": 24, "xp": 400, "pearls": 40},
 	"angler_queen": {"name": "Rainha Abissal", "hp": 6000, "script": "boss_angler", "dmg": 32, "xp": 600, "pearls": 60},
 	"leviathan": {"name": "Leviatã Elétrico", "hp": 8800, "script": "boss_leviathan", "dmg": 36, "xp": 900, "pearls": 100},
+	"titanacon": {"name": "Titanacon, o Devorador", "hp": 9000, "script": "boss_titanacon", "dmg": 30, "xp": 1300, "pearls": 150},
 }
-const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan"]
+const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan", "titanacon"]
 
 # Ecosystem populations per cycle (index 0 = cycle 1). Values = target counts.
 # The director only "immigrates" animals when a species falls below half of its

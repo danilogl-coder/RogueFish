@@ -71,7 +71,7 @@ PAL = {
     "violet": ramp("#9460ea"), "volt": ramp("#ffe234"), "lime": ramp("#a0ea40"), "poison": ramp("#b456e6"),
     "glow": ramp("#6cffe2", dark=0.25), "black": ramp("#3c3854", dark=0.3), "coral": ramp("#ff6a84"),
     "pink": ramp("#ffa0bc"), "bone": ramp("#f6ead0", dark=0.3), "orange": ramp("#ff961e"), "sunset": ramp("#ff7442"),
-    "moss": ramp("#6a9a3a"), "sharkgrey": ramp("#5b7390"), "orca": ramp("#2c3148", dark=0.3, light_gain=0.8), "eel": ramp("#5e8a3c"), "kelp": ramp("#5a8a2e"), "sand": ramp("#e6cc98", dark=0.3), "rock": ramp("#7a7090"),
+    "moss": ramp("#6a9a3a"), "sharkgrey": ramp("#5b7390"), "titan": ramp("#46606e"), "kraken": ramp("#e04a42"), "titanbelly": ramp("#b4a48c", dark=0.3), "armor": ramp("#b8ae9c", dark=0.28), "flesh": ramp("#c8424e"), "parasite": ramp("#c48cc0"), "acid": ramp("#b8e04a"), "orca": ramp("#2c3148", dark=0.3, light_gain=0.8), "eel": ramp("#5e8a3c"), "kelp": ramp("#5a8a2e"), "sand": ramp("#e6cc98", dark=0.3), "rock": ramp("#7a7090"),
     # mouths
     "mouth": np.array([(24, 6, 18), (48, 12, 30), (84, 20, 44), (122, 34, 60), (164, 56, 78), (206, 90, 106), (238, 140, 150)], dtype=np.uint8),
     "gum": ramp("#f0788e"),
