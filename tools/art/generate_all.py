@@ -18,6 +18,7 @@ from PIL import Image  # noqa: E402
 import pixel  # noqa: E402
 import player  # noqa: E402
 import critters  # noqa: E402
+import tidy  # noqa: E402
 import fishes  # noqa: E402
 import env  # noqa: E402
 import fx  # noqa: E402
@@ -65,6 +66,7 @@ def main():
         for species in player.SPECIES:
             for stage in range(len(player.STAGE_LEN)):
                 img, m = player.render_atlas(species, stage)
+                img = tidy.bridge_player_atlas(img, m["frame_w"], m["frame_h"], list(m["layers"]))
                 save(img, f"player/{species}_{stage}.png")
                 meta["player"][f"{species}_{stage}"] = m
                 print("player", species, stage, img.size)
@@ -79,8 +81,10 @@ def main():
         for name, fn in table.items():
             img = fn()
             n = FRAME_COUNT.get(name, default_frames)
-            save(img, f"{gname}/{name}.png")
             rows = int(img.info.get("rows", 1))
+            if gname == "creatures":
+                img = tidy.bridge_sheet(img, img.size[0] // -(-n // rows), img.size[1] // rows)
+            save(img, f"{gname}/{name}.png")
             info = {"frames": n, "w": img.size[0] // -(-n // rows), "h": img.size[1] // rows}
             if rows > 1:
                 info["rows"] = rows

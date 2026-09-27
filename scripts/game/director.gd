@@ -83,7 +83,7 @@ func _enter(p: String) -> void:
 			game.darkness.tint_target = Color(0.06, 0.0, 0.08)
 			game.hud.banner("CHEFE", DB.BOSSES[bid].name, Color("cc7ee0"))
 			Sfx.play("boss_roar")
-			Sfx.play_music("boss")
+			Sfx.play_music("final" if bid in ["titanacon", "leviathan"] else "boss")
 			game.shake(8.0)
 	phase_changed.emit(phase)
 

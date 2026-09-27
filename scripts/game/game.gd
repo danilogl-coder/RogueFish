@@ -178,6 +178,7 @@ func _physics_process(delta: float) -> void:
 		time += delta
 		player.input_dir = hud.move_vector()
 		_tick_engagement(delta)
+		_music_intensity()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -436,6 +437,8 @@ func _on_boss_killed(b: Creature) -> void:
 	boss = null
 	boss_changed.emit(null)
 	Sfx.play("boss_die")
+	Sfx.play_music("game")
+	Sfx.play_stinger("victory", -2.0)
 	shake(10.0)
 	hitstop(0.25)
 	var def: Dictionary = DB.BOSSES[b.boss_id]
@@ -555,7 +558,7 @@ func _process_pending() -> void:
 	if pending_levels > 0:
 		pending_levels -= 1
 		level_changed.emit()
-		Sfx.play("level_up")
+		Sfx.play_stinger("levelup", -3.0)
 		fx("fx/hit_spark", player.position, 12.0, 3.0, Color("5ee0ff"))
 		_level_shockwave()
 		_open_cards("level")
@@ -612,11 +615,33 @@ func open_pause() -> void:
 	p.closed.connect(_on_menu_closed)
 
 
+## Adaptive music: the drive layer follows how dangerous and hot the run is.
+func _music_intensity() -> void:
+	var k := 0.0
+	match director.phase:
+		"wave":
+			k = 1.0
+		"rest":
+			k = 0.35
+		_:
+			k = clampf(combo / 45.0, 0.0, 0.55)
+			var near := 0
+			for c in grid.query(player.position, 170.0):
+				if c.hostile_now() and not c.dead:
+					near += 1
+			k = maxf(k, clampf(near / 6.0, 0.0, 0.7))
+			if player.buffs.has("frenzy"):
+				k = 1.0
+	Sfx.intensity = k
+
+
 func on_player_died() -> void:
 	if run_over:
 		return
 	run_over = true
 	Sfx.play("death")
+	Sfx.play_music("")
+	Sfx.play_stinger("defeat")
 	Engine.time_scale = 0.35
 	await get_tree().create_timer(0.9, true, false, true).timeout
 	Engine.time_scale = 1.0

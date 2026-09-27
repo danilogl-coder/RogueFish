@@ -18,7 +18,11 @@ func _setup() -> void:
 	anim_fps = 5.0
 	home = Vector2(position.x, DB.floor_at(position.x) + 2.0)
 	state = "hide"
-	sprite.offset = Vector2(0, -36)          # frame is 72 tall: origin at the burrow
+	# the worm is revealed by cropping the frame (never stretched): it slides
+	# out of the burrow with its real pixels
+	sprite.hframes = 1
+	sprite.region_enabled = true
+	sprite.centered = false
 	swallowable = false
 	armor_mult = 0.3
 	_attack_len = 0.3
@@ -99,12 +103,23 @@ func on_touch_player(p: Player) -> void:
 		p.infest.add("m", position, "LARVA DE PIOLHO!")
 
 
+const FW := 28.0
+const FH := 72.0
+const HEAD_Y := 17.0          ## head centre inside the frame
+
+
 func _animate(delta: float) -> void:
-	super._animate(delta)
-	# sprite anchored at the burrow, stretched by how far the worm is out
-	sprite.position = home - position
+	anim_t += delta
+	if attack_anim > 0.0:
+		attack_anim = maxf(0.0, attack_anim - delta)
+	var f := 4 + Art.act_frame(attack_progress(), 2) if attack_anim > 0.0 else int(anim_t * anim_fps) % 4
+	# show only the part of the worm that is out of the sand
+	var out := roundf(HEAD_Y + 6.0 + (LENGTH) * _ext)
+	out = clampf(out, 10.0, FH)
+	sprite.region_rect = Rect2(f * FW, 0, FW, out)
+	sprite.offset = Vector2(-FW * 0.5, -out)
+	sprite.position = (home - position).round()
 	sprite.rotation = _lean
-	sprite.scale = Vector2(1.0, maxf(_ext, 0.05))
 	sprite.flip_h = false
 	queue_redraw()
 

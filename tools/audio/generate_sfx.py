@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Procedural retro SFX + chiptune loops for Rogue Fish (pure python, no deps).
 
-Usage: python3 tools/audio/generate_sfx.py  -> assets/audio/sfx/*.wav, assets/audio/music/*.wav
+Usage: python3 tools/audio/generate_sfx.py  -> assets/audio/sfx/*.wav
 """
 from __future__ import annotations
 
@@ -142,93 +142,9 @@ def sfx():
     write("thorn", mix(noise(0.06, 0.5, lp=0.9, seed=19), tone(0.06, 1800, 1200, "square", 0.2)))
 
 
-# ------------------------------------------------------------------ music
-NOTE = {n: i for i, n in enumerate(["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"])}
-
-
-def freq(name):
-    if name in ("-", "."):
-        return 0
-    n, o = name[:-1], int(name[-1])
-    return 440.0 * 2 ** ((NOTE[n] + (o - 4) * 12 - 9) / 12)
-
-
-def render_track(bpm, bars, patterns, total_steps_per_bar=16):
-    step = 60.0 / bpm / 4
-    n_steps = bars * total_steps_per_bar
-    n = int(n_steps * step * SR)
-    out = [0.0] * n
-    for kind, vol, pat, dur_steps, extra in patterns:
-        for i in range(n_steps):
-            item = pat[i % len(pat)]
-            if item in ("-", ".", None):
-                continue
-            start = int(i * step * SR)
-            if kind == "kick":
-                smp = tone(0.12, 150, 45, "sine", vol, a=0.001, d=0.08, s=0.2, r=0.03, curve=0.4)
-            elif kind == "snare":
-                smp = mix(noise(0.1, vol, d=0.04, s=0.3, r=0.05, lp=0.7, seed=i), tone(0.05, 220, 180, "tri", vol * 0.4))
-            elif kind == "hat":
-                smp = noise(0.03, vol, a=0.001, d=0.01, s=0.3, r=0.01, lp=0.95, seed=i)
-            else:
-                f = freq(item)
-                smp = tone(dur_steps * step, f, None, kind, vol, a=0.004, d=0.04, s=extra.get("s", 0.6), r=extra.get("r", 0.04), vib=extra.get("vib", 0.0))
-            for k, v in enumerate(smp):
-                if start + k < n:
-                    out[start + k] += v
-    return out
-
-
-def music():
-    # Boss: A minor, driving 150 bpm, 8 bars
-    bass = ("A1 - A2 - A1 - A2 - F1 - F2 - F1 - F2 - G1 - G2 - G1 - G2 - E1 - E2 - E1 E2 ").split()
-    bass = [b for b in bass]
-    arp = []
-    chords = [["A3", "C4", "E4", "A4"], ["F3", "A3", "C4", "F4"], ["G3", "B3", "D4", "G4"], ["E3", "G#3", "B3", "E4"]]
-    for ch in chords:
-        for k in range(16):
-            arp.append(ch[k % 4] if k % 2 == 0 else "-")
-    lead = ("A4 - - C5 - - E5 - D5 - C5 - B4 - - - C5 - - A4 - - F4 - G4 - A4 - C5 - - - "
-            "B4 - - G4 - - D5 - C5 - B4 - G#4 - - - E5 - - - D5 - C5 - B4 - - - G#4 - - -").split()
-    kick = ["x", "-", "-", "-", "-", "-", "x", "-", "x", "-", "-", "-", "-", "-", "-", "-"]
-    snare = ["-", "-", "-", "-", "x", "-", "-", "-", "-", "-", "-", "-", "x", "-", "-", "x"]
-    hat = ["x", "-", "x", "x"]
-    bass8 = []
-    for k in range(4):
-        seg = bass[k * 8:(k + 1) * 8]
-        bass8 += seg + seg
-    boss = render_track(150, 8, [
-        ("tri", 0.5, bass8, 1.8, {"s": 0.8}),
-        ("pulse", 0.14, arp, 1, {"s": 0.5}),
-        ("square", 0.16, lead, 2.5, {"s": 0.7, "vib": 0.006}),
-        ("kick", 0.6, kick, 1, {}), ("snare", 0.35, snare, 1, {}), ("hat", 0.12, hat, 1, {}),
-    ])
-    write("boss_theme", boss, "music")
-
-    # Menu: calm D dorian, 96 bpm, 8 bars
-    chords = [["D3", "F3", "A3", "C4"], ["G3", "B3", "D4", "F4"], ["A3", "C4", "E4", "G4"], ["F3", "A3", "C4", "E4"]]
-    arp = []
-    for ch in chords:
-        for k in range(32):
-            arp.append(ch[(k // 2) % 4] if k % 2 == 0 else "-")
-    bass = []
-    for ch in chords:
-        root = ch[0][:-1] + "2"
-        bass += [root] + ["-"] * 7 + [root] + ["-"] * 5 + [ch[2][:-1] + "2", "-"] + [root] + ["-"] * 7 + [root] + ["-"] * 7
-    lead = ("- - - - A4 - - - C5 - - - D5 - - - - - - - - - - - E5 - D5 - C5 - - - "
-            "B4 - - - - - - - D5 - - - G4 - - - - - - - - - - - A4 - B4 - C5 - - - "
-            "E5 - - - - - - - D5 - C5 - A4 - - - - - - - - - - - G4 - - - A4 - - - "
-            "F4 - - - - - - - E4 - - - F4 - - - A4 - - - - - - - - - - - - - - -").split()
-    menu = render_track(96, 8, [
-        ("tri", 0.45, bass, 3.5, {"s": 0.7}),
-        ("tri", 0.16, arp, 1.8, {"s": 0.5, "r": 0.1}),
-        ("pulse", 0.13, lead, 4, {"s": 0.6, "vib": 0.01, "r": 0.2}),
-        ("hat", 0.05, ["-", "-", "x", "-"], 1, {}),
-    ])
-    write("menu_theme", menu, "music")
+# Music lives in tools/audio/compose_music.py.
 
 
 if __name__ == "__main__":
     sfx()
-    music()
     print("audio done")

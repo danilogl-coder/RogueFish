@@ -641,7 +641,7 @@ func evolve_weapon(evo_id: String) -> void:
 	var from: String = DB.EVOLUTIONS[evo_id].from
 	if weapons.has(from):
 		weapons[from].evolve(evo_id)
-		Sfx.play("evolve")
+		Sfx.play_stinger("fusion", -2.0)
 		game.fx("fx/explosion", position, 14.0, 2.0, Color("ffbf45"))
 	inventory_changed.emit()
 
