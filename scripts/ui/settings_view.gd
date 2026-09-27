@@ -14,7 +14,9 @@ func _ready() -> void:
 		_track_picker()
 
 
-const TRACKS := [["auto", "AUTOMÁTICA"], ["game", "RECIFE VIVO"], ["boss", "MANDÍBULAS"], ["final", "DEVORADOR"], ["menu", "MARÉ MANSA"]]
+const TRACKS := [["auto", "AUTOMÁTICA"], ["explore1", "RECIFE ENSOLARADO"], ["explore2", "CORRENTE PROFUNDA"],
+	["explore3", "FLORESTA DE KELP"], ["explore4", "ABISMO AZUL"], ["explore5", "MARÉ ALTA"],
+	["horde", "HORDA"], ["boss", "MANDÍBULAS"], ["final", "DEVORADOR"], ["menu", "CANÇÃO DAS MARÉS"]]
 
 
 ## Caixa de Música: pick the track that plays during runs.
@@ -24,7 +26,7 @@ func _track_picker() -> void:
 	var l := UIKit.label("TRILHA", 8)
 	l.custom_minimum_size.x = 120
 	h.add_child(l)
-	var cur: String = Profile.settings.get("music_track", "auto")
+	var cur: String = str(Profile.settings.get("music_track", "auto"))
 	var idx := 0
 	for i in TRACKS.size():
 		if TRACKS[i][0] == cur:

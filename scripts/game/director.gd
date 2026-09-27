@@ -63,7 +63,7 @@ func _enter(p: String) -> void:
 			game.darkness.tint_target = Color(0.01, 0.02, 0.07)
 			game.hud.banner("CICLO %d" % cycle, "Explore, coma e cresça", Color("5ee0ff"))
 			game.mods.cycle_start()
-			Sfx.play_music("game")
+			Sfx.play_music("game")    # next exploration song of the rotation
 		"wave":
 			phase_len = DB.WAVE_TIME
 			_wave_t = 0.0
@@ -71,6 +71,8 @@ func _enter(p: String) -> void:
 			game.darkness.tint_target = Color(0.14, 0.0, 0.03)
 			game.hud.banner("ONDA %d!" % cycle, "Sobreviva à horda", Color("ff5c4c"))
 			Sfx.play("wave")
+			Sfx.play_stinger("horde")
+			Sfx.play_music("horde", 1.5)
 			game.shake(4.0)
 		"boss":
 			phase_len = 0.0

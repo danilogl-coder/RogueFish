@@ -2,13 +2,21 @@
 
 Renders every music track of the game to OGG Vorbis (seamless loops):
 
-  menu            "Maré Mansa"      G lydian, 90 bpm, lush pads and a music-box bell
-  explore_base    "Recife Vivo"     D major, 118 bpm, calm layer (always playing)
-  explore_drive   "Recife Vivo"     same grid, drums/bass/saw-lead layer faded in
-                                    by danger (waves, combo): adaptive music
+  menu            "Canção das Marés"   E lydian, 72 bpm: warm detuned pads, flute
+                                       melody, harp arpeggio in ping-pong delay,
+                                       whale calls and wave swells (ocean theme)
+  explore1..5     the run music, five songs rotated during a run, each one as two
+                  synced stems (_base = calm layer, _drive = drums/bass/lead faded
+                  in by danger: adaptive music)
+    explore1      "Recife Ensolarado"  D dorian, 100 bpm, rhodes + marimba + congas
+    explore2      "Corrente Profunda"  C minor, 90 bpm, pulsing ostinato, strings
+    explore3      "Floresta de Kelp"   F lydian, 80 bpm, harp plucks and flute
+    explore4      "Abismo Azul"        A minor/phrygian, 68 bpm, dark ambient
+    explore5      "Maré Alta"          G mixolydian, 122 bpm, upbeat adventure
+  horde           "Horda"              E phrygian, 148 bpm, taiko + ostinato + brass
   boss            "Mandíbulas"      A harmonic minor, 140 bpm, heroic and driving
   final           "Devorador"       D phrygian dominant, 120 bpm, choir + ostinato
-  stingers        level-up (in D), victory fanfare, defeat, fusion
+  stingers        level-up (in D), victory fanfare, defeat, fusion, horde alarm
 
 Design notes (see docs/DESIGN.md, "Música"):
   * one hook per track, repeated and varied (A A' B C) so it sticks;
@@ -16,10 +24,15 @@ Design notes (see docs/DESIGN.md, "Música"):
     and a riser lead back to the hook;
   * adaptive layering instead of track switching during a run: the calm and
     the drive stems share tempo and length and play in sync;
-  * reward sounds are in the key of the gameplay track (D major);
-  * soft timbres, gentle high end and 60+ second loops against fatigue.
+  * ocean colour: warm detuned pads with chorus and slow filter sweeps, long
+    reverb, dotted ping-pong delays, whale-like glides, bubbles, wave-noise
+    swells, lydian/dorian modes; no bright bells or music box (sounded like
+    Christmas);
+  * soft timbres, gentle high end and 70+ second loops against fatigue; loops
+    are folded (reverb tail onto the start) and mastered circularly so the
+    seam is click-free.
 
-Usage: python3 tools/audio/compose_music.py [track ...]
+Usage: python3 tools/audio/compose_music.py [menu explore explore1..5 horde boss final stingers]
 """
 from __future__ import annotations
 
@@ -71,12 +84,12 @@ def _blep(t, dt):
     return y
 
 
-def phase_of(freq):
-    return np.cumsum(freq / SR) % 1.0
+def phase_of(freq, ph0=0.0):
+    return (np.cumsum(freq / SR) + ph0) % 1.0
 
 
-def saw(freq):
-    ph = phase_of(freq)
+def saw(freq, ph0=0.0):
+    ph = phase_of(freq, ph0)
     return 2 * ph - 1 - _blep(ph, freq / SR)
 
 
@@ -89,8 +102,8 @@ def square(freq, pw=0.5):
     return (s1 - s2) * 0.5
 
 
-def sine(freq):
-    return np.sin(2 * np.pi * phase_of(freq))
+def sine(freq, ph0=0.0):
+    return np.sin(2 * np.pi * phase_of(freq, ph0))
 
 
 def tri(freq):
@@ -212,9 +225,119 @@ def inst_ostinato(f, n, gate):
     return lowpass(x, 1400) * env_adsr(n, 0.004, 0.08, 0.5, 0.05, gate) * 0.5
 
 
+# ---- ocean palette: warm, deep, flowing (no bright bells)
+def inst_warmpad(f, n, gate, cutoff=1100.0, voices=5, spread=0.17, attack=0.7):
+    """Supersaw-ish pad: detuned voices with random phases, dark low-pass,
+    a sine for body. Chorus and slow filter sweeps are added on the bus."""
+    out = np.zeros(n)
+    for i in range(voices):
+        det = spread * (2 * i / (voices - 1) - 1)
+        out += saw(np.full(n, f * 2 ** (det / 12)), RNG.uniform())
+    out = lowpass(lowpass(out / voices, cutoff * 1.2), cutoff * 2.4)
+    out += 0.35 * sine(np.full(n, f))
+    return out * env_adsr(n, attack, 1.0, 0.85, 1.1, gate) * 0.8
+
+
+def inst_ooh(f, n, gate):
+    """Soft 'ooh' choir: detuned ensemble through low formants."""
+    x = np.zeros(n)
+    for k, det in enumerate((-0.14, -0.05, 0.05, 0.14)):
+        x += saw(vibrato(n, f * 2 ** (det / 12), 0.09, 4.3 + k * 0.37, 0.2), RNG.uniform())
+    x /= 4
+    y = 0.55 * lowpass(x, 900) + bandpass(x, 280, 480) + 0.6 * bandpass(x, 700, 1000)
+    return y * env_adsr(n, 0.45, 0.8, 0.85, 0.9, gate) * 0.9
+
+
+def inst_flute(f, n, gate):
+    """Breathy, warm flute: sine-rich tone, delayed vibrato, breath noise."""
+    t = np.arange(n) / SR
+    fr = vibrato(n, f, 0.13, 5.0, 0.3)
+    x = sine(fr) + 0.3 * sine(2 * fr) + 0.12 * sine(3 * fr) + 0.04 * sine(4 * fr)
+    br = bandpass(noise(n), max(200.0, f * 0.8), min(SR * 0.4, f * 3.5))
+    x += br * (0.1 + 0.25 * np.exp(-t / 0.08))
+    return x * env_adsr(n, 0.06, 0.3, 0.85, 0.2, gate) * 0.5
+
+
+def inst_whale(f, n, gate):
+    """Whale-like moan: slow rising/falling glide, flutter, band-limited."""
+    t = np.arange(n) / SR
+    g = max(gate / SR, 0.3)
+    u = np.clip(t / g, 0, 1)
+    semis = -4 + 6 * np.sin(np.pi * u * 0.8) - 5 * np.clip((t - g) / 1.2, 0, 1)
+    fr = f * 2 ** (semis / 12) * (1 + 0.004 * np.sin(2 * np.pi * 6.5 * t))
+    x = sine(fr) + 0.35 * sine(2 * fr) + 0.12 * tri(3 * fr)
+    x = bandpass(x, 120, 1600) * (1 + 0.2 * np.sin(2 * np.pi * 3.1 * t))
+    return x * env_adsr(n, 0.5, 1.0, 0.8, 0.9, gate) * 0.6
+
+
+def inst_marimba(f, n, gate):
+    """Soft wooden mallet (Aquatic Ambience flavour), no metallic ring."""
+    t = np.arange(n) / SR
+    dec = float(np.clip(0.8 * (220 / f) ** 0.5, 0.2, 1.1))
+    x = np.sin(2 * np.pi * f * t) * np.exp(-t / dec)
+    x += 0.3 * np.sin(2 * np.pi * 3.93 * f * t) * np.exp(-t / (dec * 0.15))
+    x += 0.15 * lowpass(noise(n), 2500) * np.exp(-t / 0.006)
+    return lowpass(x, 3500) * np.clip(t / 0.002, 0, 1) * 0.8
+
+
+def inst_harp(f, n, gate):
+    """Warm Karplus-Strong harp / nylon pluck."""
+    t = np.arange(n) / SR
+    body = np.sin(2 * np.pi * f * t) * np.exp(-t / 0.9) * 0.25
+    return inst_pluck(f, n, gate + int(0.8 * SR), damp=0.997, tone=3400.0) + body
+
+
+def inst_rhodes(f, n, gate):
+    """Mellow electric piano with a slow tremolo."""
+    t = np.arange(n) / SR
+    x = inst_bell(f, n, gate, ratio=1.0, index=0.8, decay=1.8)
+    x += 0.15 * inst_bell(f, n, gate, ratio=2.0, index=0.3, decay=0.4)
+    return lowpass(x, 3000) * (1 + 0.18 * np.sin(2 * np.pi * 4.2 * t))
+
+
+def inst_strings(f, n, gate, attack=0.18, cutoff=2800.0):
+    """String ensemble: five detuned saws with vibrato."""
+    x = np.zeros(n)
+    for k, det in enumerate((-0.12, -0.05, 0.0, 0.06, 0.13)):
+        x += saw(vibrato(n, f * 2 ** (det / 12), 0.1, 5.0 + 0.3 * k, 0.2), RNG.uniform())
+    x = highpass(lowpass(x / 5, cutoff), 110)
+    return x * env_adsr(n, attack, 0.4, 0.85, 0.35, gate) * 0.55
+
+
+def inst_pulse(f, n, gate, cutoff=1800.0):
+    """Plucky filtered synth bass for ostinatos."""
+    t = np.arange(n) / SR
+    x = saw(np.full(n, f)) + 0.5 * square(np.full(n, f * 1.003), 0.4)
+    fe = np.exp(-t / 0.07)
+    y = lowpass(x, 350) + (lowpass(x, cutoff) - lowpass(x, 350)) * fe
+    y += 0.5 * sine(np.full(n, f))
+    return y * env_adsr(n, 0.003, 0.12, 0.6, 0.05, gate) * 0.5
+
+
+def inst_horn(f, n, gate):
+    """Deep swelling horn with an upward scoop (horde alarm)."""
+    t = np.arange(n) / SR
+    fr = f * 2 ** (-3 * np.exp(-t / 0.12) / 12)
+    x = saw(fr) + 0.7 * saw(fr * 1.004, 0.3) + 0.5 * square(fr * 0.5, 0.45)
+    cut = 500 + 1400 * np.clip(t / 0.35, 0, 1)
+    y = lowpass(x, 500) + (lowpass(x, 1900) - lowpass(x, 500)) * (cut - 500) / 1400
+    return y * env_adsr(n, 0.12, 0.5, 0.8, 0.5, gate) * 0.45
+
+
+def inst_bubble(f, n, gate):
+    """A rising sine chirp: the sound of an air bubble."""
+    t = np.arange(n) / SR
+    fr = f * (1 + 2.2 * t / 0.06)
+    x = np.sin(2 * np.pi * np.cumsum(fr) / SR) * np.exp(-t / 0.035)
+    return x * np.clip(t / 0.003, 0, 1) * 0.5
+
+
 INSTR = {"pad": inst_pad, "pluck": inst_pluck, "bell": inst_bell, "epiano": inst_epiano, "lead": inst_lead,
          "softlead": inst_softlead, "bass": inst_bass, "sub": inst_sub, "choir": inst_choir,
-         "brass": inst_brass, "ostinato": inst_ostinato}
+         "brass": inst_brass, "ostinato": inst_ostinato, "warmpad": inst_warmpad, "ooh": inst_ooh,
+         "flute": inst_flute, "whale": inst_whale, "marimba": inst_marimba, "harp": inst_harp,
+         "rhodes": inst_rhodes, "strings": inst_strings, "pulse": inst_pulse, "horn": inst_horn,
+         "bubble": inst_bubble}
 
 
 # ================================================================== drums
@@ -298,9 +421,36 @@ def dr_riser(seconds):
     return out * (t / seconds) ** 2 * 0.35
 
 
+def dr_conga(v=1.0, f0=330):
+    n = int(0.32 * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.25 * np.exp(-t / 0.012))
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.11)
+    slap = bandpass(noise(n), 900, 4000) * np.exp(-t / 0.007)
+    return (body + 0.35 * slap) * 0.55 * v
+
+
+def dr_taiko(v=1.0):
+    n = int(1.3 * SR)
+    t = np.arange(n) / SR
+    f = 56 * (1 + 0.9 * np.exp(-t / 0.045))
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.42)
+    skin = lowpass(noise(n), 700) * np.exp(-t / 0.07)
+    return np.tanh((body + 0.6 * skin) * 1.5) * 0.85 * v
+
+
+def dr_brush(v=1.0):
+    n = int(0.18 * SR)
+    t = np.arange(n) / SR
+    e = np.clip(t / 0.012, 0, 1) * np.exp(-t / 0.07)
+    return bandpass(noise(n), 2000, 7000) * e * 0.3 * v
+
+
 DRUM = {"K": dr_kick, "k": dr_softkick, "S": dr_snare, "C": dr_clap, "h": dr_hat,
         "o": lambda v=1.0: dr_hat(v, True), "s": dr_shaker, "r": dr_rim, "X": dr_crash,
-        "T": lambda v=1.0: dr_tom(v, 190), "t": lambda v=1.0: dr_tom(v, 130)}
+        "T": lambda v=1.0: dr_tom(v, 190), "t": lambda v=1.0: dr_tom(v, 130),
+        "c": lambda v=1.0: dr_conga(v, 340), "g": lambda v=1.0: dr_conga(v, 225), "D": dr_taiko,
+        "B": dr_brush}
 
 
 # ============================================================ sequencing
@@ -336,9 +486,14 @@ class Song:
 
     def note(self, busname, inst, m, step, length, vol=1.0, pan=0.0, **kw):
         gate = self.pos(length)
-        ring = {"pad": 1.6, "bell": 1.8, "pluck": 1.2, "choir": 1.5, "epiano": 1.6}.get(inst, 0.5)
+        ring = {"pad": 1.6, "bell": 1.8, "pluck": 1.2, "choir": 1.5, "epiano": 1.6, "warmpad": 2.6,
+                "ooh": 2.0, "strings": 1.2, "whale": 2.2, "marimba": 1.4, "harp": 1.8, "rhodes": 1.8,
+                "horn": 1.6, "bubble": 0.2, "flute": 0.8}.get(inst, 0.5)
         n = gate + int(ring * SR)
-        self.add(busname, self.pos(step), INSTR[inst](hz(m), n, gate, **kw), vol, pan)
+        x = INSTR[inst](hz(m), n, gate, **kw)
+        fade = min(len(x), int(0.03 * SR))
+        x[-fade:] *= np.linspace(1, 0, fade)
+        self.add(busname, self.pos(step), x, vol, pan)
 
     def melody(self, busname, inst, bars, start_bar=0, vol=1.0, pan=0.0, octave=0, **kw):
         """bars: list of strings of 'NOTE:len' tokens ('_' = rest), 16 steps per bar."""
@@ -373,19 +528,36 @@ class Song:
 
 
 def chord_notes(name, octave=3):
-    """'Dmaj7', 'Bm7', 'A', 'Asus', 'F#m7', 'E7', 'Cm', 'Eb'... -> midi list."""
+    """'Dmaj7', 'Bm7', 'A', 'Asus', 'F#m7', 'E7', 'Cm', 'Eb', 'F#/E'... -> midi
+    list (a slash bass only changes chord_root)."""
     import re
+    name = name.split("/")[0]
     mm = re.match(r"([A-G][b#]?)(.*)", name)
     root, q = mm.group(1), mm.group(2)
     r = midi(root + str(octave))
     iv = {"": [0, 4, 7], "m": [0, 3, 7], "maj7": [0, 4, 7, 11], "m7": [0, 3, 7, 10], "7": [0, 4, 7, 10],
           "sus": [0, 5, 7], "6": [0, 4, 7, 9], "m9": [0, 3, 7, 10, 14], "add9": [0, 4, 7, 14],
-          "maj7#11": [0, 4, 7, 11, 18]}[q]
+          "maj7#11": [0, 4, 7, 11, 18], "maj9": [0, 4, 7, 11, 14], "m11": [0, 3, 7, 10, 14, 17],
+          "7sus": [0, 5, 7, 10], "madd9": [0, 3, 7, 14], "sus2": [0, 2, 7], "9": [0, 4, 7, 10, 14]}[q]
     return [r + i for i in iv]
 
 
+def chord_root(name, octave=2):
+    """Bass note of a chord, honouring slash chords ('F#/E' -> E)."""
+    if "/" in name:
+        b = name.split("/")[1]
+        return midi(b + str(octave))
+    return chord_notes(name, octave)[0]
+
+
 # ================================================================== mixing
+_IR_CACHE: dict = {}
+
+
 def reverb_ir(seconds=2.2, damp=5000.0, seed=3):
+    key = (seconds, damp, seed)
+    if key in _IR_CACHE:
+        return _IR_CACHE[key]
     n = int(seconds * SR)
     t = np.arange(n) / SR
     rng = np.random.default_rng(seed)
@@ -394,26 +566,43 @@ def reverb_ir(seconds=2.2, damp=5000.0, seed=3):
     ir[:, 0] = lowpass(ir[:, 0], damp)
     ir[:, 1] = lowpass(ir[:, 1], damp)
     ir[: int(0.012 * SR)] = 0  # predelay
-    return ir / np.sqrt((ir ** 2).sum(0))
+    ir = ir / np.sqrt((ir ** 2).sum(0))
+    _IR_CACHE[key] = ir
+    return ir
 
 
-def reverb(x, amount, seconds=2.2):
-    ir = reverb_ir(seconds)
+def reverb(x, amount, seconds=2.2, damp=5000.0):
+    ir = reverb_ir(seconds, damp)
     wet = np.stack([signal.fftconvolve(x[:, c], ir[:, c])[: len(x)] for c in range(2)], 1)
     return wet * amount
 
 
-def pingpong(x, song, feedback=0.38, mix=0.3, steps=3):
+def pingpong(x, song, feedback=0.38, mix=0.3, steps=3, repeats=4, tone=3500.0):
     d = song.pos(steps)
     out = np.zeros_like(x)
     src = x.copy()
-    for k in range(1, 5):
+    for k in range(1, repeats + 1):
         g = mix * feedback ** (k - 1)
         sh = np.zeros_like(x)
+        if d * k >= len(x):
+            break
         sh[d * k:] = src[: len(x) - d * k]
         ch = k % 2
         out[:, ch] += (sh[:, 0] + sh[:, 1]) * 0.5 * g
-    return lowpass_st(out, 3500)
+    return lowpass_st(out, tone)
+
+
+def chorus_st(x, depth_ms=3.5, base_ms=14.0, rate=0.21, mix=0.6):
+    """Slow stereo chorus (modulated delay, quadrature LFOs)."""
+    n = len(x)
+    t = np.arange(n) / SR
+    out = x.copy()
+    idx = np.arange(n, dtype=float)
+    for c in range(2):
+        d = (base_ms + depth_ms * np.sin(2 * np.pi * rate * t + c * np.pi / 2)) * SR / 1000
+        mono = 0.5 * (x[:, 0] + x[:, 1])
+        out[:, c] += mix * np.interp(idx - d, idx, mono, left=0.0)
+    return out / (1 + mix * 0.5)
 
 
 def lowpass_st(x, fc):
@@ -434,24 +623,32 @@ def duck(song, depth=0.45, release=0.16):
     return g[:, None]
 
 
-def mixdown(song, spec, sidechain=0.0):
-    """spec: bus -> (gain, reverb_send, delay_send). Returns stereo float."""
+def mixdown(song, spec, sidechain=0.0, rv_seconds=2.2, rv_damp=5000.0, delay=None):
+    """spec: bus -> (gain, reverb_send, delay_send, *options). Options: "duck"
+    (sidechain to the kicks), "chorus", ("sweep", low_cutoff, cycles): a slow
+    low-pass sweep whose period divides the loop. delay: pingpong kwargs."""
     dry = np.zeros((song.n, 2))
     send = np.zeros((song.n, 2))
     dly = np.zeros((song.n, 2))
     g_duck = duck(song, sidechain) if sidechain > 0 and song.kicks else 1.0
-    for name, (gain, rv, dl, *opt) in spec.items():
+    for name, (gain, rv, dl, *opts) in spec.items():
         if name not in song.buses:
             continue
         b = song.buses[name] * gain
-        if opt and opt[0] == "duck":
-            b = b * g_duck
+        for o in opts:
+            if o == "duck":
+                b = b * g_duck
+            elif o == "chorus":
+                b = chorus_st(b)
+            elif isinstance(o, tuple) and o[0] == "sweep":
+                m = 0.5 - 0.5 * np.cos(2 * np.pi * o[2] * np.arange(song.n) / song.length)
+                b = lowpass_st(b, o[1]) * (1 - m[:, None]) + b * m[:, None]
         dry += b
         send += b * rv
         dly += b * dl
-    wet = reverb(send, 1.0)
+    wet = reverb(send, 1.0, rv_seconds, rv_damp)
     if np.any(dly):
-        wet += pingpong(dly, song)
+        wet += pingpong(dly, song, **(delay or {}))
     return dry + wet
 
 
@@ -459,7 +656,10 @@ def loop_wrap(x, length):
     """Folds the tail (reverb/delay ring) back onto the start: seamless loop."""
     out = x[:length].copy()
     tail = x[length:]
-    out[: len(tail)] += tail[: length]
+    while len(tail):
+        k = min(len(tail), length)
+        out[:k] += tail[:k]
+        tail = tail[k:]
     return out
 
 
@@ -469,11 +669,43 @@ def master(x, gain=1.0):
     return x
 
 
-def write(name, x):
+def master_loop(x, peak_in=1.0, lp=None):
+    """Mastering for loops, done circularly (the filters see the loop as
+    periodic) so the seam stays click-free. peak_in sets how hard the soft
+    clipper is driven."""
+    n = len(x)
+    y = np.concatenate([x, x, x]) * (peak_in / max(1e-6, np.abs(x).max()))
+    y = highpass_st(y, 30)
+    if lp:
+        y = lowpass_st(y, lp)
+    y = np.tanh(y * 1.1) / np.tanh(1.1)
+    return y[n: 2 * n]
+
+
+def ocean_bed(length, swells, cutoff=600.0, foam=0.22, seed=11):
+    """Wave-noise swells, exactly periodic over `length` (seamless)."""
+    rng = np.random.default_rng(seed)
+    t = np.arange(length) / length
+    out = np.zeros((length, 2))
+    for c in range(2):
+        base = rng.uniform(-1, 1, length)
+        tiled = np.concatenate([base, base, base])
+        low = lowpass(lowpass(tiled, cutoff), cutoff)[length: 2 * length]
+        hi = bandpass(tiled, 900, 3200)[length: 2 * length]
+        env = (0.5 - 0.5 * np.cos(2 * np.pi * swells * t + c * 0.6)) ** 1.6
+        out[:, c] = low * (0.25 + 0.75 * env) * 1.6 + hi * foam * env ** 2
+    return out
+
+
+def write(name, x, quality=0.8):
     os.makedirs(OUT, exist_ok=True)
     path = os.path.join(OUT, name + ".ogg")
-    sf.write(path, np.clip(x, -1, 1).astype(np.float32), SR, format="OGG", subtype="VORBIS",
-             compression_level=0.8)
+    data = np.clip(x, -1, 1).astype(np.float32)
+    # written in blocks: libsndfile's Vorbis encoder can crash on one huge write
+    with sf.SoundFile(path, "w", SR, data.shape[1], format="OGG", subtype="VORBIS",
+                      compression_level=quality) as f:
+        for i in range(0, len(data), SR):
+            f.write(data[i: i + SR])
     peak = np.abs(x).max()
     rms = np.sqrt((x ** 2).mean())
     print(f"  {name}.ogg  {len(x) / SR:5.1f}s  peak {peak:.2f}  rms {20 * np.log10(rms + 1e-9):5.1f} dB  {os.path.getsize(path) // 1024} KB")
@@ -497,7 +729,44 @@ def chords_track(song, bus, prog, inst="pad", octave=3, vol=0.22, start_bar=0, p
             song.note(bus, inst, m, start_bar * 16 + i * span, span, vol, pan, **kw)
 
 
-def arp_track(song, bus, prog, pattern, octave=4, vol=0.16, inst="pluck", start_bar=0, pan_swing=0.35):
+def comp_track(song, bus, prog, rhythm, inst="rhodes", octave=3, vol=0.12, start_bar=0, strum=0.0,
+               hold=None, **kw):
+    """Rhythmic chords. rhythm: 16 chars, 'x' hit, digit = velocity, '.' rest;
+    each hit lasts until the next one (or `hold` steps)."""
+    hits = [i for i, c in enumerate(rhythm) if c != "."]
+    for bi, ch in enumerate(prog):
+        if ch in ("-", "_"):
+            continue
+        notes = chord_notes(ch, octave)
+        for hi, st in enumerate(hits):
+            ln = hold or ((hits[hi + 1] if hi + 1 < len(hits) else 16) - st) * 0.92
+            c = rhythm[st]
+            v = vol * (int(c) / 9.0 if c.isdigit() else 1.0)
+            for j, m in enumerate(notes):
+                pan = (j / max(1, len(notes) - 1) - 0.5) * 0.7
+                song.note(bus, inst, m, (start_bar + bi) * 16 + st + j * strum, ln, v, pan, **kw)
+
+
+def whales(song, bus, calls, vol=0.2):
+    """calls: list of (bar, note name, length in steps, pan)."""
+    for bar, nm, ln, pan in calls:
+        song.note(bus, "whale", midi(nm), bar * 16, ln, vol, pan)
+
+
+def bubbles(song, bus, count, vol=0.05, seed=5):
+    rng = np.random.default_rng(seed)
+    total = song.bars * 16
+    for _ in range(count):
+        st = rng.uniform(0, total - 1)
+        burst = rng.integers(1, 4)
+        for k in range(burst):
+            f = rng.uniform(72, 86)
+            song.note(bus, "bubble", f, st + k * rng.uniform(0.3, 0.9), 0.4, vol * rng.uniform(0.5, 1.0),
+                      rng.uniform(-0.8, 0.8))
+
+
+def arp_track(song, bus, prog, pattern, octave=4, vol=0.16, inst="pluck", start_bar=0, pan_swing=0.35,
+              note_len=1.6, **kw):
     """pattern: list of chord-tone indices per 16th ('.' = rest). Tones above the
     chord size wrap to the next octave."""
     for i, ch in enumerate(prog):
@@ -510,7 +779,7 @@ def arp_track(song, bus, prog, pattern, octave=4, vol=0.16, inst="pluck", start_
             k = int(idx)
             m = tones[k % len(tones)] + 12 * (k // len(tones))
             pan = pan_swing * (1 if s % 2 else -1)
-            song.note(bus, inst, m, (start_bar + i) * 16 + s, 1.6, vol * (1.0 if s % 4 == 0 else 0.78), pan)
+            song.note(bus, inst, m, (start_bar + i) * 16 + s, note_len, vol * (1.0 if s % 4 == 0 else 0.78), pan, **kw)
 
 
 def bass_track(song, bus, prog, rhythm, octave=2, vol=0.5, inst="bass", start_bar=0, **kw):
@@ -519,7 +788,7 @@ def bass_track(song, bus, prog, rhythm, octave=2, vol=0.5, inst="bass", start_ba
     for i, ch in enumerate(prog):
         if ch in ("-", "_"):
             continue
-        r = chord_notes(ch, octave)[0]
+        r = chord_root(ch, octave)
         s = 0
         while s < 16:
             c = rhythm[s]
@@ -535,56 +804,279 @@ def bass_track(song, bus, prog, rhythm, octave=2, vol=0.5, inst="bass", start_ba
 
 
 # ----------------------------------------------------------------- explore
-EXPLORE_PROG = (["Dmaj7", "Bm7", "Gmaj7", "A6", "Dmaj7", "F#m7", "Gmaj7", "A"]
-                + ["Em7", "F#m7", "Gmaj7", "A", "Bm7", "F#m7", "Gmaj7", "Asus"]
-                + ["Gmaj7", "A", "F#m7", "Bm7", "Em7", "A", "Dmaj7", "Dmaj7"]
-                + ["Dmaj7", "Bm7", "Gmaj7", "A6", "Dmaj7", "F#m7", "Gmaj7", "A"])
-HOOK_A = ["A4:2 D5:2 F#5:3 E5:1 D5:2 E5:2 F#5:4", "_:2 F#5:2 A5:2 F#5:2 E5:4 D5:4",
-          "B4:2 D5:2 G5:3 F#5:1 E5:2 D5:2 E5:4", "_:4 C#5:2 D5:2 E5:4 A4:4",
-          "A4:2 D5:2 F#5:3 E5:1 D5:2 E5:2 F#5:4", "_:2 F#5:2 A5:2 C#6:2 B5:4 A5:4",
-          "B5:3 A5:1 G5:2 F#5:2 E5:2 D5:2 E5:4", "E5:4 F#5:2 E5:2 C#5:4 _:4"]
-HOOK_B = ["_:4 G5:2 F#5:2 E5:4 B4:4", "_:4 A5:2 G5:2 F#5:4 C#5:4",
-          "_:2 D5:2 G5:2 B5:2 A5:4 G5:4", "F#5:2 E5:2 C#5:4 E5:4 _:4",
-          "_:4 D5:2 F#5:2 B5:4 A5:4", "_:4 C#6:2 B5:2 A5:4 F#5:4",
-          "G5:2 A5:2 B5:4 D6:4 C#6:4", "B5:4 A5:4 _:8"]
-HOOK_C = ["D6:8 B5:4 A5:4", "C#6:8 A5:4 E5:4", "A5:8 F#5:4 C#6:4", "B5:12 A5:4",
-          "G5:4 B5:4 E6:8", "E6:4 D6:4 C#6:8", "D6:16", "_:16"]
-HOOK_A2 = HOOK_A[:7] + ["E5:4 F#5:2 E5:2 D5:4 _:4"]
+# Five songs rotate during a run. Each is rendered as two synced stems: the
+# calm base (always on) and the drive layer (buses prefixed d_) that the game
+# fades in with danger.  Every song has its own key, mode, tempo and palette.
+
+# --- 1. "Recife Ensolarado": D dorian, 100 bpm, sunny reef groove
+R1_A = ["Dm9", "G9", "Dm9", "G9", "Fmaj7", "C", "Em7", "A7sus"]
+R1_B = ["Fmaj7", "G9", "Em7", "Am7", "Dm9", "G9", "Cmaj7", "A7sus"]
+R1_C = ["Fmaj7", "Em7", "Dm9", "C", "Fmaj7", "G9", "A7sus", "A7sus"]
+R1_PROG = R1_A + R1_B + R1_C + R1_A
+R1_MA = ["D5:3 F5:3 A5:2 G5:2 F5:2 E5:2 D5:2", "B4:4 D5:2 E5:2 F5:4 E5:4",
+         "D5:3 F5:3 A5:2 C6:2 A5:2 G5:2 F5:2", "G5:8 E5:4 _:4",
+         "A5:3 C6:3 A5:2 G5:2 F5:2 E5:2 C5:2", "E5:6 D5:2 C5:4 G4:4",
+         "B4:4 D5:4 E5:4 G5:4", "A5:12 _:4"]
+R1_MB = ["_:4 C6:2 A5:2 F5:4 A5:4", "B5:6 A5:2 G5:4 D5:4", "_:4 G5:2 E5:2 B4:4 E5:4",
+         "C6:6 B5:2 A5:4 E5:4", "F5:4 A5:4 D6:4 C6:4", "B5:8 A5:4 G5:4",
+         "E5:4 G5:4 B5:4 C6:4", "A5:8 E5:8"]
+R1_MC = ["A5:16", "G5:16", "F5:8 E5:8", "E5:16", "C6:16", "B5:16", "A5:8 G5:8", "A5:16"]
+R1_MA2 = R1_MA[:7] + ["D5:12 _:4"]
 
 
-def explore():
-    s = Song(118, 32)
+def explore1():
+    s = Song(100, 32, tail=5.0)
     # ---- calm layer
-    chords_track(s, "pad", EXPLORE_PROG, "pad", 3, 0.2)
-    arp_track(s, "arp", EXPLORE_PROG, list("0123" "2123" "0123" "4321"), 4, 0.13)
-    bass_track(s, "sub", EXPLORE_PROG, "R-------5---R---", 2, 0.42, "sub")
-    s.melody("lead", "softlead", HOOK_A + HOOK_B, 0, 0.36)
-    s.melody("lead", "bell", HOOK_C, 16, 0.3)
-    s.melody("lead", "softlead", HOOK_A2, 24, 0.36)
-    s.melody("bell", "bell", HOOK_A, 24, 0.12, 0.3, octave=1)
-    perc = {"k": "5.......5.......", "s": "..4...4...4...45", "r": "....6.......6..."}
-    s.drums("perc", perc, 0, 32, 0.55, {"s": 0.3, "r": -0.25})
+    comp_track(s, "keys", R1_PROG, "x..x..x...x.x...", "rhodes", 3, 0.075)
+    chords_track(s, "pad", R1_PROG, "warmpad", 3, 0.05, cutoff=900)
+    arp_track(s, "arp", R1_PROG, list("0.2.4.3.1.3.2.4."), 4, 0.12, "marimba", note_len=2)
+    bass_track(s, "sub", R1_PROG, "R-----R-5-----R-", 2, 0.4, "sub")
+    s.melody("lead", "flute", R1_MA + R1_MB, 0, 0.3)
+    s.melody("lead", "ooh", R1_MC, 16, 0.16)
+    s.melody("lead", "flute", R1_MA2, 24, 0.3)
+    s.melody("lead2", "marimba", R1_MA2, 24, 0.07, 0.4, octave=-1)
+    perc = {"c": "..6...6.....6.6.", "g": "6.....5...6.....", "s": "5.3.5.3.5.3.5.3."}
+    s.drums("perc", perc, 0, 32, 0.5, {"c": 0.3, "g": -0.2, "s": 0.4})
+    bubbles(s, "fx", 14, 0.05, seed=1)
     s.kicks.clear()
-    # ---- drive layer (bus names prefixed with d_)
-    drv = {"K": "9...9...9...9...", "C": "....8.......8...", "h": "..6...6...6...6.", "o": "..............6."}
-    drv_b = {"K": "9...9...9...9...", "S": "....9.......9..5", "h": "5.6.5.6.5.6.5.6.", "o": "..............7."}
-    s.drums("d_drums", drv, 0, 8, 0.8)
-    s.drums("d_drums", drv_b, 8, 8, 0.8)
-    s.drums("d_drums", drv, 16, 7, 0.85)
-    s.drums("d_drums", {"T": "........7...7...", "t": "..........7...77", "S": "9.5.9.5.9.5.9999"}, 23, 1, 0.8)
-    s.drums("d_drums", drv_b, 24, 8, 0.85)
+    # ---- drive layer
+    groove = {"K": "9.....9...9.....", "S": "....9.......9...", "h": "6.6.6.6.6.6.6.6.", "o": "..............6."}
+    groove_b = {"K": "9.....9...9..6..", "S": "....9.......9..5", "h": "6464646464646464", "o": "......6.......6."}
+    s.drums("d_drums", groove, 0, 16, 0.8)
+    s.drums("d_drums", groove_b, 16, 15, 0.8)
+    s.drums("d_drums", {"S": "9.5.9.5.9.5.9999", "t": "..........7..7..", "K": "9...9..........."}, 31, 1, 0.8)
     for b in (0, 8, 16, 24):
-        s.drums("d_drums", {"X": "9..............."}, b, 1, 0.8)
-    s.fx("d_fx", dr_riser(s.step * 16 * 2), 22 * 16, 0.9)
-    bass_track(s, "d_bass", EXPLORE_PROG, "R.RO.RO.R.RO.R5O", 2, 0.34, "bass")
-    s.melody("d_lead", "lead", HOOK_A + HOOK_B + HOOK_C + HOOK_A2, 0, 0.2, octave=0)
+        s.drums("d_drums", {"X": "9..............."}, b, 1, 0.6)
+    s.fx("d_fx", dr_riser(s.step * 16 * 2), 22 * 16, 0.8)
+    bass_track(s, "d_bass", R1_PROG, "R..R..O.R..5.R.O", 2, 0.32, "bass", cutoff=800)
+    s.melody("d_lead", "lead", R1_MA + R1_MB + R1_MC + R1_MA2, 0, 0.15, cutoff=2600)
     return s
 
 
-EXPLORE_MIX_BASE = {"pad": (1.0, 0.35, 0.0, "duck"), "arp": (1.2, 0.3, 0.25), "sub": (0.7, 0.0, 0.0, "duck"),
-                    "lead": (1.5, 0.3, 0.3), "bell": (1.0, 0.45, 0.2), "perc": (1.0, 0.15, 0.0)}
-EXPLORE_MIX_DRIVE = {"d_drums": (0.55, 0.1, 0.0), "d_bass": (0.6, 0.0, 0.0, "duck"), "d_lead": (1.9, 0.25, 0.3),
-                     "d_fx": (1.0, 0.3, 0.0)}
+R1_MIX_BASE = {"pad": (1.6, 0.5, 0.0, "duck", "chorus"), "keys": (0.55, 0.3, 0.15, "duck"),
+               "arp": (1.0, 0.35, 0.35), "sub": (0.5, 0.0, 0.0, "duck"), "lead": (1.2, 0.4, 0.25),
+               "lead2": (1.0, 0.4, 0.3), "perc": (1.0, 0.18, 0.0), "fx": (1.0, 0.5, 0.2)}
+R1_MIX_DRIVE = {"d_drums": (0.42, 0.1, 0.0), "d_bass": (0.95, 0.0, 0.0, "duck"), "d_lead": (2.2, 0.3, 0.3),
+                "d_fx": (1.0, 0.3, 0.0)}
+
+# --- 2. "Corrente Profunda": C minor, 90 bpm, mysterious deep current
+R2_A = ["Cm9", "Abmaj7", "Fm9", "G7sus", "Cm9", "Dbmaj7", "Abmaj7", "G7sus"]
+R2_B = ["Abmaj7", "Bb", "Gm7", "Cm9", "Fm9", "Ebmaj7", "Dbmaj7", "G"]
+R2_PROG = R2_A + R2_B + R2_A + R2_B
+R2_MA = ["G4:8 Eb4:4 D4:4", "C4:8 Eb4:4 G4:4", "Ab4:6 G4:2 F4:4 C4:4", "D4:12 _:4",
+         "G4:6 Bb4:2 C5:8", "Db5:6 C5:2 Ab4:8", "G4:4 Eb4:4 C4:4 Eb4:4", "D4:8 F4:4 G4:4"]
+R2_MB = ["C5:8 Eb5:8", "D5:8 F5:4 D5:4", "Bb4:8 D5:4 F5:4", "Eb5:12 D5:4",
+         "C5:8 Ab4:4 G4:4", "Bb4:8 G4:4 Eb4:4", "F4:8 Ab4:4 C5:4", "B4:12 _:4"]
+
+
+def explore2():
+    s = Song(90, 32, tail=5.0)
+    chords_track(s, "pad", R2_PROG, "warmpad", 3, 0.08, cutoff=800)
+    chords_track(s, "choir", R2_B, "ooh", 4, 0.045, start_bar=8)
+    chords_track(s, "choir", R2_B, "ooh", 4, 0.045, start_bar=24)
+    bass_track(s, "ost", R2_PROG, "R.R.O.R.R.R.O.5.", 2, 0.2, "pulse", cutoff=1200)
+    bass_track(s, "sub", R2_PROG, "R-------R-------", 2, 0.34, "sub")
+    arp_track(s, "harp", R2_PROG, list("0...2...4...3..."), 4, 0.1, "harp", note_len=4)
+    s.melody("lead", "strings", R2_MA + R2_MB, 0, 0.22, attack=0.25)
+    s.melody("lead", "strings", R2_MA, 16, 0.22, attack=0.25)
+    s.melody("lead", "strings", R2_MB, 24, 0.2, attack=0.25, octave=1)
+    s.melody("lead", "strings", R2_MB, 24, 0.14, attack=0.25)
+    whales(s, "whale", [(2, "G3", 26, -0.5), (10, "C4", 22, 0.5), (18, "Eb3", 28, 0.3), (27, "G3", 24, -0.4)], 0.2)
+    s.drums("perc", {"g": "6.......3.....4.", "s": "..3...3...3...3."}, 0, 32, 0.45, {"g": -0.2, "s": 0.35})
+    bubbles(s, "fx", 10, 0.04, seed=2)
+    s.kicks.clear()
+    # ---- drive
+    beat = {"D": "9.......7.......", "K": "9.....6...9.....", "r": "....7.......7..5", "h": "5.5.5.5.5.5.5.5."}
+    beat_b = {"D": "9.......7...6...", "K": "9.....6...9..6..", "S": "....8.......8...", "h": "5555555555555555"}
+    s.drums("d_drums", beat, 0, 8, 0.75)
+    s.drums("d_drums", beat_b, 8, 7, 0.75)
+    s.drums("d_drums", {"T": "9.9.9.9.........", "t": "........9.9.9999", "D": "9..............."}, 15, 1, 0.75)
+    s.drums("d_drums", beat, 16, 8, 0.75)
+    s.drums("d_drums", beat_b, 24, 8, 0.75)
+    for b in (0, 8, 16, 24):
+        s.drums("d_drums", {"X": "9..............."}, b, 1, 0.55)
+    arp_track(s, "d_arp", R2_PROG, list("0123" "2123" "0123" "4321"), 4, 0.07, "pluck")
+    comp_track(s, "d_stab", R2_PROG, "x.....x...x.....", "brass", 3, 0.05, hold=1.6)
+    bass_track(s, "d_bass", R2_PROG, "R.R.R.O.R.R.R.O.", 1, 0.3, "bass", cutoff=600)
+    s.fx("d_fx", dr_riser(s.step * 16 * 2), 14 * 16, 0.7)
+    s.fx("d_fx", dr_riser(s.step * 16 * 2), 30 * 16, 0.7)
+    return s
+
+
+R2_MIX_BASE = {"pad": (1.5, 0.5, 0.0, "duck", "chorus", ("sweep", 450.0, 4)), "choir": (1.8, 0.6, 0.0),
+               "ost": (1.1, 0.15, 0.2, "duck"), "sub": (0.5, 0.0, 0.0, "duck"), "harp": (1.6, 0.45, 0.45),
+               "lead": (2.3, 0.45, 0.15), "whale": (1.0, 0.8, 0.3), "perc": (1.0, 0.2, 0.0),
+               "fx": (1.0, 0.5, 0.2)}
+R2_MIX_DRIVE = {"d_drums": (0.42, 0.15, 0.0), "d_arp": (2.0, 0.3, 0.35), "d_stab": (1.3, 0.35, 0.1),
+                "d_bass": (0.95, 0.0, 0.0, "duck"), "d_fx": (1.0, 0.3, 0.0)}
+
+# --- 3. "Floresta de Kelp": F lydian, 80 bpm, gentle swaying plucks
+R3_A = ["Fmaj7", "G/F", "Am7", "G/F", "Dm9", "Em7", "Fmaj7", "Csus"]
+R3_B = ["Dm9", "Em7", "Fmaj7", "G", "Am7", "G/B", "Cmaj7", "Csus"]
+R3_T = ["Fmaj7", "G/F", "Fmaj7", "G/F"]
+R3_PROG = R3_A + R3_B + R3_A + R3_T
+R3_MA = ["A4:6 C5:2 E5:8", "D5:6 B4:2 G4:8", "C5:4 E5:4 G5:4 E5:4", "F5:8 D5:4 B4:4",
+         "A4:6 C5:2 F5:8", "E5:4 D5:4 B4:8", "C5:4 A4:4 E5:8", "C5:12 _:4"]
+R3_MB = ["F5:6 E5:2 D5:4 A5:4", "G5:8 E5:4 D5:4", "A5:6 G5:2 E5:8", "D5:8 B4:4 D5:4",
+         "E5:6 G5:2 C6:8", "B5:6 A5:2 G5:8", "E5:4 G5:4 B5:4 G5:4", "F5:8 G5:8"]
+R3_COUNTER = ["C5:16", "B4:16", "A4:16", "B4:16", "F4:16", "G4:16", "A4:16", "G4:16"]
+
+
+def explore3():
+    s = Song(80, 28, tail=5.0)
+    chords_track(s, "pad", R3_PROG, "warmpad", 3, 0.07, cutoff=1100)
+    arp_track(s, "harp", R3_PROG, list("0.1.2.3.4.3.2.1."), 4, 0.1, "harp", note_len=3)
+    bass_track(s, "sub", R3_PROG, "R-------5-------", 2, 0.38, "sub")
+    s.melody("lead", "flute", R3_MA + R3_MB + R3_MA, 0, 0.28)
+    s.melody("choir", "ooh", R3_COUNTER, 16, 0.09)
+    chords_track(s, "choir", R3_T, "ooh", 4, 0.04, start_bar=24)
+    whales(s, "whale", [(24, "C4", 22, -0.4), (26, "F3", 20, 0.4)], 0.18)
+    s.drums("perc", {"s": "..4...4...4...45", "B": "....5.......5..."}, 0, 28, 0.45, {"s": 0.35, "B": -0.2})
+    bubbles(s, "fx", 16, 0.05, seed=3)
+    s.kicks.clear()
+    # ---- drive
+    beat = {"K": "9.......9.6.....", "r": "....7.......7...", "h": "..5...5...5...5."}
+    beat_b = {"K": "9.......9.6...6.", "S": "....8.......8...", "h": "5.5.5.5.5.5.5.5.", "c": "......5.....5.5."}
+    s.drums("d_drums", beat, 0, 8, 0.75)
+    s.drums("d_drums", beat_b, 8, 8, 0.75)
+    s.drums("d_drums", beat, 16, 8, 0.75)
+    s.drums("d_drums", {"r": "....5.......5...", "h": "..4...4...4...4."}, 24, 4, 0.7)
+    for b in (0, 8, 16):
+        s.drums("d_drums", {"X": "7..............."}, b, 1, 0.5)
+    arp_track(s, "d_arp", R3_PROG[:24], list("0243" "1342" "0243" "1432"), 4, 0.06, "marimba")
+    bass_track(s, "d_bass", R3_PROG, "R..R....5..R.O..", 2, 0.3, "bass", cutoff=700)
+    s.melody("d_lead", "lead", R3_MA + R3_MB + R3_MA, 0, 0.12, cutoff=2200)
+    return s
+
+
+R3_MIX_BASE = {"pad": (1.6, 0.5, 0.0, "duck", "chorus", ("sweep", 600.0, 2)), "harp": (1.6, 0.4, 0.4),
+               "sub": (0.5, 0.0, 0.0, "duck"), "lead": (1.2, 0.45, 0.25), "choir": (1.8, 0.6, 0.0),
+               "whale": (1.0, 0.8, 0.3), "perc": (1.0, 0.2, 0.0), "fx": (1.0, 0.5, 0.2)}
+R3_MIX_DRIVE = {"d_drums": (0.45, 0.12, 0.0), "d_arp": (0.9, 0.3, 0.35), "d_bass": (0.95, 0.0, 0.0, "duck"),
+                "d_lead": (2.0, 0.35, 0.3)}
+
+# --- 4. "Abismo Azul": A minor / phrygian, 68 bpm, dark ambient deep sea
+R4_P1 = ["Amadd9", "Amadd9", "Fmaj7", "Fmaj7", "Dm9", "Dm9", "Bbmaj7", "E7sus"]
+R4_P2 = ["Amadd9", "Amadd9", "Cmaj7", "G", "Fmaj7", "Fmaj7", "Bbmaj7", "E7sus"]
+R4_P3 = ["Dm9", "Dm9", "Amadd9", "Amadd9", "Bbmaj7", "Bbmaj7", "E7sus", "E"]
+R4_PROG = R4_P1 + R4_P2 + R4_P3
+R4_M1 = ["E4:16", "_:16", "C5:8 A4:8", "_:16", "F4:16", "E4:8 D4:8", "D4:16", "E4:12 _:4"]
+R4_M2 = ["B4:16", "C5:8 E5:8", "G5:16", "D5:16", "C5:8 A4:8", "F5:16", "D5:8 F5:8", "E5:12 _:4"]
+R4_M3 = ["A4:16", "F4:8 E4:8", "E4:16", "_:16", "F4:16", "D4:8 F4:8", "E4:16", "G#4:12 _:4"]
+
+
+def explore4():
+    s = Song(68, 24, tail=6.0)
+    chords_track(s, "pad", R4_PROG, "warmpad", 3, 0.09, cutoff=700, attack=1.2)
+    chords_track(s, "choir", R4_PROG, "ooh", 4, 0.035)
+    bass_track(s, "sub", R4_PROG, "R---------------", 2, 0.36, "sub")
+    s.melody("lead", "ooh", R4_M1, 0, 0.16)
+    s.melody("lead", "flute", R4_M2, 8, 0.24)
+    s.melody("lead", "ooh", R4_M3, 16, 0.16)
+    s.melody("lead", "flute", R4_M3, 16, 0.12, octave=1)
+    for bar in range(0, 24, 2):
+        nm = ["A3", "E4", "A3", "C4", "D4", "A3", "E4", "A3", "D4", "A3", "F4", "E4"][bar // 2]
+        s.note("sonar", "marimba", midi(nm), bar * 16 + 6, 2, 0.13, -0.3)
+    whales(s, "whale", [(1, "E4", 30, -0.5), (6, "A3", 28, 0.5), (11, "C4", 30, -0.2), (17, "E3", 30, 0.4),
+                        (21, "A3", 26, -0.4)], 0.22)
+    bubbles(s, "fx", 12, 0.045, seed=4)
+    s.kicks.clear()
+    # ---- drive
+    beat = {"K": "9..6....9..6....", "h": "..4...4...4...4."}
+    beat_b = {"K": "9..6....9..6....", "S": "........7.......", "h": "..4...4...4...4.", "t": "..............76"}
+    s.drums("d_drums", beat, 0, 8, 0.8)
+    s.drums("d_drums", beat_b, 8, 8, 0.8)
+    s.drums("d_drums", beat_b, 16, 8, 0.8)
+    s.drums("d_drums", {"D": "9..............."}, 8, 1, 0.8)
+    s.drums("d_drums", {"D": "9..............."}, 16, 1, 0.8)
+    bass_track(s, "d_ost", R4_PROG, "R.R.R.R.R.R.R.O.", 2, 0.18, "pulse", cutoff=1000)
+    s.melody("d_lead", "strings", R4_M1 + R4_M2 + R4_M3, 0, 0.1, octave=1, attack=0.3)
+    s.fx("d_fx", dr_riser(s.step * 16 * 2), 14 * 16, 0.6)
+    return s
+
+
+R4_MIX_BASE = {"pad": (1.4, 0.55, 0.0, "duck", "chorus", ("sweep", 380.0, 3)), "choir": (1.8, 0.6, 0.0),
+               "sub": (0.5, 0.0, 0.0, "duck"), "lead": (1.2, 0.55, 0.3), "sonar": (1.4, 0.6, 0.6),
+               "whale": (0.9, 0.8, 0.35), "fx": (1.0, 0.5, 0.2)}
+R4_MIX_DRIVE = {"d_drums": (0.45, 0.2, 0.0), "d_ost": (1.4, 0.2, 0.25, "duck"), "d_lead": (2.4, 0.5, 0.2),
+                "d_fx": (1.0, 0.4, 0.0)}
+
+# --- 5. "Maré Alta": G mixolydian, 122 bpm, upbeat adventure
+R5_A = ["G", "D/F#", "Em7", "Cadd9", "G", "F", "C", "D"]
+R5_B = ["Em7", "Cadd9", "G", "D", "Em7", "Cadd9", "Am7", "D7sus"]
+R5_C = ["Cadd9", "D", "Bm7", "Em7", "Cadd9", "D", "F", "D"]
+R5_PROG = R5_A + R5_B + R5_A + R5_C + R5_A
+R5_MA = ["D5:3 G5:3 B5:2 A5:4 G5:4", "F#5:3 A5:3 D6:2 A5:4 F#5:4", "G5:3 B5:3 E6:2 D6:4 B5:4",
+         "C6:6 B5:2 A5:4 G5:4", "D5:3 G5:3 B5:2 D6:4 B5:4", "C6:3 A5:3 F5:2 A5:4 C6:4",
+         "E6:4 D6:4 C6:4 G5:4", "A5:12 _:4"]
+R5_MB = ["_:4 B4:2 D5:2 E5:4 G5:4", "G5:6 E5:2 D5:4 C5:4", "_:4 B4:2 D5:2 G5:4 B5:4", "A5:8 F#5:4 D5:4",
+         "_:4 E5:2 G5:2 B5:4 D6:4", "E6:6 D6:2 C6:4 G5:4", "A5:4 C6:4 E6:4 C6:4", "D6:8 C6:4 A5:4"]
+R5_MC = ["E5:8 G5:8", "F#5:8 A5:8", "D6:12 B5:4", "B5:16", "C6:8 E6:8", "D6:8 A5:8", "C6:8 A5:8",
+         "A5:4 B5:4 C6:4 D6:4"]
+R5_MA2 = R5_MA[:7] + ["G5:12 _:4"]
+
+
+def explore5():
+    s = Song(122, 40, tail=4.0)
+    comp_track(s, "gtr", R5_PROG, "x.x..x.x..x.x.x.", "harp", 3, 0.06, strum=0.12)
+    chords_track(s, "pad", R5_PROG, "warmpad", 3, 0.05, cutoff=1300)
+    bass_track(s, "sub", R5_PROG, "R---R---5---R---", 2, 0.36, "sub")
+    s.melody("lead", "flute", R5_MA + R5_MB + R5_MA, 0, 0.28)
+    s.melody("lead", "ooh", R5_MC, 24, 0.16)
+    s.melody("lead", "flute", R5_MA2, 32, 0.28)
+    arp_track(s, "arp", R5_B, list("0.2.1.3.2.4.3.1."), 4, 0.08, "marimba", start_bar=8)
+    arp_track(s, "arp", R5_C, list("0.2.1.3.2.4.3.1."), 4, 0.08, "marimba", start_bar=24)
+    perc = {"c": "..5..5....5..5..", "g": "5.......5.....5.", "s": "4.4.4.4.4.4.4.4."}
+    s.drums("perc", perc, 0, 40, 0.5, {"c": 0.3, "g": -0.25, "s": 0.4})
+    bubbles(s, "fx", 14, 0.05, seed=6)
+    s.kicks.clear()
+    # ---- drive
+    rock = {"K": "9...9...9...9...", "S": "....9.......9...", "h": "..6...6...6...6."}
+    rock_b = {"K": "9...9...9...9.6.", "S": "....9.......9...", "h": "6464646464646464", "o": "..............6."}
+    fill = {"T": "........9.9.....", "t": "............9999", "S": "9...9..........."}
+    s.drums("d_drums", rock, 0, 8, 0.8)
+    s.drums("d_drums", rock_b, 8, 7, 0.8)
+    s.drums("d_drums", fill, 15, 1, 0.8)
+    s.drums("d_drums", rock, 16, 8, 0.8)
+    s.drums("d_drums", rock_b, 24, 7, 0.8)
+    s.drums("d_drums", fill, 31, 1, 0.8)
+    s.drums("d_drums", rock_b, 32, 8, 0.8)
+    for b in (0, 8, 16, 24, 32):
+        s.drums("d_drums", {"X": "9..............."}, b, 1, 0.6)
+    s.fx("d_fx", dr_riser(s.step * 16 * 2), 30 * 16, 0.8)
+    bass_track(s, "d_bass", R5_PROG, "R.RO.RO.R.RO.R5O", 2, 0.3, "bass", cutoff=900)
+    s.melody("d_lead", "lead", R5_MA + R5_MB + R5_MA + R5_MC + R5_MA2, 0, 0.14, cutoff=3000)
+    comp_track(s, "d_brass", R5_C, "x.....x.....x...", "brass", 3, 0.05, start_bar=24, hold=2.5)
+    return s
+
+
+R5_MIX_BASE = {"gtr": (1.5, 0.3, 0.2, "duck"), "pad": (1.6, 0.45, 0.0, "duck", "chorus"),
+               "sub": (0.5, 0.0, 0.0, "duck"), "lead": (1.2, 0.35, 0.25), "arp": (1.5, 0.35, 0.35),
+               "perc": (1.0, 0.18, 0.0), "fx": (1.0, 0.5, 0.2)}
+R5_MIX_DRIVE = {"d_drums": (0.4, 0.1, 0.0), "d_bass": (0.95, 0.0, 0.0, "duck"), "d_lead": (2.0, 0.3, 0.3),
+                "d_brass": (1.8, 0.3, 0.1), "d_fx": (1.0, 0.3, 0.0)}
+
+# song id -> (builder, base mix, drive mix, reverb seconds, delay kwargs, ocean swells, bed volume)
+EXPLORE_SONGS = {
+    "explore1": (explore1, R1_MIX_BASE, R1_MIX_DRIVE, 2.6, {"steps": 3, "feedback": 0.4}, 8, 0.05),
+    "explore2": (explore2, R2_MIX_BASE, R2_MIX_DRIVE, 3.4, {"steps": 3, "feedback": 0.45, "repeats": 5}, 8, 0.07),
+    "explore3": (explore3, R3_MIX_BASE, R3_MIX_DRIVE, 3.2, {"steps": 3, "feedback": 0.45, "repeats": 5}, 7, 0.06),
+    "explore4": (explore4, R4_MIX_BASE, R4_MIX_DRIVE, 4.0, {"steps": 6, "feedback": 0.5, "repeats": 6, "tone": 2500.0}, 6, 0.09),
+    "explore5": (explore5, R5_MIX_BASE, R5_MIX_DRIVE, 2.4, {"steps": 3, "feedback": 0.38}, 10, 0.04),
+}
+
+
+def render_explore(key):
+    build, mb, md, rv, dl, swells, bed = EXPLORE_SONGS[key]
+    s = build()
+    base = loop_wrap(mixdown(s, mb, 0.15, rv, 4200.0, dl), s.length)
+    drive = loop_wrap(mixdown(s, md, 0.4, rv, 4200.0, dl), s.length)
+    base += ocean_bed(s.length, swells, seed=int(key[-1]) + 20) * bed * np.abs(base).max()
+    k = 1.0 / max(1e-6, np.abs(base + drive).max())
+    base = master_loop(base * k, np.abs(base * k).max(), lp=11000)
+    drive = master_loop(drive * k, np.abs(drive * k).max(), lp=11000)
+    base, drive = normalize_pair(base, drive, target=0.89)
+    return base, drive
 
 
 # -------------------------------------------------------------------- boss
@@ -670,30 +1162,106 @@ FINAL_MIX = {"choir": (1.4, 0.5, 0.0), "pad": (1.0, 0.3, 0.0, "duck"), "ost": (1
 
 
 # -------------------------------------------------------------------- menu
-MENU_PROG = (["Gmaj7", "Cmaj7", "Em7", "Dsus", "Gmaj7", "Cmaj7", "Em7", "D"]
-             + ["Am7", "Bm7", "Cmaj7", "D", "Am7", "Bm7", "Cmaj7", "D"]
-             + ["Gmaj7", "Cmaj7", "Em7", "Dsus", "Gmaj7", "Cmaj7", "Em7", "D"])
-MENU_A = ["B5:6 A5:2 G5:4 D5:4", "E5:6 F#5:2 G5:4 B5:4", "A5:8 G5:4 E5:4", "F#5:12 _:4",
-          "B5:6 A5:2 G5:4 D6:4", "C6:6 B5:2 A5:4 G5:4", "E5:8 G5:4 B5:4", "A5:16"]
-MENU_B = ["C6:4 B5:4 A5:4 E5:4", "D6:4 C6:4 B5:4 F#5:4", "E5:4 G5:4 C6:4 B5:4", "A5:8 F#5:8",
-          "C6:4 B5:4 A5:4 E6:4", "D6:4 B5:4 F#5:4 D6:4", "E6:4 D6:4 C6:4 B5:4", "A5:8 D6:8"]
-MENU_A2 = MENU_A[:7] + ["G5:16"]
+# "Canção das Marés": E lydian, 72 bpm. Deep warm pads with chorus, a slow
+# flute melody, a harp arpeggio through a dotted ping-pong delay, whale calls,
+# bubbles and wave-noise swells. No bells: warm, deep and flowing.
+MENU_A = ["Emaj9", "F#/E", "Emaj9", "F#/E", "C#m9", "Amaj9", "F#m11", "Bsus"]
+MENU_B = ["Amaj9", "B", "G#m7", "C#m9", "Amaj9", "B", "Emaj9", "F#/E"]
+MENU_PROG = MENU_A + MENU_B + MENU_A
+MENU_MA = ["B4:6 C#5:2 D#5:8", "A#4:8 F#4:8", "G#4:4 B4:4 D#5:4 F#5:4", "E5:8 C#5:4 A#4:4",
+           "G#4:12 E4:4", "C#5:8 B4:4 A4:4", "G#4:6 A4:2 B4:8", "F#4:16"]
+MENU_MB = ["C#5:6 E5:2 G#5:8", "F#5:8 D#5:8", "D#5:6 B4:2 G#4:8", "E5:8 G#5:8",
+           "C#5:4 E5:4 A5:4 G#5:4", "F#5:12 D#5:4", "E5:4 D#5:4 B4:8", "A#4:8 C#5:8"]
 
 
 def menu():
-    s = Song(90, 24)
-    chords_track(s, "pad", MENU_PROG, "pad", 3, 0.2, bright=1500)
-    chords_track(s, "ep", MENU_PROG, "epiano", 4, 0.07, per_bar=2)
-    arp_track(s, "arp", MENU_PROG, list("0.2.1.3.2.1.4..."), 4, 0.12)
-    bass_track(s, "sub", MENU_PROG, "R-------5-------", 2, 0.4, "sub")
-    s.melody("lead", "bell", MENU_A + MENU_B + MENU_A2, 0, 0.26)
-    s.melody("lead2", "softlead", MENU_B, 8, 0.12, 0.35, octave=-1)
-    s.drums("perc", {"k": "7.......6.......", "s": "..3...3...3...3.", "r": "....5.......5..."}, 8, 16, 0.45)
+    s = Song(72, 24, tail=6.0)
+    chords_track(s, "pad", MENU_PROG, "warmpad", 3, 0.085, cutoff=1000)
+    chords_track(s, "choir", MENU_B, "ooh", 4, 0.04, start_bar=8)
+    arp_track(s, "harp", MENU_PROG, list("0.2.4.3.1.3.2.4."), 4, 0.1, "harp", note_len=3)
+    bass_track(s, "sub", MENU_PROG, "R-------5-------", 2, 0.36, "sub")
+    s.melody("lead", "flute", MENU_MA + MENU_MB + MENU_MA, 0, 0.3)
+    s.melody("lead2", "ooh", MENU_MA, 16, 0.11, -0.3, octave=-1)
+    s.melody("lead2", "marimba", MENU_MB, 8, 0.06, 0.4, octave=-1)
+    whales(s, "whale", [(3, "B3", 28, -0.5), (11, "E4", 26, 0.5), (19, "G#3", 30, -0.3)], 0.2)
+    s.drums("perc", {"g": "5.......4.....3.", "s": "..3...3...3...3."}, 8, 16, 0.4, {"g": -0.2, "s": 0.35})
+    bubbles(s, "fx", 14, 0.05, seed=9)
     return s
 
 
-MENU_MIX = {"pad": (1.0, 0.45, 0.0), "ep": (1.0, 0.4, 0.25), "arp": (1.0, 0.35, 0.3), "sub": (1.0, 0.0, 0.0),
-            "lead": (1.0, 0.45, 0.3), "lead2": (1.0, 0.4, 0.2), "perc": (1.0, 0.2, 0.0)}
+MENU_MIX = {"pad": (1.5, 0.55, 0.0, "chorus", ("sweep", 500.0, 3)), "choir": (1.8, 0.6, 0.0),
+            "harp": (1.7, 0.45, 0.45), "sub": (0.5, 0.0, 0.0), "lead": (1.2, 0.45, 0.28),
+            "lead2": (1.4, 0.55, 0.2), "whale": (1.0, 0.8, 0.35), "perc": (1.0, 0.25, 0.0),
+            "fx": (1.0, 0.5, 0.2)}
+
+
+def render_menu():
+    s = menu()
+    x = loop_wrap(mixdown(s, MENU_MIX, 0.0, 3.6, 4000.0, {"steps": 3, "feedback": 0.48, "repeats": 6}), s.length)
+    x += ocean_bed(s.length, 12, seed=31) * 0.08 * np.abs(x).max()
+    x = master_loop(x, 1.0, lp=10000)
+    return x * 0.86 / np.abs(x).max()
+
+
+# ------------------------------------------------------------------- horde
+# "Horda": E phrygian, 148 bpm. Taiko + snare, a 16th pulse ostinato, string
+# ostinato, urgent brass stabs, then a brass melody; a breakdown with a whale
+# call and riser keeps it underwater.
+H_1 = ["Em", "Em", "C", "D", "Em", "Em", "F", "B7"]
+H_2 = ["Am", "Em", "F", "Em", "Am", "C", "D", "B"]
+H_BRK = ["Em", "F", "Em", "F"]
+HORDE_PROG = H_1 + H_2 + H_BRK + H_1
+H_M1 = ["E5:4 B4:2 E5:2 G5:4 F#5:2 E5:2", "B5:8 A5:4 G5:4", "G5:4 E5:2 G5:2 C6:4 B5:2 A5:2",
+        "A5:8 F#5:4 D5:4", "E5:4 B4:2 E5:2 G5:4 A5:2 B5:2", "E6:8 D6:4 B5:4", "C6:4 A5:4 F5:4 A5:4",
+        "B5:4 A5:4 F#5:4 D#5:4"]
+H_M2 = ["A5:6 C6:2 E6:8", "B5:6 G5:2 E5:8", "C6:8 A5:8", "B5:16", "A5:4 C6:4 E6:4 C6:4",
+        "E6:8 C6:8", "D6:8 A5:8", "B5:8 D#6:8"]
+
+
+def horde():
+    s = Song(148, 28, tail=3.5)
+    bass_track(s, "ost", HORDE_PROG, "RRORRROR5RROR5OR", 2, 0.24, "pulse", cutoff=1600)
+    bass_track(s, "sub", HORDE_PROG, "R-------R-------", 1, 0.34, "sub")
+    arp_track(s, "str", H_1 + H_2, list("0.1.2.1.0.1.2.1."), 4, 0.09, "strings", note_len=1.8, attack=0.01)
+    arp_track(s, "str", H_1, list("0.1.2.1.0.1.2.1."), 4, 0.09, "strings", start_bar=20, note_len=1.8,
+              attack=0.01)
+    comp_track(s, "stab", H_1 + H_2, "x..x..x...x..x..", "brass", 3, 0.055, hold=1.5)
+    comp_track(s, "stab", H_1, "x..x..x...x..x..", "brass", 3, 0.055, start_bar=20, hold=1.5)
+    chords_track(s, "pad", HORDE_PROG, "warmpad", 3, 0.045, cutoff=1400, attack=0.3)
+    s.melody("lead", "strings", H_M1, 0, 0.16, attack=0.05)
+    s.melody("lead", "brass", H_M2, 8, 0.24)
+    s.melody("lead", "brass", H_M1, 20, 0.24)
+    s.melody("lead", "strings", H_M1, 20, 0.12, octave=-1, attack=0.05)
+    whales(s, "whale", [(16, "E3", 40, -0.4)], 0.22)
+    s.fx("fx", dr_riser(s.step * 16 * 2), 18 * 16, 0.9)
+    main_ = {"D": "9.......9.......", "K": "9..9..9...9..9..", "S": "....9.......9...", "h": "5.7.5.7.5.7.5.7."}
+    main_b = {"D": "9.....7.9.......", "K": "9..9..9...9..9.9", "S": "....9.......9..6", "h": "5757575757575757",
+              "t": "..............7."}
+    fill = {"T": "9.9.9.9.........", "t": "........9.9.9999", "D": "9..............."}
+    s.drums("drums", main_, 0, 7, 0.8)
+    s.drums("drums", fill, 7, 1, 0.8)
+    s.drums("drums", main_b, 8, 7, 0.8)
+    s.drums("drums", fill, 15, 1, 0.8)
+    s.drums("drums", {"D": "9.......9.......", "t": "............7.7."}, 16, 3, 0.8)
+    s.drums("drums", {"D": "9...9...9...9...", "S": "..............99"}, 19, 1, 0.8)
+    s.drums("drums", main_b, 20, 7, 0.8)
+    s.drums("drums", fill, 27, 1, 0.8)
+    for b in (0, 8, 20):
+        s.drums("drums", {"X": "9..............."}, b, 1, 0.65)
+    return s
+
+
+HORDE_MIX = {"ost": (1.4, 0.1, 0.12, "duck"), "sub": (0.6, 0.0, 0.0, "duck"), "str": (2.4, 0.3, 0.15),
+             "stab": (1.6, 0.3, 0.1), "pad": (1.4, 0.4, 0.0, "duck", "chorus"), "lead": (1.4, 0.3, 0.2),
+             "whale": (1.0, 0.8, 0.3), "fx": (1.0, 0.3, 0.0), "drums": (0.38, 0.12, 0.0)}
+
+
+def render_horde():
+    s = horde()
+    x = loop_wrap(mixdown(s, HORDE_MIX, 0.35, 2.4, 4500.0, {"steps": 3, "feedback": 0.35}), s.length)
+    x += ocean_bed(s.length, 7, seed=41) * 0.04 * np.abs(x).max()
+    x = master_loop(x, 1.25, lp=12000)
+    return x * 0.89 / np.abs(x).max()
 
 
 # ---------------------------------------------------------------- stingers
@@ -718,6 +1286,15 @@ def stinger(kind):
         s.melody("lead", "softlead", ["A5:4 G5:4 E5:4 D5:4", "C5:4 B4:4 A4:8", "_:16"], 0, 0.3)
         chords_track(s, "pad", ["Am", "F", "Am"], "pad", 3, 0.18, bright=1100)
         mix = {"lead": (1.0, 0.45, 0.2), "pad": (1.0, 0.5, 0.0)}
+    elif kind == "horde":        # alarm: water swell -> taiko + deep horn in E
+        s = Song(100, 2, tail=2.5)
+        s.fx("fx", dr_riser(0.4) * 1.6, 0, 1.0)
+        for n, v in (("E2", 0.3), ("B2", 0.24), ("E3", 0.22), ("G3", 0.12)):
+            s.note("horn", "horn", midi(n), 2.5, 8, v)
+        s.note("whale", "whale", midi("E3"), 2.5, 12, 0.18)
+        s.drums("drums", {"D": "..9.....7.9.....", "X": "..9.............", "t": "......6.6......."}, 0, 1, 0.9)
+        mix = {"fx": (1.0, 0.3, 0.0), "horn": (1.0, 0.4, 0.0), "whale": (1.0, 0.6, 0.0),
+               "drums": (0.8, 0.25, 0.0)}
     else:                        # fusion: riser + big chord
         s = Song(120, 3, tail=2.5)
         s.fx("fx", dr_riser(s.step * 16), 0, 0.9)
@@ -733,7 +1310,11 @@ def stinger(kind):
     lvl = np.abs(x).max(1)
     last = np.nonzero(lvl > 10 ** (-40 / 20))[0]
     x = x[: min(len(x), int(last[-1]) + int(0.05 * SR))] if len(last) else x
-    fade = int(0.08 * SR)
+    if kind == "horde":
+        x = x[: int(3.0 * SR)]
+        fade = int(0.5 * SR)
+    else:
+        fade = int(0.08 * SR)
     x[-fade:] *= np.linspace(1, 0, fade)[:, None]
     return x
 
@@ -747,13 +1328,14 @@ def render_loop(song, mix, sidechain):
 def main():
     want = set(sys.argv[1:])
     print("composing ->", os.path.abspath(OUT))
-    if not want or "explore" in want:
-        s = explore()
-        base = render_loop(s, EXPLORE_MIX_BASE, 0.25)
-        drive = render_loop(s, EXPLORE_MIX_DRIVE, 0.4)
-        base, drive = normalize_pair(master(base, 1.0), master(drive, 1.0))
-        write("explore_base", base)
-        write("explore_drive", drive)
+    for key in EXPLORE_SONGS:
+        if not want or "explore" in want or key in want:
+            base, drive = render_explore(key)
+            write(key + "_base", base, 0.85)
+            write(key + "_drive", drive, 0.9)
+    if not want or "horde" in want:
+        write("horde", render_horde())
+        write("sting_horde", stinger("horde"))
     if not want or "boss" in want:
         s = boss()
         x = master(render_loop(s, BOSS_MIX, 0.4))
@@ -763,11 +1345,9 @@ def main():
         x = master(render_loop(s, FINAL_MIX, 0.35))
         write("final", x * 0.89 / np.abs(x).max())
     if not want or "menu" in want:
-        s = menu()
-        x = master(render_loop(s, MENU_MIX, 0.0))
-        write("menu", x * 0.85 / np.abs(x).max())
+        write("menu", render_menu())
     if not want or "stingers" in want:
-        for k in ("levelup", "victory", "defeat", "fusion"):
+        for k in ("levelup", "victory", "defeat", "fusion", "horde"):
             write("sting_" + k, stinger(k))
 
 

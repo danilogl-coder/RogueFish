@@ -361,7 +361,8 @@ func _species_details(sp: String) -> Control:
 		if not unlocked:
 			pv.modulate = Color(0.1, 0.12, 0.22)
 		holder.add_child(pv)
-		stage_lbl.text = Evolutions.stage_name(sp, st).to_upper()
+		stage_lbl.text = "%s · %s" % [Evolutions.stage_name(sp, st).to_upper(), String(Evolutions.move(sp, st).name).to_upper()]
+		holder.tooltip_text = Evolutions.stage_desc(sp, st)
 	refresh.call()
 	var timer := Timer.new()
 	timer.wait_time = 0.2

@@ -1,33 +1,42 @@
 extends Node
 ## Sound effects pool and adaptive music.
 ##
-## Music (tools/audio/compose_music.py): the run music is two synced stems of
-## the same song, a calm layer and a drive layer (drums, bass, saw lead). The
-## drive layer follows `intensity` (0..1): danger, waves and combos push it up,
-## so the music reacts to how the run feels instead of switching tracks.
-## Bosses and the menu use their own loops; stingers (level up, victory...)
-## briefly duck the music.
+## Music (tools/audio/compose_music.py): the run music is a rotation of five
+## exploration songs. Each song is two synced stems, a calm layer and a drive
+## layer (drums, bass, lead). The drive layer follows `intensity` (0..1):
+## danger and combos push it up, so the music reacts to how the run feels.
+## Every time the run returns to exploring (and after a song has looped about
+## twice) the next song crossfades in, so long runs do not repeat. Hordes,
+## bosses and the menu use their own loops; stingers briefly duck the music.
 
 const SFX_DIR := "res://assets/audio/sfx/"
 const MUSIC_DIR := "res://assets/audio/music/"
 const MUSIC := {
 	"menu": "menu",
-	"game": "explore_base",
+	"horde": "horde",
 	"boss": "boss",
 	"final": "final",
 }
-const DRIVE := "explore_drive"
+## exploration songs (files <id>_base.ogg + <id>_drive.ogg)
+const EXPLORE: Array[String] = ["explore1", "explore2", "explore3", "explore4", "explore5"]
+const EXPLORE_LOOPS := 2               ## plays of a song before the next one
+const SONG_FADE := 4.0                 ## crossfade between exploration songs
 const POOL_SIZE := 14
 
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
 var _streams: Dictionary = {}
 var _last_play: Dictionary = {}
-var _music_a: AudioStreamPlayer
-var _music_b: AudioStreamPlayer
-var _drive: AudioStreamPlayer          ## drive stem, synced with the calm stem
+var _main: Array[AudioStreamPlayer] = []   ## two music players (crossfade)
+var _drv: Array[AudioStreamPlayer] = []    ## drive stem paired with each one
+var _tweens: Dictionary = {}
+var _cur := 0                          ## index of the active music player
 var _sting: AudioStreamPlayer
 var _current_music := ""
+var _song := -1                        ## index in EXPLORE of the current song
+var _song_fixed := false               ## chosen in the Caixa de Música
+var _song_loops := 0
+var _last_pos := 0.0
 var intensity := 0.0                   ## target 0..1 set by the game
 var _drive_lvl := 0.0
 var _duck := 0.0                       ## seconds of stinger ducking left
@@ -42,13 +51,19 @@ func _ready() -> void:
 		p.bus = "SFX"
 		add_child(p)
 		_players.append(p)
-	_music_a = AudioStreamPlayer.new()
-	_music_b = AudioStreamPlayer.new()
-	_drive = AudioStreamPlayer.new()
-	_sting = AudioStreamPlayer.new()
-	for m in [_music_a, _music_b, _drive, _sting]:
+	for i in 2:
+		var m := AudioStreamPlayer.new()
+		var d := AudioStreamPlayer.new()
 		m.bus = "Music"
+		d.bus = "Music"
 		add_child(m)
+		add_child(d)
+		_main.append(m)
+		_drv.append(d)
+	_sting = AudioStreamPlayer.new()
+	_sting.bus = "Music"
+	add_child(_sting)
+	_song = randi() % EXPLORE.size()
 	Profile._apply_audio()
 
 
@@ -59,15 +74,35 @@ func _process(delta: float) -> void:
 	_drive_lvl = move_toward(_drive_lvl, target, delta * rate)
 	var duck_db := -7.0 if _duck > 0.0 else 0.0
 	_duck -= delta
-	if _drive.playing:
-		_drive.volume_db = linear_to_db(maxf(0.0001, _drive_lvl)) + duck_db
-		# keep the stems locked together (they can drift after a pause)
-		var main := _music_a if _music_a.stream == _drive.get_meta("pair", null) else _music_b
-		if main.playing and absf(main.get_playback_position() - _drive.get_playback_position()) > 0.05:
-			_drive.seek(main.get_playback_position())
-	for m in [_music_a, _music_b]:
+	for i in 2:
+		var m := _main[i]
+		var d := _drv[i]
 		if m.playing and not m.has_meta("fading"):
 			m.volume_db = move_toward(m.volume_db, float(m.get_meta("vol", 0.0)) + duck_db, delta * 30.0)
+		if d.playing and not d.has_meta("fading"):
+			# follows its calm stem (and that stem's fade-in) plus the intensity
+			var fade_db := m.volume_db - float(m.get_meta("vol", 0.0)) if m.playing else -60.0
+			d.volume_db = linear_to_db(maxf(0.0001, _drive_lvl)) + minf(fade_db, 0.0) + duck_db
+			# keep the stems locked together (they can drift after a pause)
+			if m.playing and absf(m.get_playback_position() - d.get_playback_position()) > 0.05:
+				d.seek(m.get_playback_position())
+	_rotate_songs()
+
+
+## After a song has looped EXPLORE_LOOPS times, crossfade to the next one.
+func _rotate_songs() -> void:
+	if _current_music != "game" or _song_fixed:
+		return
+	var m := _main[_cur]
+	if not m.playing or m.stream == null:
+		return
+	var pos := m.get_playback_position()
+	if pos + 1.0 < _last_pos:
+		_song_loops += 1
+	_last_pos = pos
+	var length := m.stream.get_length()
+	if _song_loops >= EXPLORE_LOOPS - 1 and length > SONG_FADE * 2.0 and pos >= length - SONG_FADE:
+		_play_song((_song + 1) % EXPLORE.size(), SONG_FADE)
 
 
 func _load_music(name: String) -> AudioStream:
@@ -143,39 +178,83 @@ func play_pitched(sfx_name: String, pitch: float, volume_db := 0.0) -> void:
 
 
 func play_music(key: String, fade := 1.2) -> void:
-	# Caixa de Música: a chosen track replaces the run music (bosses keep theirs)
+	# Caixa de Música: a chosen track replaces the run music (hordes and
+	# bosses keep theirs)
 	var pick: String = str(Profile.settings.get("music_track", "auto"))
-	if key == "game" and pick != "auto" and pick != "game" and Profile.owns("relic_music"):
+	var owns: bool = Profile.owns("relic_music")
+	if key == "game" and owns and MUSIC.has(pick):
 		key = pick
 	if key == _current_music:
 		return
 	_current_music = key
-	var incoming := _music_b if _music_a.playing else _music_a
-	var outgoing := _music_a if incoming == _music_b else _music_b
-	var stream: AudioStream = _load_music(MUSIC.get(key, ""))
-	var t := create_tween().set_parallel(true)
-	outgoing.set_meta("fading", true)
-	t.tween_property(outgoing, "volume_db", -40.0, fade)
-	if _drive.playing:
-		t.tween_property(_drive, "volume_db", -40.0, fade)
-	t.chain().tween_callback(func():
-		outgoing.stop()
-		outgoing.remove_meta("fading")
-		if _current_music != "game":
-			_drive.stop())
+	if key == "game":
+		var fixed := EXPLORE.find(pick) if owns else -1
+		_song_fixed = fixed >= 0
+		# a different song every time the run goes back to exploring
+		_play_song(fixed if _song_fixed else (_song + 1) % EXPLORE.size(), fade)
+		return
+	var path: String = str(MUSIC.get(key, ""))
+	var st: AudioStream = null
+	if path != "":
+		st = _load_music(path)
+	_crossfade(st, null, 0.0, fade)
+
+
+func _play_song(idx: int, fade: float) -> void:
+	_song = idx
+	_song_loops = 0
+	_last_pos = 0.0
+	var id: String = EXPLORE[idx]
+	_crossfade(_load_music(id + "_base"), _load_music(id + "_drive"), -2.0, fade)
+
+
+## Fades the active music out and `stream` (with its synced drive stem) in.
+func _crossfade(stream: AudioStream, drive: AudioStream, vol: float, fade: float) -> void:
+	var out_i := _cur
+	_cur = 1 - _cur
+	_fade_out(_main[out_i], fade)
+	_fade_out(_drv[out_i], fade)
+	var incoming := _main[_cur]
+	var in_drv := _drv[_cur]
+	_kill_tween(incoming)
+	_kill_tween(in_drv)
+	incoming.stop()
+	in_drv.stop()
+	in_drv.remove_meta("fading")
 	if stream == null:
+		incoming.remove_meta("fading")
 		return
 	incoming.stream = stream
 	incoming.volume_db = -40.0
-	incoming.set_meta("vol", -2.0 if key == "game" else 0.0)
+	incoming.set_meta("vol", vol)
 	incoming.set_meta("fading", true)
 	incoming.play()
-	var t2 := create_tween()
-	t2.tween_property(incoming, "volume_db", float(incoming.get_meta("vol")), fade)
-	t2.tween_callback(func(): incoming.remove_meta("fading"))
-	if key == "game":
-		_drive.stream = _load_music(DRIVE)
-		_drive.set_meta("pair", stream)
-		_drive_lvl = 0.0
-		_drive.volume_db = -60.0
-		_drive.play()
+	var t := create_tween()
+	t.tween_property(incoming, "volume_db", vol, fade)
+	t.tween_callback(func(): incoming.remove_meta("fading"))
+	_tweens[incoming] = t
+	if drive != null:
+		in_drv.stream = drive
+		in_drv.volume_db = -60.0
+		in_drv.play()
+
+
+func _fade_out(p: AudioStreamPlayer, fade: float) -> void:
+	_kill_tween(p)
+	if not p.playing:
+		p.remove_meta("fading")
+		return
+	p.set_meta("fading", true)
+	var t := create_tween()
+	t.tween_property(p, "volume_db", -40.0, fade)
+	t.tween_callback(func():
+		p.stop()
+		p.remove_meta("fading"))
+	_tweens[p] = t
+
+
+func _kill_tween(p: AudioStreamPlayer) -> void:
+	var t: Tween = _tweens.get(p, null)
+	if t != null and t.is_valid():
+		t.kill()
+	_tweens.erase(p)

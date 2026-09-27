@@ -79,9 +79,28 @@ que trilhas **adaptativas** aumentam o tempo de jogo e que loops curtos cansam. 
   virada de bateria + riser voltando ao refrão;
 - **camadas adaptativas**: a camada calma toca sempre e a camada de tensão (bateria, baixo, lead)
   entra com o perigo, o combo e as ondas, então a música acompanha o momento da partida;
-- sons de recompensa **no tom** da trilha (vinheta de nível em Ré maior) e vinhetas de vitória,
-  derrota e fusão que abaixam a música por instantes;
-- timbres suaves, agudos contidos e loops de 55 a 65 s sem emenda audível, para evitar fadiga.
+- sons de recompensa (vinheta de nível em Ré maior) e vinhetas de vitória, derrota, fusão e
+  **horda** que abaixam a música por instantes;
+- timbres suaves, agudos contidos e loops de 45 a 85 s sem emenda audível (cauda dobrada sobre o
+  início e masterização circular), para evitar fadiga.
+
+**Trilha oceânica** (`tools/audio/compose_music.py`, gerada em numpy). Seguimos o que funciona em
+Subnautica, Abzû, Dave the Diver e "Aquatic Ambience" (DKC): pads quentes e desafinados com chorus e
+filtro abrindo/fechando devagar, reverb longo, arpejos com delay pingue-pongue pontuado, glissandos
+tipo canto de baleia, bolhas, ondas de ruído que sobem e descem, modos lídio/dórico e graves
+redondos. Evitamos sinos, caixinha de música e agudos tilintantes (soavam natalinos).
+- **Menu – "Canção das Marés"** (Mi lídio, 72 bpm): pads profundos, flauta lenta, harpa em delay,
+  coro "ooh", baleias e ondas.
+- **Exploração – 5 músicas em rodízio** (cada uma com camada calma + camada de tensão sincronizadas):
+  "Recife Ensolarado" (Ré dórico, 100 bpm, rhodes, marimba e congas), "Corrente Profunda" (Dó menor,
+  90 bpm, ostinato pulsante e cordas), "Floresta de Kelp" (Fá lídio, 80 bpm, harpa e flauta),
+  "Abismo Azul" (Lá menor/frígio, 68 bpm, ambiente escuro com coro e sonar) e "Maré Alta" (Sol
+  mixolídio, 122 bpm, aventura animada). Cada volta à exploração troca de música, e uma música que já
+  tocou duas vezes passa para a seguinte com crossfade, então partidas longas não repetem.
+- **Horda – "Horda"** (Mi frígio, 148 bpm): taikos, ostinato de baixo em semicolcheias, cordas e
+  metais em ataques curtos, quebra com canto de baleia; entra com a vinheta de alarme (trompa grave +
+  taiko) quando a onda começa e volta à exploração no ciclo seguinte.
+- A **Caixa de Música** permite fixar qualquer faixa (inclusive uma das cinco de exploração).
 Evitamos deliberadamente táticas de manipulação (recompensas enganosas, pressão artificial): o
 objetivo é o jogador sentir prazer em jogar, não ser explorado.
 
