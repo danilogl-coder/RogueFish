@@ -65,13 +65,15 @@ def main():
 
     if want("player"):
         import mobs
+        import beasts
         only_sp = [a.split("=", 1)[1] for a in sys.argv if a.startswith("--species=")]
         for species in list(player.SPECIES) + list(mobs.CRITTERS):
             if only_sp and species not in only_sp[0].split(","):
                 continue
             for stage in range(len(player.STAGE_LEN)):
                 if species in mobs.CRITTERS:
-                    img, m = mobs.render_critter_atlas(species, stage)
+                    # every critter has its own natively drawn body plan
+                    img, m = beasts.render_atlas(species, stage)
                 else:
                     img, m = player.render_atlas(species, stage)
                 img = tidy.bridge_player_atlas(img, m["frame_w"], m["frame_h"], list(m["layers"]))

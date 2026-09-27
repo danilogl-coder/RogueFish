@@ -185,7 +185,9 @@ def skin_detail(ctx, lay, mask, skin, cell=2.6, seed=1, rim=None, center=None, r
         lay.paint(ring, PAL["glow"], 3)
         for j in range(6):
             a = j * TAU / 6 + 0.3
-            ctx.dot(lay, cx + math.cos(a) * rx * 0.62, cy + math.sin(a) * ry * 0.62, PAL["glow"], 6, r=0.45)
+            px_, py_ = cx + math.cos(a) * rx * 0.62, cy + math.sin(a) * ry * 0.62
+            d = mask & (np.abs(X - px_) <= max(0.45, 0.5 * ctx.px)) & (np.abs(Y - py_) <= max(0.45, 0.5 * ctx.px))
+            lay.paint(d, PAL["glow"], 6, outline=False)
 
 
 def segmented(ctx, lay, pts, r0, r1, rmp, seg_len=1.8, gain=1.3, shift=0):

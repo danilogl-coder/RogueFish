@@ -105,11 +105,29 @@ grupo `terrain`: o jogo lê as posições de `terrain.json`.
   cujo filete fino sumia e deixava só o contorno) são religados com uma linha 4-conectada na cor
   do contorno. Nos atlas do jogador cada camada é analisada junto da silhueta corpo + cauda, então
   nadadeiras separadas nunca são ligadas entre si. `tools/art/audit_islands.py` lista o que sobrar.
-- **Critters jogáveis em qualquer tamanho** (`tools/art/mobs.py`): os desenhos de `critters.py` são
-  funções de X e Y em "unidades de sprite". Para cada estágio a mesma função é amostrada numa grade
-  mais fina, gerando pixel art de verdade em cada tamanho (sem ampliar pixels). As mutações são
-  peças posicionadas por âncoras medidas em cada quadro (boca, traseira e linha do dorso), e cada
-  estágio acrescenta um visual próprio.
+- **Critters jogáveis desenhados nativamente** (`tools/art/beasts.py` + `beasts2..5.py`): cada
+  animal é um *plano corporal* escrito em "unidades de sprite" e redesenhado (não ampliado) na
+  densidade de pixels de cada estágio. Nada é colado por cima: cada mutação é anatomia própria do
+  animal, modelada, sombreada e contornada junto do corpo, e cada espécie tem um caminho de
+  evolução único. Exemplos:
+  - caranguejo: bordas com espinhos, depois sulcos, pinça esmagadora e coroa com olhos luminosos;
+    a "cauda" vira cauda de escorpião, leque ou abdômen de lagosta;
+  - lula: barbatanas maiores, cromatóforos, clavas com ganchos e olho luminoso;
+    a lula-vampira ganha a capa de membrana e pontas brancas;
+  - água-viva: mais tentáculos, canais radiais e gônadas, borda recortada e coroa luminosa;
+  - ouriço: espinhos cada vez mais longos, com faixas e fileira dupla;
+  - pepino-do-mar: papilas que crescem e coroa de tentáculos; a cauda enguia vira fios de Cuvier;
+  - caramujo: estrias de crescimento, nós, espinhos de múrex e lábio perolado;
+  - minhoca-bobbit: brilho iridescente, cerdas, cinco antenas e mandíbulas-tesoura;
+  - verme-tubo: tubo com anéis, cracas e penacho duplo;
+  - tartaruga: escudos, quilha, cracas e costuras luminosas; a isca é a língua de tartaruga-aligátor;
+  - lontra: filhote fofo que chega a anciã de cabeça prateada com sua pedra.
+
+  Cada quadro é renderizado em quatro camadas (traseira, membros de trás, corpo e membros da
+  frente), então qualquer combinação de mutações é montada no jogo. `scripts/data/families.gd` dá
+  a cada família o nome das suas mutações (ex.: "Cauda de Escorpião" no caranguejo e "Fios de
+  Cuvier" no pepino). Para visualizar:
+  `python3 -c "import beasts; beasts.sheet_preview('lula','out.png')"`.
 - **Peixes jogáveis**: novas espécies no renderizador de peixes. Todos crescem com barbatanas mais
   altas (Adulto), cauda maior e cicatrizes (Veterano) e fotóforos (Leviatã).
 - **Itens**: `tools/art/items.py` desenha 18 folhas de efeito (garra, chicote, mandíbulas, casco,

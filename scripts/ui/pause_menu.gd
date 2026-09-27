@@ -117,7 +117,7 @@ func _show_status() -> void:
 	mut.add_child(FishPreview.new().setup(p.species, p.stage, p.mutations, 1.0 if p.stage >= 3 else 2.0))
 	for slot in DB.MUTATION_SLOTS:
 		var mid: String = p.mutations.get(slot, "")
-		mut.add_child(UIKit.wrap_label(DB.MUTATIONS[mid].name if mid != "" else "- vazio -", 8, UIKit.WHITE if mid != "" else UIKit.DIM, 130))
+		mut.add_child(UIKit.wrap_label(Families.mutation_name(p.species, mid) if mid != "" else "- vazio -", 8, UIKit.WHITE if mid != "" else UIKit.DIM, 130))
 
 
 ## Items of this run: levels, fusion recipes in reach, the character's trait

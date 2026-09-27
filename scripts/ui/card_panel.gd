@@ -199,7 +199,7 @@ func _mutation_offers(n: int) -> Array:
 	var out := []
 	for mid in picks:
 		var m: Dictionary = DB.MUTATIONS[mid]
-		out.append(_offer("mutation", mid, m.name, m.desc, "dna", "mutation", m.tag, 0, 1.0))
+		out.append(_offer("mutation", mid, Families.mutation_name(p.species, mid), m.desc, "dna", "mutation", m.tag, 0, 1.0))
 	return out
 
 
