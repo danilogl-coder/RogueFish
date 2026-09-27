@@ -20,7 +20,7 @@ func _ready() -> void:
 	_build_background()
 	_build_main()
 	Sfx.play_music("menu")
-	if Profile.daily_available() > 0 and not Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--menu=")):
+	if Profile.daily_available() > 0 and not Array(OS.get_cmdline_user_args()).any(func(a): return a.begins_with("--menu") or a.begins_with("--sp-") or a.begins_with("--store")):
 		_show_daily.call_deferred()
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--menu="):
@@ -32,6 +32,21 @@ func _ready() -> void:
 				"credits": _show_credits()
 				"missions": _show_missions()
 				"bestiary": _show_bestiary()
+				"store": _show_store()
+		if a.begins_with("--sp-view="):
+			_sp_view = a.substr(10)
+			_sp_group = DB.SPECIES[_sp_view].group
+			_show_species()
+		if a.begins_with("--store-cat="):
+			_store_cat = a.substr(12)
+			_show_store()
+		if a.begins_with("--menu-shot="):
+			# debug: save a screenshot of the menu and quit
+			var path := a.substr(12)
+			await get_tree().create_timer(1.2).timeout
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(path)
+			get_tree().quit()
 
 
 # ------------------------------------------------------------- background
@@ -153,9 +168,16 @@ func _build_main() -> void:
 	play.add_theme_font_size_override("font_size", UIKit.px(16))
 	play.pressed.connect(_show_species)
 	buttons.add_child(play)
-	var shop := UIKit.button("EVOLUÇÃO", "", 170, "dna")
+	var row0 := UIKit.hbox(5)
+	buttons.add_child(row0)
+	var shop := UIKit.button("EVOLUÇÃO", "", 0, "dna")
+	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop.pressed.connect(_show_shop)
-	buttons.add_child(shop)
+	row0.add_child(shop)
+	var store := UIKit.button("LOJA", "GoldButton", 0, "chest")
+	store.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	store.pressed.connect(_show_store)
+	row0.add_child(store)
 	var row2 := UIKit.hbox(5)
 	buttons.add_child(row2)
 	var mis := UIKit.button("MISSÕES", "", 0, "target")
@@ -320,7 +342,7 @@ func _species_details(sp: String) -> Control:
 	head.add_child(stage_lbl)
 	# animated look, cycling through the five growth stages
 	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(270, 70)
+	holder.custom_minimum_size = Vector2(270, 58)
 	v.add_child(holder)
 	var shown := [-1]
 	var refresh := func():
@@ -330,7 +352,7 @@ func _species_details(sp: String) -> Control:
 		shown[0] = st
 		for c in holder.get_children():
 			c.queue_free()
-		var pv := FishPreview.new().setup(sp, st, {}, 1.0).fit(Vector2(270, 70), 3.0)
+		var pv := FishPreview.new().setup(sp, st, {}, 1.0).fit(Vector2(270, 58), 3.0)
 		if not unlocked:
 			pv.modulate = Color(0.1, 0.12, 0.22)
 		holder.add_child(pv)
@@ -341,20 +363,19 @@ func _species_details(sp: String) -> Control:
 	timer.autostart = true
 	timer.timeout.connect(refresh)
 	holder.add_child.call_deferred(timer)
-	v.add_child(UIKit.wrap_label(d.short, 8, Color("c8d4e4"), 280))
 	# trait
 	var tr := UIKit.hbox(4)
 	tr.add_child(UIKit.icon_rect("dna", 12))
-	tr.add_child(UIKit.label(d.trait.name.to_upper(), 8, UIKit.GREEN))
+	tr.add_child(UIKit.label("TRAÇO: " + d.trait.name.to_upper(), 8, UIKit.GREEN))
 	v.add_child(tr)
 	v.add_child(UIKit.wrap_label(d.trait.desc, 8, Color("b8c6d8"), 280))
 	# unique item
 	var w: Dictionary = DB.WEAPONS[d.weapon]
 	var ir := UIKit.hbox(4)
 	ir.add_child(UIKit.icon_rect(w.icon, 16))
-	ir.add_child(UIKit.label("ITEM: " + w.name.to_upper(), 8, UIKit.CYAN))
+	ir.add_child(UIKit.label("ITEM ÚNICO: " + w.name.to_upper(), 8, UIKit.CYAN))
 	v.add_child(ir)
-	v.add_child(UIKit.wrap_label(DB.weapon_desc(d.weapon, 0) + (" (entra nas cartas de todas as partidas)" if not Arsenal.BASE_ITEMS.has(d.weapon) else ""), 8, Color("b8c6d8"), 280))
+	v.add_child(UIKit.wrap_label(DB.weapon_desc(d.weapon, 0), 8, Color("b8c6d8"), 280))
 	# stats
 	var s: Dictionary = d.stats
 	var stats := UIKit.hbox(8)
@@ -376,7 +397,7 @@ func _species_details(sp: String) -> Control:
 	var b: Button
 	if unlocked:
 		var sel := Profile.selected_species == sp
-		b = UIKit.button("SELECIONADO" if sel else "ESCOLHER", "GoldButton" if sel else "", 0, "check" if sel else "play")
+		b = UIKit.button("SELECIONADO" if sel else "ESCOLHER", "" , 0, "check" if sel else "")
 		b.pressed.connect(func():
 			Profile.selected_species = sp
 			Profile.save_game()
@@ -400,11 +421,103 @@ func _species_details(sp: String) -> Control:
 				Sfx.play_stinger("fusion")
 				_show_species())
 	b.add_theme_font_size_override("font_size", 9)
-	v.add_child(b)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := UIKit.hbox(4)
+	row.add_child(b)
 	var go := UIKit.button("MERGULHAR!", "GoldButton", 0, "play")
-	go.custom_minimum_size.y = 24
 	go.pressed.connect(_start_game)
-	v.add_child(go)
+	go.disabled = not Profile.unlocked.has(Profile.selected_species)
+	row.add_child(go)
+	v.add_child(row)
+	return p
+
+
+# ------------------------------------------------------------------ store
+var _store_cat := "pack"
+
+
+## Pearl store: expansions, relics, tides and modes.
+func _show_store() -> void:
+	var v := _open_screen("LOJA DO RECIFE", Vector2(612, 0))
+	var tabs := UIKit.hbox(4)
+	v.add_child(tabs)
+	for c in Shop.CATEGORIES:
+		var cid: String = c[0]
+		var tb := UIKit.button(c[1], "GoldButton" if cid == _store_cat else "", 0)
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.pressed.connect(func():
+			_store_cat = cid
+			_show_store())
+		tabs.add_child(tb)
+	var hint := {"pack": "Novos conteúdos para o oceano. Bichos de expansão entram na lista de personagens.",
+		"relic": "Relíquias mudam para sempre como as partidas funcionam.",
+		"tide": "Equipe UMA maré: ela vale para todas as partidas (requer Rosa-dos-Ventos).",
+		"mode": "Ligue quantos modos quiser: mais difícil, mais pérolas."}
+	v.add_child(UIKit.wrap_label(hint[_store_cat], 8, Color("c8d4e4"), 590))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(600, 214)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	scroll.add_child(grid)
+	for id in Shop.ITEMS:
+		if Shop.ITEMS[id].cat == _store_cat:
+			grid.add_child(_store_card(id))
+
+
+func _store_card(id: String) -> Control:
+	var d: Dictionary = Shop.ITEMS[id]
+	var owned := Profile.owns(id)
+	var p := PanelContainer.new()
+	p.theme_type_variation = "Card_legend" if owned else "Card_common"
+	p.custom_minimum_size = Vector2(192, 102)
+	var v := UIKit.vbox(2)
+	p.add_child(v)
+	var h := UIKit.hbox(4)
+	v.add_child(h)
+	h.add_child(UIKit.icon_rect(d.icon, 16))
+	h.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD if owned else UIKit.WHITE))
+	var desc := UIKit.wrap_label(d.desc, 8, Color("b8c6d8"), 180)
+	desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(desc)
+	var b: Button
+	var needs: String = d.get("needs", "")
+	if not owned:
+		if needs != "" and not Profile.owns(needs):
+			b = UIKit.button("REQUER " + Shop.ITEMS[needs].name.to_upper(), "", 0, "lock")
+			b.disabled = true
+		else:
+			b = UIKit.button("%d" % int(d.price), "GoldButton" if Profile.pearls >= int(d.price) else "", 0, "pearl")
+			b.disabled = Profile.pearls < int(d.price)
+			b.pressed.connect(func():
+				if Profile.buy_item(id):
+					Sfx.play_stinger("fusion")
+					_show_store())
+	elif d.cat == "tide":
+		var on: bool = Profile.settings.get("tide", "") == id
+		b = UIKit.button("EQUIPADA" if on else "EQUIPAR", "GoldButton" if on else "", 0, "check" if on else "")
+		b.pressed.connect(func():
+			Profile.set_setting("tide", "" if on else id)
+			_show_store())
+	elif d.cat == "mode":
+		var modes: Array = Profile.settings.get("modes", []).duplicate()
+		var on2 := modes.has(id)
+		b = UIKit.button("LIGADO" if on2 else "DESLIGADO", "GoldButton" if on2 else "", 0, "check" if on2 else "")
+		b.pressed.connect(func():
+			if on2:
+				modes.erase(id)
+			else:
+				modes.append(id)
+			Profile.set_setting("modes", modes)
+			_show_store())
+	else:
+		b = UIKit.button("ADQUIRIDO", "", 0, "check")
+		b.disabled = true
+	b.add_theme_font_size_override("font_size", 9)
+	v.add_child(b)
 	return p
 
 
@@ -537,6 +650,11 @@ func _show_options() -> void:
 		Profile.selected_species = "dourado"
 		Profile.records = {"runs": 0, "wins": 0, "best_time": 0.0, "best_level": 0, "best_cycle": 0, "kills": 0, "bosses": 0, "pearls_total": 0}
 		Profile.seen_tutorial = false
+		Profile.owned = []
+		Profile.stats = {}
+		Profile.missions_done = []
+		Profile.settings.erase("tide")
+		Profile.settings.erase("modes")
 		Profile.save_game()
 		reset.text = "APAGADO")
 	v.add_child(reset)

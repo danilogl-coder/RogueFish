@@ -143,6 +143,10 @@ func play_pitched(sfx_name: String, pitch: float, volume_db := 0.0) -> void:
 
 
 func play_music(key: String, fade := 1.2) -> void:
+	# Caixa de Música: a chosen track replaces the run music (bosses keep theirs)
+	var pick: String = str(Profile.settings.get("music_track", "auto"))
+	if key == "game" and pick != "auto" and pick != "game" and Profile.owns("relic_music"):
+		key = pick
 	if key == _current_music:
 		return
 	_current_music = key

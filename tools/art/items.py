@@ -551,3 +551,168 @@ def fusion_icon(a_img: Image.Image, b_img: Image.Image) -> Image.Image:
     for k in range(3, 13, 3):
         po[k, 15 - k] = (255, 255, 255, 255)
     return out
+
+
+# ============================================================ shop icons
+def s_pack_vents():
+    c = ic()
+    c.poly([(4, 15), (6, 6), (10, 6), (12, 15)], A("rock", 2, "ch"))
+    c.rect(5, 5, 6, 2, A("rock", 3, "top"))
+    for k, (x, y, r) in enumerate(((8, 3.5, 2.2), (6, 1.8, 1.6), (10.5, 1.5, 1.4))):
+        c.circle(x, y, r, F("black", 2, "sm%d" % k, alpha=200, outline=False))
+    img = c.render()
+    for y in range(8, 15, 2):
+        img.putpixel((8, y), col("orange", 5))
+    return img
+
+
+def s_pack_glow():
+    c = ic()
+    c.ellipse(8, 9, 6, 3.4, A("abyss", 3, "b"))
+    c.poly([(12, 8), (15.5, 7), (14, 10)], A("abyss", 2, "j"))
+    img = c.render()
+    for x in range(3, 13, 2):
+        img.putpixel((x, 11), col("glow", 5))
+    img.putpixel((12, 8), col("white", 5))
+    img.putpixel((13, 11), col("white", 5))
+    img.putpixel((14, 11), col("white", 5))
+    return img
+
+
+def s_pack_megalodon():
+    c = ic()
+    c.ellipse(8, 9, 7, 5, A("shark", 3, "h"))
+    c.poly([(3, 9), (13, 9), (12, 13), (4, 13)], F("red", 1, "m"))
+    img = c.render()
+    for x in range(4, 13, 2):
+        img.putpixel((x, 9), col("white", 5))
+        img.putpixel((x + 1, 12), col("white", 5))
+    img.putpixel((11, 6), col("black", 0))
+    return img
+
+
+def s_relic_compass():
+    c = ic()
+    c.circle(8, 8, 7, A("gold", 3, "r"))
+    c.circle(8, 8, 5.5, F("navy", 2, "in", outline=False))
+    c.poly([(8, 2.5), (9.5, 8), (8, 13.5), (6.5, 8)], F("white", 5, "n", outline=False))
+    c.poly([(2.5, 8), (8, 6.8), (13.5, 8), (8, 9.2)], F("cyan", 4, "e", outline=False))
+    return c.render()
+
+
+def s_relic_crown():
+    c = ic()
+    c.poly([(2, 13), (2, 6), (5, 9), (8, 3), (11, 9), (14, 6), (14, 13)], A("coral", 4, "c"))
+    img = c.render()
+    for x, y in ((8, 5), (4, 9), (12, 9)):
+        img.putpixel((x, y), col("glow", 5))
+    return img
+
+
+def s_relic_anchor():
+    c = ic()
+    c.rect(7, 2, 2, 11, A("steel", 3, "s"))
+    c.circle(8, 3, 2, A("steel", 4, "ring"))
+    c.paint_fn(lambda x, y: abs(math.hypot(x - 8, y - 8) - 6) < 1.0 and y > 9, A("steel", 3, "arc"))
+    c.rect(5, 5, 6, 1.5, A("steel", 4, "bar"))
+    return c.render()
+
+
+def s_relic_eye():
+    c = ic()
+    c.ellipse(8, 8, 7, 4.2, A("cyan", 4, "w"))
+    c.circle(8, 8, 3, F("navy", 2, "i"))
+    c.circle(8, 8, 1.3, F("glow", 5, "p", outline=False))
+    return c.render()
+
+
+def s_relic_amber():
+    c = ic()
+    c.poly([(8, 1.5), (13.5, 6), (12, 13.5), (4, 13.5), (2.5, 6)], A("orange", 3, "a", alpha=235))
+    c.ellipse(8, 9, 2.4, 1.2, F("black", 1, "bug", outline=False))
+    img = c.render()
+    img.putpixel((6, 4), col("white", 5))
+    return img
+
+
+def s_relic_bottle():
+    c = ic()
+    c.rect(6, 1, 4, 3, A("brown", 3, "cork"))
+    c.poly([(5, 4), (11, 4), (13, 14), (3, 14)], A("water", 3, "g", alpha=200))
+    c.rect(5, 8, 6, 3, F("cream", 5, "note", outline=False))
+    return c.render()
+
+
+def s_relic_pearl():
+    c = ic()
+    c.circle(8, 8, 5.5, A("abyss", 2, "p"))
+    img = c.render()
+    img.putpixel((6, 6), col("violet", 5))
+    img.putpixel((7, 5), col("white", 5))
+    return img
+
+
+def s_relic_hourglass():
+    c = ic()
+    c.rect(3, 1, 10, 2, A("brown", 3, "t"))
+    c.rect(3, 13, 10, 2, A("brown", 3, "b"))
+    c.poly([(4, 3), (12, 3), (8.5, 8), (12, 13), (4, 13), (7.5, 8)], A("water", 4, "g", alpha=200))
+    c.poly([(5.5, 12.5), (10.5, 12.5), (8, 9.5)], F("sand", 4, "s", outline=False))
+    return c.render()
+
+
+def s_relic_music():
+    c = ic()
+    c.rect(2, 8, 12, 6, A("brown", 3, "box"))
+    c.rect(2, 6, 12, 2, A("brown", 4, "lid"))
+    c.line(10, 6, 12, 1, F("gold", 4, "n", outline=False), 1.2)
+    c.circle(11, 2, 1.3, F("gold", 5, "h", outline=False))
+    return c.render()
+
+
+def _tide(ramp):
+    def f():
+        c = ic()
+        for k in range(3):
+            y = 5 + k * 4
+            c.curve([(1, y), (4, y - 2), (8, y), (12, y - 2), (15, y)], A(ramp, 4 - (k % 2), "w%d" % k), 2.0)
+        return c.render()
+    return f
+
+
+def s_mode_mutant():
+    c = ic()
+    c.ellipse(8, 9, 6, 4, A("lime", 3, "b"))
+    c.poly([(2, 8), (0.5, 5), (3.5, 6)], A("red", 3, "s1"))
+    c.poly([(10, 5), (12, 1), (13, 6)], A("violet", 3, "s2"))
+    img = c.render()
+    img.putpixel((11, 8), col("red", 5))
+    img.putpixel((12, 8), col("black", 0))
+    return img
+
+
+def s_mode_hyper():
+    c = ic()
+    c.poly([(9, 1), (3, 9), (7.5, 9), (6, 15), (13, 6), (8.5, 6)], A("orange", 4, "b"))
+    return c.render()
+
+
+def s_mode_inverse():
+    c = ic()
+    c.circle(8, 8, 6.5, A("violet", 2, "m"))
+    c.circle(10.5, 6.5, 5, F("black", 0, "x"), erase=True)
+    img = c.render()
+    img.putpixel((4, 12), col("white", 5))
+    img.putpixel((12, 12), col("white", 4))
+    return img
+
+
+SHOP_ICONS = {
+    "pack_vents": s_pack_vents, "pack_glow": s_pack_glow, "pack_megalodon": s_pack_megalodon,
+    "relic_compass": s_relic_compass, "relic_crown": s_relic_crown, "relic_anchor": s_relic_anchor,
+    "relic_eye": s_relic_eye, "relic_amber": s_relic_amber, "relic_bottle": s_relic_bottle,
+    "relic_pearl": s_relic_pearl, "relic_hourglass": s_relic_hourglass, "relic_music": s_relic_music,
+    "tide_red": _tide("red"), "tide_silver": _tide("silver"), "tide_black": _tide("ink"),
+    "tide_storm": _tide("volt"), "tide_life": _tide("lime"), "tide_gold": _tide("gold"),
+    "mode_mutant": s_mode_mutant, "mode_hyper": s_mode_hyper, "mode_inverse": s_mode_inverse,
+}

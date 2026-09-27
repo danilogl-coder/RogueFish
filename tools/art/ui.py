@@ -662,6 +662,7 @@ ICONS = {
 # expansion items (tools/art/items.py): weapon icons + fusion icons
 import items as _items  # noqa: E402
 ICONS.update(_items.WEAPON_ICONS)
+ICONS.update(_items.SHOP_ICONS)
 for _f, (_a, _b) in _items.FUSION_PAIRS.items():
     ICONS[_f] = (lambda a=_a, b=_b: _items.fusion_icon(ICONS[a](), ICONS[b]()))
 

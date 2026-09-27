@@ -10,6 +10,33 @@ func _ready() -> void:
 	_toggle("VIBRAÇÃO", "vibration", "vibrate")
 	_toggle("TREMOR DE TELA", "shake", "wave")
 	_toggle("NÚMEROS DE DANO", "damage_numbers", "numbers")
+	if Profile.owns("relic_music"):
+		_track_picker()
+
+
+const TRACKS := [["auto", "AUTOMÁTICA"], ["game", "RECIFE VIVO"], ["boss", "MANDÍBULAS"], ["final", "DEVORADOR"], ["menu", "MARÉ MANSA"]]
+
+
+## Caixa de Música: pick the track that plays during runs.
+func _track_picker() -> void:
+	var h := UIKit.hbox(6)
+	h.add_child(UIKit.icon_rect("relic_music", 16))
+	var l := UIKit.label("TRILHA", 8)
+	l.custom_minimum_size.x = 120
+	h.add_child(l)
+	var cur: String = Profile.settings.get("music_track", "auto")
+	var idx := 0
+	for i in TRACKS.size():
+		if TRACKS[i][0] == cur:
+			idx = i
+	var b := UIKit.button(TRACKS[idx][1], "", 110)
+	b.pressed.connect(func():
+		idx = (idx + 1) % TRACKS.size()
+		b.text = TRACKS[idx][1]
+		Profile.set_setting("music_track", TRACKS[idx][0])
+		Sfx.play("click"))
+	h.add_child(b)
+	add_child(h)
 
 
 func _slider(text: String, key: String, icon: String) -> void:

@@ -248,6 +248,20 @@ func owns(id: String) -> bool:
 	return owned.has(id)
 
 
+func buy_item(id: String) -> bool:
+	var d: Dictionary = Shop.ITEMS[id]
+	if owns(id) or pearls < int(d.price):
+		return false
+	if d.has("needs") and not owns(d.needs):
+		return false
+	pearls -= int(d.price)
+	owned.append(id)
+	if d.cat == "tide" and str(settings.get("tide", "")) == "":
+		settings["tide"] = id
+	save_game()
+	return true
+
+
 # ---------------------------------------------------------------- bestiary
 ## Returns true the first time a species is seen.
 func bestiary_see(id: String) -> bool:
