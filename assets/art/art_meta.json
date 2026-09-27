@@ -3861,12 +3861,26 @@
    "swim": 4,
    "w": 36
   },
-  "creatures/titan_inside": {
+  "creatures/titan_far": {
    "act": 0,
    "frames": 1,
-   "h": 88,
+   "h": 164,
    "swim": 1,
-   "w": 164
+   "w": 304
+  },
+  "creatures/titan_mid": {
+   "act": 0,
+   "frames": 1,
+   "h": 164,
+   "swim": 1,
+   "w": 304
+  },
+  "creatures/titan_near": {
+   "act": 0,
+   "frames": 1,
+   "h": 164,
+   "swim": 1,
+   "w": 304
   },
   "creatures/titanacon": {
    "act": 4,

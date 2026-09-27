@@ -7,8 +7,8 @@ extends Node2D
 
 const PIXEL := 2.0                        ## same pixel scale as the boss sprite
 const CENTER := Vector2(-8, 12)           ## cavity centre relative to the boss (facing right)
-const RADII := Vector2(156, 80)
-const ACID_Y := 44.0                      ## below this (relative to the centre) is acid
+const RADII := Vector2(292, 152)   ## the inside is bigger than it looks: the wall hides the body
+const ACID_Y := 84.0                      ## below this (relative to the centre) is acid
 
 var game
 var boss                                  # the Titanacon
@@ -20,21 +20,45 @@ var _acid_t := 0.0
 var _t := 0.0
 var _last_pos := Vector2.ZERO
 var _last_facing := 1.0
-var _inside: Sprite2D
+# perspective layers: the gullet (far), ribs + acid floor (mid) and the wall
+# folds drawn over the player (near). They slide at different rates as you
+# swim, so the inside reads as a deep tube and not a flat window.
+var _far: Sprite2D
+var _mid: Sprite2D
+var _near: Sprite2D
+var _wall: Node2D
+const PARALLAX_FAR := Vector2(30, 14)
+const PARALLAX_MID := Vector2(15, 7)
+const PARALLAX_NEAR := Vector2(-12, -6)
+
+
+func _mk_layer(sheet: String) -> Sprite2D:
+	var sp := Sprite2D.new()
+	sp.texture = Art.tex("creatures/" + sheet)
+	sp.scale = Vector2(PIXEL, PIXEL)
+	add_child(sp)
+	return sp
 
 
 func _ready() -> void:
 	z_index = 1
-	_inside = Sprite2D.new()
-	_inside.texture = Art.tex("creatures/titan_inside")
-	_inside.scale = Vector2(PIXEL, PIXEL)
-	add_child(_inside)
+	_far = _mk_layer("titan_far")
+	_mid = _mk_layer("titan_mid")
+	# the body wall around the cavity: you are inside, the ocean is only a glow through the flesh
+	_wall = Node2D.new()
+	_wall.z_as_relative = false
+	_wall.z_index = 3
+	_wall.draw.connect(_draw_wall)
+	add_child(_wall)
+	_near = _mk_layer("titan_near")
+	_near.z_as_relative = false
+	_near.z_index = 5
 	_last_pos = boss.position
 	_last_facing = boss.facing
 	_place()
-	_add_organ("organ_heart", Vector2(6, -34), 26.0, 2.4, 1.4)
-	_add_organ("organ_gland", Vector2(-112, 18), 18.0, 1.6, 1.2)
-	_add_organ("organ_gland", Vector2(104, 10), 18.0, 1.6, 1.2)
+	_add_organ("organ_heart", Vector2(12, -66), 30.0, 2.4, 2.0)
+	_add_organ("organ_gland", Vector2(-205, 30), 22.0, 1.6, 1.6)
+	_add_organ("organ_gland", Vector2(195, 20), 22.0, 1.6, 1.6)
 	for i in 3:
 		_spawn_parasite()
 
@@ -42,7 +66,43 @@ func _ready() -> void:
 # ------------------------------------------------------------- geometry
 func _place() -> void:
 	position = Vector2(CENTER.x * boss.facing, CENTER.y)
-	_inside.scale.x = PIXEL * boss.facing
+	var f: float = boss.facing
+	var rel := Vector2.ZERO
+	if game.player and game.player.swallowed:
+		rel = to_rel(game.player.position) / RADII
+	for pair in [[_far, PARALLAX_FAR], [_mid, PARALLAX_MID], [_near, PARALLAX_NEAR]]:
+		var sp: Sprite2D = pair[0]
+		var k: Vector2 = pair[1]
+		sp.scale.x = PIXEL * f
+		sp.position = Vector2(-rel.x * k.x * f, -rel.y * k.y).round()
+
+
+func _draw_wall() -> void:
+	# ring between the cavity and far beyond the screen, darker near the cavity
+	var beat := 0.5 + 0.5 * sin(_t * (2.0 + 3.0 * (1.0 - boss.hp / maxf(boss.max_hp, 1.0))) * PI)
+	var inner_c := Color(0.2, 0.02, 0.07, 0.9 + 0.05 * beat)
+	var outer_c := Color(0.1, 0.01, 0.04, 0.62)
+	var n := 64
+	var rin := RADII * 0.96
+	var rout := Vector2(1100, 800)
+	for i in n:
+		var a0 := TAU * i / n
+		var a1 := TAU * (i + 1) / n
+		var p0 := Vector2(cos(a0) * rin.x, sin(a0) * rin.y)
+		var p1 := Vector2(cos(a1) * rin.x, sin(a1) * rin.y)
+		var q1 := Vector2(cos(a1) * rout.x, sin(a1) * rout.y)
+		var q0 := Vector2(cos(a0) * rout.x, sin(a0) * rout.y)
+		_wall.draw_polygon(PackedVector2Array([p0, p1, q1, q0]), PackedColorArray([inner_c, inner_c, outer_c, outer_c]))
+	# a few veins crawling through the wall
+	for k in 6:
+		var a := k * 1.05 + 0.4
+		var base := Vector2(cos(a) * rin.x, sin(a) * rin.y)
+		var pts := PackedVector2Array([base])
+		var d := base.normalized()
+		for j in 5:
+			d = d.rotated(sin(k * 3.1 + j) * 0.5)
+			pts.append(pts[pts.size() - 1] + d * 60.0)
+		_wall.draw_polyline(pts, Color(0.42, 0.12, 0.3, 0.55), 2.0)
 
 
 ## World position of a point given relative to the cavity centre (facing right).
@@ -58,8 +118,8 @@ func to_rel(world: Vector2) -> Vector2:
 ## Keeps a body of radius r inside the cavity ellipse.
 func clamp_point(world: Vector2, r: float) -> Vector2:
 	var rel := to_rel(world)
-	var rx := maxf(8.0, RADII.x - r)
-	var ry := maxf(8.0, RADII.y - r)
+	var rx := maxf(8.0, RADII.x * 0.9 - r * 1.6)
+	var ry := maxf(8.0, RADII.y * 0.88 - r * 1.3)
 	var k := (rel.x / rx) * (rel.x / rx) + (rel.y / ry) * (rel.y / ry)
 	if k > 1.0:
 		rel /= sqrt(k)
@@ -155,8 +215,9 @@ func _draw() -> void:
 	for i in 10:
 		var x := -RADII.x * 0.8 + fmod(i * 37.0 + _t * 8.0 * (1 + i % 3), RADII.x * 1.6)
 		var ph := fmod(_t * 0.6 + i * 0.37, 1.0)
-		var y := ACID_Y + 20.0 - ph * 50.0
+		var y := ACID_Y + 30.0 - ph * 80.0
 		draw_circle(Vector2(x * boss.facing, y), 1.5 + (i % 2), Color(0.75, 0.95, 0.35, 0.8 * (1.0 - ph)))
+	_wall.queue_redraw()
 
 
 ## Frees everything that lives in here (the player was spat out).

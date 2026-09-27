@@ -362,42 +362,108 @@ def titanacon():
 
 # Body cavity seen through the "x-ray" while the player is inside (in sprite pixels,
 # relative to the body centre; the game scales it like the boss sprite).
-CAVITY = dict(cx=-4.0, cy=6.0, rx=78.0, ry=40.0)
+CAVITY = dict(cx=-4.0, cy=6.0, rx=146.0, ry=76.0)
 
 
-def titan_inside():
-    """Stomach cavity drawn over the Titanacon's body when it swallows you."""
+def _cavity_grid(pad=6):
+    c = CAVITY
+    w, h = int(c["rx"] * 2 + pad * 2), int(c["ry"] * 2 + pad * 2)
+    X, Y = np.meshgrid(np.arange(w) + 0.5, np.arange(h) + 0.5)
+    return c, w, h, X, Y, w / 2.0, h / 2.0
+
+
+# vanishing point of the gullet (toward the tail), relative to the cavity centre
+VP = (-0.42, -0.05)
+
+
+def titan_far():
+    """Deep layer: the gullet recedes to a dark vanishing point (the intestine)
+    with fleshy rings shrinking and darkening with distance."""
     import props
     from pro import ramp
-    c = CAVITY
-    w, h = int(c["rx"] * 2 + 8), int(c["ry"] * 2 + 8)
-    X, Y = np.meshgrid(np.arange(w) + 0.5, np.arange(h) + 0.5)
-    ex, ey = w / 2.0, h / 2.0
-    nz = props.noise2(X, Y, 9.0, 21)
-    r = ((X - ex) / c["rx"]) ** 2 + ((Y - ey) / c["ry"]) ** 2
-    r = r * (1.0 + 0.06 * nz)
-    cav = r <= 1.0
-    lay = Layer(w, h)
+    c, w, h, X, Y, ex, ey = _cavity_grid()
+    vx, vy = ex + VP[0] * c["rx"], ey + VP[1] * c["ry"]
     dark = ramp("#5a1a2e", dark=0.3)
     flesh = FP.PAL["flesh"]
-    fold = np.sin((Y + 5 * np.sin(X / 13.0) + 4 * nz) / 4.5)
-    val = (1.0 - r) * 0.9 + fold * 0.1
-    tone = FP.band(val, (0.12, 0.3, 0.5, 0.75))
-    lay.paint(cav, dark, np.clip(tone, 1, 4))
-    lay.paint(cav & (val > 0.55), flesh, np.clip(tone - 2, 1, 3))
-    lay.shift(cav & (fold > 0.9) & (val > 0.25), +1, hi=4)
-    # ribs seen from inside
-    for k in range(5):
-        rx = ex - c["rx"] * 0.66 + k * c["rx"] * 0.33
-        d = np.abs(np.hypot((X - rx) / 9.0, (Y - (ey - c["ry"] * 0.95)) / 16.0) - 1.0) * 9.0
-        lay.paint(cav & (d < 1.4) & (Y < ey), FP.PAL["bone"], np.where(d < 0.6, 4, 2))
-    # acid pool in the belly
-    acid = cav & (Y > ey + c["ry"] * 0.55 + np.sin(X / 7.0))
-    lay.paint(acid, FP.PAL["acid"], np.where(Y < ey + c["ry"] * 0.62, 5, 3))
-    # thick fleshy rim so the cut-away reads as the inside of the body wall
-    rim = cav & (r > 0.86)
-    lay.paint(rim, dark, 1)
-    return lay.to_image(outline=True)
+    lay = Layer(w, h)
+    # "depth" of each pixel: 0 at the rim (near), 1 at the vanishing point (far)
+    best = np.zeros(X.shape)
+    for s_ in np.linspace(1.0, 0.04, 90):
+        cxs, cys = vx + (ex - vx) * s_, vy + (ey - vy) * s_
+        inside = ((X - cxs) / (c["rx"] * s_)) ** 2 + ((Y - cys) / (c["ry"] * s_)) ** 2 <= 1.0
+        best = np.where(inside, 1.0 - s_, best)
+    cav = ((X - ex) / c["rx"]) ** 2 + ((Y - ey) / c["ry"]) ** 2 <= 1.0
+    depth = np.where(cav, best, 0.0)
+    nz = props.noise2(X, Y, 7.0, 31)
+    # rings: equal steps in 1/scale feel evenly spaced in depth
+    ringpos = (1.0 / np.maximum(1.0 - depth, 0.05)) * 1.6 + nz * 0.25
+    ring = (ringpos % 1.0) < 0.16
+    light = (1.0 - depth) ** 1.3
+    tone = np.clip(np.floor(light * 4.6), 0, 4).astype(int)
+    lay.paint(cav, dark, np.clip(tone, 0, 4))
+    lay.paint(cav & (light > 0.62), flesh, np.clip(tone - 2, 1, 3))
+    lay.shift(cav & ring & (depth < 0.85), +1, hi=5)
+    hole = cav & (depth > 0.9)
+    lay.paint(hole, FP.PAL["black"], 0)
+    return lay.to_image(outline=False)
+
+
+def titan_mid():
+    """Middle layer: rib arches and the acid floor, both in perspective."""
+    from pro import ramp
+    c, w, h, X, Y, ex, ey = _cavity_grid()
+    vx, vy = ex + VP[0] * c["rx"], ey + VP[1] * c["ry"]
+    lay = Layer(w, h)
+    bone = FP.PAL["bone"]
+    for s_ in (0.92, 0.7, 0.52, 0.38, 0.27):
+        cxs, cys = vx + (ex - vx) * s_, vy + (ey - vy) * s_
+        rx, ry = c["rx"] * s_ * 0.97, c["ry"] * s_ * 0.97
+        d = np.abs(np.hypot((X - cxs) / rx, (Y - cys) / ry) - 1.0) * ry
+        th = 2.6 * s_ + 0.4
+        rib = (d < th) & (Y < cys + ry * 0.25)
+        tone = {0.92: 5, 0.7: 4, 0.52: 3, 0.38: 2, 0.27: 1}[s_]
+        lay.paint(rib, bone if s_ > 0.45 else ramp("#8a6a6e", dark=0.3), np.where(d < th * 0.4, tone, max(0, tone - 2)))
+    # acid floor: a plane whose far edge converges toward the vanishing point
+    yl = ey + c["ry"] * 0.55
+    far_y = vy + (yl - vy) * 0.25
+    u = np.clip((Y - far_y) / max(1.0, yl - far_y), 0, 1)       # 0 far .. 1 near
+    half = (c["rx"] * 0.25) + (c["rx"] * 0.95 - c["rx"] * 0.25) * u
+    xc = vx + (ex - vx) * (0.25 + 0.75 * u)
+    floor = (Y >= far_y) & (np.abs(X - xc) <= half)
+    floor &= ((X - ex) / c["rx"]) ** 2 + ((Y - ey) / c["ry"]) ** 2 <= 1.0
+    acid = FP.PAL["acid"]
+    lay.paint(floor, acid, np.clip(np.floor(1 + u * 3.2).astype(int), 1, 4))
+    # ripples get wider toward the viewer (perspective)
+    shine = floor & (np.abs(np.sin((X - xc) / (2.0 + 6.0 * u) + u * 14.0)) < 0.08) & (u > 0.3)
+    lay.shift(shine, +1, hi=5)
+    return lay.to_image(outline=False)
+
+
+def titan_near():
+    """Front layer, drawn over the player: thick wall folds, dripping mucus."""
+    import props
+    from pro import ramp
+    c, w, h, X, Y, ex, ey = _cavity_grid()
+    dark = ramp("#5a1a2e", dark=0.3)
+    flesh = FP.PAL["flesh"]
+    nz = props.noise2(X, Y, 6.0, 41)
+    r = np.hypot((X - ex) / c["rx"], (Y - ey) / c["ry"])
+    edge = 0.86 + 0.07 * nz + 0.05 * np.sin(np.arctan2(Y - ey, X - ex) * 9.0)
+    wall = (r >= edge) & (r <= 1.02)
+    lay = Layer(w, h)
+    t = np.clip((r - edge) / 0.14, 0, 1)
+    lay.paint(wall, dark, np.clip(np.floor(1 + (1 - t) * 3).astype(int), 1, 4))
+    lay.paint(wall & (t < 0.35) & (Y < ey), flesh, 3)
+    # mucus drips hanging from the upper wall
+    rng = np.random.default_rng(5)
+    for _ in range(9):
+        a = rng.uniform(math.pi * 1.1, math.pi * 1.9)
+        bx, by = ex + math.cos(a) * c["rx"] * 0.86, ey + math.sin(a) * c["ry"] * 0.86
+        ln = rng.uniform(4, 11)
+        drip = (np.abs(X - bx) < 1.2 - (Y - by) / ln * 0.5) & (Y >= by) & (Y < by + ln)
+        lay.paint(drip, FP.PAL["pink"], 4, alpha=210)
+        lay.paint((np.hypot(X - bx, Y - (by + ln)) < 1.4), FP.PAL["pink"], 6, alpha=230)
+    return lay.to_image(outline=False)
 
 
 def parasite():
@@ -420,10 +486,11 @@ ALL = {
     "puffer": puffer, "puffer_big": puffer_big, "barracuda": barracuda, "shark": shark, "angler": angler,
     "orca": orca, "moray": moray, "boss_shark": boss_shark, "boss_angler": boss_angler,
     "leviathan_head": leviathan_head, "titanacon": titanacon, "parasite": parasite,
-    "titan_inside": titan_inside,
+    "titan_far": titan_far, "titan_mid": titan_mid, "titan_near": titan_near,
 }
 
 # swim / action frame counts per sheet (default for this module: 6 swim + 4 bite)
 ANIM = {name: (FP.SWIM_N, FP.BITE_N) for name in ALL}
 ANIM["puffer_big"] = (4, 0)
-ANIM["titan_inside"] = (1, 0)
+for _k in ("titan_far", "titan_mid", "titan_near"):
+    ANIM[_k] = (1, 0)
