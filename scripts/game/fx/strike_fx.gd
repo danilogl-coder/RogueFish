@@ -30,6 +30,10 @@ func _ready() -> void:
 			_sprite = Art.sprite("fx/jaws")
 			_sprite.position = Vector2(0, 10)
 			_dur = 0.22
+		"megajaw":
+			_sprite = Art.sprite("fx/megajaw")
+			_sprite.modulate = Color(0.85, 0.95, 1.1, 0.9)
+			_dur = 0.26
 		_:
 			_sprite = Art.sprite("fx/coin")
 			_from = Vector2(randf_range(-12.0, 12.0), -90.0)
@@ -50,6 +54,10 @@ func _process(delta: float) -> void:
 			if _done:
 				_sprite.position = Vector2.ZERO.lerp(_from, clampf((_t - _dur) / 0.25, 0.0, 1.0))
 				_sprite.modulate.a = 1.0 - clampf((_t - _dur) / 0.25, 0.0, 1.0)
+		"megajaw":
+			_sprite.frame = mini(int(k * 4.0), 3)
+			if _done:
+				_sprite.modulate.a = 0.9 * (1.0 - clampf((_t - _dur) / 0.3, 0.0, 1.0))
 		"jaws":
 			_sprite.frame = mini(int(k * 3.0), 2) if not _done else 3
 			_sprite.position.y = lerpf(10.0, -2.0, ease(k, 0.3))

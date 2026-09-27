@@ -32,6 +32,7 @@ const CreatureScripts := {
 	"boss_angler": preload("res://scripts/game/bosses/boss_angler.gd"),
 	"boss_leviathan": preload("res://scripts/game/bosses/boss_leviathan.gd"),
 	"boss_titanacon": preload("res://scripts/game/bosses/boss_titanacon.gd"),
+	"boss_megalodon": preload("res://scripts/game/bosses/boss_megalodon.gd"),
 	"parasite": preload("res://scripts/game/creatures/parasite.gd"),
 	"bobbit": preload("res://scripts/game/creatures/bobbit.gd"),
 	"louse": preload("res://scripts/game/creatures/louse.gd"),

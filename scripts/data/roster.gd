@@ -188,6 +188,12 @@ const SPECIES := {
 		"trait": {"name": "Couro Elétrico", "desc": "Inimigos que te tocam levam 15 de choque."},
 		"stats": {"max_hp": 145.0, "speed": 126.0, "bite_damage": 16.0, "armor": 2.0},
 	},
+	"megalodonte": {
+		"name": "Megalodonte", "group": "chefes", "short": "O predador ancestral.",
+		"weapon": "ancient_jaws", "unlock": {"type": "boss", "boss": "megalodon"},
+		"trait": {"name": "Frenesi Ancestral", "desc": "Abaixo de 50% de vida: +30% de dano e +15% de velocidade."},
+		"stats": {"max_hp": 170.0, "speed": 132.0, "bite_damage": 25.0, "armor": 2.0, "bite_reach": 1.3},
+	},
 	"titanacon": {
 		"name": "Titanacon", "group": "chefes", "short": "Titã blindado e lento.",
 		"weapon": "whirl", "unlock": {"type": "boss", "boss": "titanacon"},

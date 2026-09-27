@@ -74,7 +74,8 @@ func _enter(p: String) -> void:
 			game.shake(4.0)
 		"boss":
 			phase_len = 0.0
-			var bid: String = DB.BOSS_ORDER[(cycle - 1) % DB.BOSS_ORDER.size()]
+			var order: Array = DB.boss_order()
+			var bid: String = order[(cycle - 1) % order.size()]
 			var p2: Vector2 = game.player.position
 			var side := -1.0 if p2.x > DB.WORLD_W * 0.5 else 1.0
 			var bx := clampf(p2.x + side * 380.0, 60, DB.WORLD_W - 60)
@@ -84,7 +85,7 @@ func _enter(p: String) -> void:
 			game.darkness.tint_target = Color(0.06, 0.0, 0.08)
 			game.hud.banner("CHEFE", DB.BOSSES[bid].name, Color("cc7ee0"))
 			Sfx.play("boss_roar")
-			Sfx.play_music("final" if bid in ["titanacon", "leviathan"] else "boss")
+			Sfx.play_music("final" if bid in ["titanacon", "leviathan", "megalodon"] else "boss")
 			game.shake(8.0)
 	phase_changed.emit(phase)
 
@@ -116,7 +117,7 @@ func _physics_process(delta: float) -> void:
 
 func on_boss_killed() -> void:
 	game.hud.banner("VITÓRIA!", "Chefe derrotado", Color("ffbf45"))
-	if cycle >= DB.BOSS_ORDER.size() and not endless:
+	if cycle >= DB.boss_order().size() and not endless:
 		game.on_victory()
 		return
 	phase = "rest"

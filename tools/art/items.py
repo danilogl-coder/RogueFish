@@ -283,6 +283,35 @@ def jaws():
     return sheet(frames)
 
 
+def megajaw():
+    """Ancient jaws snapping shut on a target: 4 frames (open wide -> shut).
+    Each jaw is a crescent (outer arc = lip, inner arc = gum line) lined with
+    serrated triangular teeth along the inner edge."""
+    frames = []
+    for i in range(4):
+        c = Canvas(52, 44)
+        gap = [15.0, 10.0, 4.0, 0.5][i]
+        for s_ in (-1, 1):
+            cy = 22 + s_ * (gap * 0.5 + 1.5)
+            # lip: ellipse band; gum: slightly smaller ellipse towards the mouth
+            def lip(x, y, s_=s_, cy=cy):
+                u = ((x - 26) / 24.0) ** 2 + ((y - cy) / 10.5) ** 2
+                inner = ((x - 26) / 20.0) ** 2 + ((y - cy + s_ * 3.5) / 8.0) ** 2
+                return u <= 1.0 and s_ * (y - cy) < 4.0 and not (inner <= 1.0 and s_ * (y - cy) < -1.0) and s_ * (y - cy) > -10.5 + 0 * x
+            c.paint_fn(lambda x, y, s_=s_, cy=cy: ((x - 26) / 24.0) ** 2 + ((y - cy) / 10.5) ** 2 <= 1.0 and s_ * (y - cy) > -1.5,
+                       A("shark", 3, "j%d" % s_))
+            c.paint_fn(lambda x, y, s_=s_, cy=cy: ((x - 26) / 21.0) ** 2 + ((y - cy) / 6.5) ** 2 <= 1.0 and s_ * (y - cy) > -1.5 and s_ * (y - cy) < 2.5,
+                       F("red", 2, "g%d" % s_, outline=False))
+            edge = cy - s_ * 1.5
+            for k in range(10):
+                x = 8.5 + k * 3.6
+                w_ = 1.6
+                depth = (4.8 if i < 3 else 2.4) * (1.0 - abs(x - 26) / 34.0)
+                c.poly([(x - w_, edge), (x + w_, edge), (x, edge - s_ * depth)], A("white", 4, "t%d%d" % (s_, k)))
+        frames.append(c.render())
+    return sheet(frames)
+
+
 def gold_tooth():
     return tooth("gold")
 
@@ -291,11 +320,11 @@ FX = {
     "lash_arc": lash_arc, "claw_snap": claw_snap, "coral_shard": coral_shard, "silver_arrow": silver_arrow,
     "tooth": tooth, "gold_tooth": gold_tooth, "coin": coin, "splash_ring": splash_ring,
     "cavitation": cavitation, "cavitation_pop": cavitation_pop, "sucker": sucker, "shell_spin": shell_spin,
-    "spine_violet": spine_violet, "mucus": mucus, "guts": guts, "stone": stone, "jaws": jaws,
+    "spine_violet": spine_violet, "mucus": mucus, "guts": guts, "stone": stone, "jaws": jaws, "megajaw": megajaw,
 }
 FX_FRAMES = {"lash_arc": 4, "claw_snap": 4, "tooth": 4, "gold_tooth": 4, "coin": 4, "splash_ring": 5,
              "cavitation": 2, "cavitation_pop": 5, "sucker": 2, "shell_spin": 4, "mucus": 4, "guts": 2,
-             "stone": 4, "jaws": 4}
+             "stone": 4, "jaws": 4, "megajaw": 4}
 
 
 # ================================================================= icons
@@ -531,7 +560,19 @@ def i_star_mucus():
     return c.render()
 
 
+def i_ancient_jaws():
+    c = ic()
+    c.poly([(1, 7), (15, 7), (13, 2), (3, 2)], A("shark", 3, "u"))
+    c.poly([(1, 9), (15, 9), (13, 14), (3, 14)], A("shark", 3, "l"))
+    img = c.render()
+    for x in range(3, 14, 3):
+        img.putpixel((x, 7), col("white", 5))
+        img.putpixel((x + 1, 8), col("white", 5))
+    return img
+
+
 WEAPON_ICONS = {
+    "w_ancient_jaws": i_ancient_jaws,
     "w_hypno_lure": i_hypno_lure, "w_star_mucus": i_star_mucus,
     "w_tail_whip": i_tail_whip, "w_coral_shard": i_coral_shard, "w_bubble_ring": i_bubble_ring,
     "w_volt_lance": i_volt_lance, "w_silver_school": i_silver_school, "w_photophore": i_photophore,
@@ -554,6 +595,7 @@ FUSION_PAIRS = {
     "f_abyss_plague": ("w_scavengers", "w_louse_swarm"), "f_deadly_ambush": ("w_moray_strike", "w_scissor_jaws"),
     "f_golden_fangs": ("w_gold_rain", "w_serrated"), "f_venom_garden": ("w_tetrodo", "w_tentacles"),
     "f_tide_ring": ("w_bubble_ring", "w_silver_arrow"), "f_star_abyss": ("w_hypno_lure", "w_star_mucus"),
+    "f_fang_storm": ("w_ancient_jaws", "w_serrated"),
 }
 
 

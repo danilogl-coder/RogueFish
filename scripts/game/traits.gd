@@ -47,6 +47,10 @@ func modify(s: Dictionary) -> void:
 			s.luck += 0.2
 		"tubarao":
 			s.damage_mult *= 1.0 + 0.03 * _blood
+		"megalodonte":
+			if player.hp < player.st.get("max_hp", 999.0) * 0.5:
+				s.damage_mult *= 1.3
+				s.speed *= 1.15
 	if player.buffs.has("concha"):
 		s.armor += 5.0
 		s.regen += 2.0
@@ -95,6 +99,15 @@ func tick(delta: float) -> void:
 				if _blood_t <= 0.0:
 					_blood = 0
 					player.recalc()
+		"megalodonte":
+			var low: bool = player.hp < player.st.max_hp * 0.5
+			if low != player.has_meta("frenzy_on"):
+				if low:
+					player.set_meta("frenzy_on", true)
+					game.float_text(player.position + Vector2(0, -18), "FRENESI ANCESTRAL!", Color("ff5c4c"), 10)
+				else:
+					player.remove_meta("frenzy_on")
+				player.recalc()
 		"garoupa":
 			if _cd <= 0.0 and not player.has_meta("block_ready"):
 				player.set_meta("block_ready", true)

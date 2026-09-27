@@ -192,6 +192,7 @@ def orca_pattern(fish, f):
 # species with parts that are not mutations (built into the head)
 SPECIES_EXTRAS = {"tubarao": shark_extras, "titanacon": titan_extras, "kraken": kraken_extras,
                   "leviata": leviathan_extras, "pescadora": angler_extras, "lanterna": lantern_extras,
+                  "megalodonte": shark_extras,
                   "vibora": lambda fish: fish.extras.append(__import__("fishes").photophores(0.82, 0.07))}
 BUILTIN_LURE = {"pescadora"}
 
@@ -245,6 +246,12 @@ SPECIES = {
                    pectoral=(0.14, 0.06), pelvic=0.0, gloss=False, countershade=0.1,
                    mouth=dict(v=0.5, corner_t=0.72, corner_v=0.56, open=1.0, under=0.08, chin=0.3, teeth="needle",
                               teeth_n=3, teeth_len=0.18, closed_teeth=True, tongue=False)),
+    "megalodonte": dict(H=0.34, peak=0.58, q=1.1, front_e=0.72, top_ratio=0.5, body="titan", belly="titanbelly",
+                        fin="titan", tail="hetero", tail_len=0.36, eye=0.04, eye_ramp="iris_red",
+                        dorsal=("shark", 0.44, 0.62, 0.9), anal=("tri", 0.2, 0.26, 0.3), pectoral=(0.28, 0.1),
+                        pelvic=0.1, belly_v=0.6, gill=False, backshade=0.25,
+                        mouth=dict(v=0.9, corner_t=0.74, corner_v=0.8, sag=0.06, open=0.85, teeth="triangle",
+                                   teeth_n=6, teeth_len=0.05, tongue=False)),
     # ---- fish mobs (Marés Profundas)
     "sardinha": dict(H=0.36, peak=0.62, q=1.15, front_e=0.68, body="silver", belly="white", fin="silver",
                      tail="fork", tail_len=0.44, eye=0.13, eye_ramp="iris_white", dorsal=("tri", 0.42, 0.58, 0.5),

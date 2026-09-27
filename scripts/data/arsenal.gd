@@ -167,6 +167,12 @@ const WEAPONS := {
 		"damage": [7, 7, 9.1, 9.1, 9.1], "cooldown": [2.4, 2.4, 2.3, 2.2, 1.9], "amount": [6, 8, 8, 8, 11], "pierce": [2, 2, 2, 2, 3],
 		"slow": [0.35, 0.35, 0.35, 0.55, 0.55], "sheet": "fx/light_orb", "speed": 110.0, "life": 1.3, "size": 5.0,
 	},
+	"ancient_jaws": {
+		"name": "Mandíbula Ancestral", "icon": "w_ancient_jaws", "tag": "predator", "kind": "strike", "owner": "megalodonte",
+		"desc": ["Mandíbulas fantasmas se fecham sobre um inimigo.", "+30% dano", "+1 mordida", "-15% recarga", "+1 mordida, +30% dano, sangramento"],
+		"damage": [34, 44, 44, 44, 57], "cooldown": [3.0, 2.9, 2.8, 2.4, 2.3], "amount": [1, 1, 2, 2, 3],
+		"visual": "megajaw", "radius": 190.0, "bleed": [0.0, 0, 0, 0, 5.0],
+	},
 	"louse_swarm": {
 		"name": "Enxame de Piolhos", "icon": "w_louse_swarm", "tag": "poison", "kind": "summon", "owner": "piolho",
 		"desc": ["Piolhos-do-mar saem de você e devoram inimigos.", "+1 piolho", "+30% dano", "+1 piolho", "+2 piolhos, +30% dano"],
@@ -234,6 +240,9 @@ const FUSIONS := {
 		"desc": "Vórtices estrelados puxam os inimigos, cegam e os esmagam.", "kind": "vortex",
 		"base": {"damage": 12.0, "cooldown": 2.8, "amount": 2, "area": 1.3, "duration": 4.0}, "radius": 46.0, "pull": 140.0,
 		"slow": 0.5, "tint": "b0a0ff"},
+	"fang_storm": {"name": "Tempestade de Presas", "icon": "f_fang_storm", "from": ["ancient_jaws", "serrated"], "tag": "predator",
+		"desc": "Mandíbulas ancestrais caem sobre vários inimigos e fazem sangrar.", "kind": "strike",
+		"base": {"damage": 48.0, "cooldown": 1.9, "amount": 3}, "visual": "megajaw", "radius": 230.0, "bleed": 6.0},
 	"tide_ring": {"name": "Anel das Marés", "icon": "f_tide_ring", "from": ["bubble_ring", "silver_arrow"], "tag": "current",
 		"desc": "Bolhas orbitam e disparam flechas de prata para fora.", "kind": "orbit",
 		"base": {"damage": 12.0, "amount": 6, "area": 1.2, "speed": 2.6}, "sheet": "fx/bubble_big", "radius": 36.0, "knock": 120.0,

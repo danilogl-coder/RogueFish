@@ -258,6 +258,27 @@ def boss_shark():
                             teeth_n=8, teeth_len=0.04, tongue=False))
 
 
+def mega_pattern(fish, fl):
+    """Ancient hide: darker saddle, pale mottles and deep scars."""
+    t, v = fl["t"], fl["v"]
+    body = fl["body"]
+    saddle = body & (v < 0.36)
+    fl["lay"].shift(saddle, -1, lo=1)
+    import player as _pl
+    _pl.spots(fish, fl, "armor", cell=0.05, rad=(0.006, 0.012), zone=(v < 0.55), seed=41, density=0.45)
+
+
+def megalodon():
+    """Megalodonte: an ancient giant shark with a jaw full of serrated teeth."""
+    return sheet(150, H=0.34, peak=0.58, q=1.1, front_e=0.72, top_ratio=0.5, body="titan", belly="titanbelly",
+                 fin="titan", tail="hetero", tail_len=0.34, eye=0.024, eye_ramp="iris_red",
+                 dorsal=("shark", 0.44, 0.62, 0.9), anal=("tri", 0.2, 0.26, 0.3), pectoral=(0.28, 0.1),
+                 pelvic=0.1, belly_v=0.6, gill=False, extras=(gill_slits(5, 0.64, 0.02), scars), wag=0.6,
+                 backshade=0.25, pattern=mega_pattern,
+                 mouth=dict(v=0.9, corner_t=0.74, corner_v=0.8, sag=0.06, open=0.85, teeth="triangle",
+                            teeth_n=11, teeth_len=0.035, tongue=False))
+
+
 def glow_lines(fish, st, f, lay):
     t, v = f["t"], f["v"]
     hgt = fish.bottom(t) - fish.top(t)
@@ -491,7 +512,7 @@ def viperfish():
                             teeth_n=3, teeth_len=0.2, closed_teeth=True, tongue=False))
 
 
-ALL = {"viperfish": viperfish, 
+ALL = {"viperfish": viperfish, "megalodon": megalodon, 
     "sardine": sardine, "golden": golden, "pilot": pilot, "lanternfish": lanternfish, "piranha": piranha,
     "puffer": puffer, "puffer_big": puffer_big, "barracuda": barracuda, "shark": shark, "angler": angler,
     "orca": orca, "moray": moray, "boss_shark": boss_shark, "boss_angler": boss_angler,

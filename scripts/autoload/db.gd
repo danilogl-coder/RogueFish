@@ -259,8 +259,17 @@ const BOSSES := {
 	"angler_queen": {"name": "Rainha Abissal", "hp": 6000, "script": "boss_angler", "dmg": 32, "xp": 600, "pearls": 60},
 	"leviathan": {"name": "Leviatã Elétrico", "hp": 8800, "script": "boss_leviathan", "dmg": 36, "xp": 900, "pearls": 100},
 	"titanacon": {"name": "Titanacon, o Devorador", "hp": 9000, "script": "boss_titanacon", "dmg": 30, "xp": 1300, "pearls": 150},
+	"megalodon": {"name": "Megalodonte, o Ancestral", "hp": 9500, "script": "boss_megalodon", "dmg": 34, "xp": 1600, "pearls": 180, "pack": "pack_megalodon"},
 }
 const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan", "titanacon"]
+
+
+## Bosses of a run: the Megalodonte expansion adds a sixth, final cycle.
+func boss_order() -> Array:
+	var out: Array = BOSS_ORDER.duplicate()
+	if Profile.owns("pack_megalodon"):
+		out.append("megalodon")
+	return out
 
 # Ecosystem populations per cycle (index 0 = cycle 1). Values = target counts.
 # The director only "immigrates" animals when a species falls below half of its
