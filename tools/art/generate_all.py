@@ -23,8 +23,9 @@ import env  # noqa: E402
 import fx  # noqa: E402
 import ui  # noqa: E402
 import creatures2  # noqa: E402
-import env2  # noqa: E402
+import props  # noqa: E402
 import fx2  # noqa: E402
+import terrain  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(ROOT, "assets", "art")
@@ -70,7 +71,7 @@ def main():
 
     for name, (sw, act) in ANIM.items():
         FRAME_COUNT[name] = sw + act
-    groups = [("creatures", {**creatures.ALL, **creatures2.ALL, **fishes.ALL}, creatures.NF), ("env", {**env.ALL, **env2.ALL}, 1),
+    groups = [("creatures", {**creatures.ALL, **creatures2.ALL, **fishes.ALL}, creatures.NF), ("env", {**env.ALL, **props.ALL}, 1),
               ("fx", {**fx.ALL, **fx2.ALL}, 1), ("ui", ui.ALL, 1)]
     for gname, table, default_frames in groups:
         if not want(gname):
@@ -86,6 +87,10 @@ def main():
             meta["sheets"][f"{gname}/{name}"] = info
             print(gname, name, img.size)
 
+    if want("terrain"):
+        d = terrain.build(os.path.join(OUT, "terrain"), os.path.join(OUT, "terrain.json"))
+        print("terrain", len(d["chunks"]), "chunks")
+
     if want("icons"):
         atlas, names = ui.icon_atlas()
         save(atlas, "ui/icons.png")
@@ -99,6 +104,11 @@ def main():
         with open(meta_path) as fh:
             old = json.load(fh)
         for k in ("player", "sheets", "icons"):
+            if k == "sheets":
+                # drop stale sheets of regenerated groups
+                for g in only:
+                    for key in [key for key in old.get("sheets", {}) if key.startswith(g + "/")]:
+                        del old["sheets"][key]
             old.setdefault(k, {}).update(meta[k])
         meta = old
     with open(meta_path, "w") as fh:

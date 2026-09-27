@@ -30,6 +30,10 @@ func build() -> void:
 	_build_surface()
 	var bed := Seabed.new()
 	add_child(bed)
+	# the lip of the sand is drawn in front of props, planting their bases
+	var lip := Seabed.new()
+	lip.front = true
+	add_child(lip)
 	_build_hideouts()
 	_build_kelp()
 	_build_decor()
@@ -102,7 +106,9 @@ func _floor_sprite(path: String, x: float, z := -28, frames := 1, fps := 0.0, y_
 	s.centered = false
 	var h := float(Art.sheet_info(path).h)
 	var w := float(Art.sheet_info(path).w)
-	s.position = Vector2(roundf(x - w * 0.5), roundf(floor_at(x) - h + 3 + y_off))
+	# rest on the lowest point under the footprint: no corner hangs in the water
+	var gy := DB.ground_under(x, w * 0.4)
+	s.position = Vector2(roundf(x - w * 0.5), roundf(gy - h + 3 + y_off))
 	s.z_index = z
 	s.z_as_relative = false
 	add_child(s)
@@ -124,6 +130,9 @@ func _free_x(x: float, margin: float) -> bool:
 	for w in whale_falls:
 		if absf(w.x - x) < 75 + margin:
 			return false
+	for r in DB.terrain.get("rocks", []):
+		if absf(float(r[0]) - x) < float(r[1]) * 0.5 + margin * 0.5:
+			return false
 	return true
 
 
@@ -137,19 +146,26 @@ func _add_hideout(kind: String, x: float) -> void:
 
 
 func _build_hideouts() -> void:
-	for x in [260.0, 1050.0, 3450.0, 4150.0, 4620.0]:
-		_add_hideout("cave", x + randf_range(-40, 40))
-	for x in [1650.0, 2150.0, 2600.0, 3000.0, 700.0]:
-		_add_hideout("thicket", x + randf_range(-40, 40))
-	for ex in [520.0, 820.0, 1300.0]:
+	# hideouts and eel rocks sit on flat shelves carved into the terrain
+	for x in _sites("cave", [260.0, 1050.0, 3452.0, 4050.0, 4620.0]):
+		_add_hideout("cave", x)
+	for x in _sites("thicket", [700.0, 1700.0, 2150.0, 2600.0, 3000.0]):
+		_add_hideout("thicket", x)
+	for ex in _sites("eel_rock", [520.0, 830.0, 1310.0]):
 		var rock := Sprite2D.new()
 		rock.texture = Art.tex("env/eel_rock")
-		var x2: float = ex + randf_range(-30, 30)
-		rock.position = Vector2(x2, floor_at(x2) - 15)
+		var x2: float = ex
+		var eh := float(Art.sheet_info("env/eel_rock").h)
+		rock.position = Vector2(x2, roundf(DB.ground_under(x2, 20.0) - eh * 0.5 + 3.0))
 		rock.z_index = -25
 		rock.z_as_relative = false
 		add_child(rock)
 		eel_rocks.append(rock)
+
+
+func _sites(kind: String, fallback: Array) -> Array:
+	var got: Array = DB.sites(kind)
+	return got if not got.is_empty() else fallback
 
 
 func _add_kelp(x: float) -> void:
@@ -175,11 +191,13 @@ func _build_kelp() -> void:
 
 
 func _build_decor() -> void:
+	# rocks, shells, pebbles and bacterial mats are baked into the terrain;
+	# living decor stays as sprites
 	var by_biome := {
-		"reef": ["coral_branch", "coral_branch2", "coral_fan", "coral_brain", "anemone", "coral_branch", "coral_fan", "starfish", "shell", "rock_small"],
-		"kelp": ["seagrass", "seagrass", "rock_big", "rock_mid", "rock_small", "shell", "starfish", "coral_brain"],
-		"slope": ["rock_big", "rock_mid", "rock_small", "rock_big", "seagrass"],
-		"abyss": ["rock_mid", "rock_small", "glow_mushroom", "tube_worms", "bacterial_mat", "rock_big"],
+		"reef": ["coral_branch", "coral_branch2", "coral_fan", "coral_brain", "anemone", "coral_branch", "coral_fan", "anemone", "seagrass"],
+		"kelp": ["seagrass", "seagrass", "seagrass", "coral_brain", "anemone"],
+		"slope": ["seagrass", "anemone", "coral_fan"],
+		"abyss": ["glow_mushroom", "tube_worms", "glow_mushroom", "anemone"],
 	}
 	var x := 20.0
 	while x < DB.WORLD_W - 20:
@@ -190,32 +208,36 @@ func _build_decor() -> void:
 		var items: Array = by_biome[b.id]
 		var it: String = items[randi() % items.size()]
 		var path := "env/" + it
+		# only on level ground: a prop on a cliff face would look glued to it
+		if DB.ground_unevenness(x, Art.sheet_info(path).w * 0.4) > 5.0:
+			continue
 		var frames := Art.frames(path)
 		var s := _floor_sprite(path, x, -28 if randf() < 0.82 else 12, frames, 5.0 + randf() * 2.0)
-		if it.begins_with("rock") and randf() < 0.4:
+		if randf() < 0.5 and not it.begins_with("coral_branch"):
 			s.flip_h = true
 		if it == "glow_mushroom" or it == "anemone" and b.id == "abyss":
 			lights.append({"node": s, "radius": 34.0, "power": 0.75})
 	# foreground seagrass tufts for depth (shallow biomes only)
 	for i in 34:
 		var fx := randf_range(0, 3150)
+		if DB.ground_unevenness(fx, 7.0) > 5.0:
+			continue
 		var s2 := _floor_sprite("env/seagrass", fx, 16, 4, 4.0, 4.0)
 		s2.modulate = Color(0.55, 0.75, 0.8)
 
 
 func _build_abyss() -> void:
 	# hydrothermal vents: chemosynthesis feeds the dark food web
-	for vx in [3950.0, 4380.0, 4700.0]:
-		var x: float = vx + randf_range(-40, 40)
+	for vx in _sites("vent", [3930.0, 4480.0, 4740.0]):
+		var x: float = vx
 		var s := _floor_sprite("env/black_smoker", x, -26)
 		vents.append(Vector2(x, floor_at(x) - 60))
 		lights.append({"node": s, "radius": 70.0, "power": 0.85})
 		for k in 3:
-			var tw := _floor_sprite("env/tube_worms", x + randf_range(-40, 40), -27, 4, 4.0)
+			var tw := _floor_sprite("env/tube_worms", x + (18.0 + randf_range(0, 26)) * (1 if k % 2 == 0 else -1), -27, 4, 4.0)
 			tw.modulate = Color(1.1, 1.0, 1.0)
-		_floor_sprite("env/bacterial_mat", x + randf_range(-30, 30), -27)
 	# whale fall: an enormous carcass that feeds scavengers for decades
-	var wx := 4180.0
+	var wx: float = _sites("whale", [4300.0])[0]
 	var bones := _floor_sprite("env/whale_bones", wx, -26)
 	bones.modulate = Color(0.85, 0.85, 0.9)
 	whale_falls.append(Vector2(wx, floor_at(wx) - 16))
@@ -237,7 +259,8 @@ func spawn_poi(kind: String, near: Vector2) -> Poi:
 	p.game = game
 	p.kind = kind
 	var x := clampf(near.x + randf_range(260, 520) * (1 if randf() < 0.5 else -1), 120, DB.WORLD_W - 120)
-	var y := floor_at(x) - 12.0
+	# POI sprites are drawn from their origin up, so the origin rests on the sand
+	var y := DB.ground_under(x, 18.0) + 1.0
 	if kind == "golden":
 		y = randf_range(200, minf(700.0, floor_at(x) - 60.0))
 	p.position = Vector2(x, y)

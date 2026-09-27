@@ -1594,11 +1594,6 @@
    "h": 20,
    "w": 20
   },
-  "env/bacterial_mat": {
-   "frames": 1,
-   "h": 6,
-   "w": 48
-  },
   "env/bg_backdrop": {
    "frames": 1,
    "h": 360,
@@ -1684,40 +1679,10 @@
    "h": 6,
    "w": 6
   },
-  "env/rock_big": {
-   "frames": 1,
-   "h": 24,
-   "w": 44
-  },
-  "env/rock_mid": {
-   "frames": 1,
-   "h": 18,
-   "w": 32
-  },
-  "env/rock_small": {
-   "frames": 1,
-   "h": 13,
-   "w": 22
-  },
-  "env/seabed": {
-   "frames": 1,
-   "h": 96,
-   "w": 320
-  },
   "env/seagrass": {
    "frames": 4,
    "h": 18,
    "w": 18
-  },
-  "env/shell": {
-   "frames": 1,
-   "h": 8,
-   "w": 10
-  },
-  "env/starfish": {
-   "frames": 1,
-   "h": 12,
-   "w": 12
   },
   "env/surface": {
    "frames": 4,

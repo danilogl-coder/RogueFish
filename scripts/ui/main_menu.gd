@@ -58,10 +58,10 @@ func _build_background() -> void:
 			layer.add_child(t)
 		_layers.append({"node": layer, "speed": d[1], "y": d[2], "tex": Art.tex(d[0])})
 	var seabed := TextureRect.new()
-	seabed.texture = Art.tex("env/seabed")
+	seabed.texture = Art.tex("terrain/menu_strip")
 	seabed.stretch_mode = TextureRect.STRETCH_TILE
 	seabed.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	seabed.offset_top = -40
+	seabed.offset_top = -52
 	seabed.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(seabed)
 	var fish_holder := Control.new()

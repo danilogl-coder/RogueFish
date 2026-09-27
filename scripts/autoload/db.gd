@@ -6,6 +6,15 @@ const WORLD_W := 4800.0
 const WORLD_H := 1560.0
 const FLOOR_Y := 948.0      # reference floor (kelp forest); use floor_at(x) for the real one
 const SURFACE_Y := 14.0
+const TERRAIN_PATH := "res://assets/art/terrain.json"
+
+var terrain: Dictionary = {}
+var _heights := PackedFloat32Array()
+var _hstep := 2.0
+
+
+func _ready() -> void:
+	_load_terrain()
 
 # Biomes from left to right (Deeeep.io-like): each has its own floor depth,
 # light, decor, food sources and animals.
@@ -382,8 +391,58 @@ func biome_at(x: float) -> Dictionary:
 	return BIOMES[BIOMES.size() - 1]
 
 
-## Seafloor height at x: shallow reef, kelp plain, continental slope, abyssal trench.
+## Seafloor height at x. The heightmap is baked by tools/art/terrain.py into
+## assets/art/terrain.json together with the terrain textures, so the drawn
+## sand and this function always agree.
 func floor_at(x: float) -> float:
+	if _heights.is_empty():
+		return _floor_fallback(x)
+	var u := clampf(x, 0.0, WORLD_W) / _hstep
+	var i := mini(int(u), _heights.size() - 2)
+	return lerpf(_heights[i], _heights[i + 1], u - float(i))
+
+
+## Lowest ground point under a footprint [x - half_w, x + half_w]: resting a
+## wide prop there keeps every part of its base in contact with the sand.
+func ground_under(x: float, half_w: float) -> float:
+	var y := floor_at(x)
+	var n := maxi(2, int(half_w / 6.0))
+	for k in range(-n, n + 1):
+		y = maxf(y, floor_at(x + half_w * float(k) / float(n)))
+	return y
+
+
+## Height difference of the ground under a footprint (0 = perfectly level).
+func ground_unevenness(x: float, half_w: float) -> float:
+	var lo := floor_at(x)
+	var hi := lo
+	var n := maxi(2, int(half_w / 6.0))
+	for k in range(-n, n + 1):
+		var y := floor_at(x + half_w * float(k) / float(n))
+		lo = minf(lo, y)
+		hi = maxf(hi, y)
+	return hi - lo
+
+
+## Flat shelves carved for props (caves, thickets, eel rocks, vents, whale fall).
+func sites(kind: String) -> Array:
+	return terrain.get("sites", {}).get(kind, [])
+
+
+func _load_terrain() -> void:
+	var f := FileAccess.open(TERRAIN_PATH, FileAccess.READ)
+	if f == null:
+		push_warning("terrain.json missing, using the analytic seafloor")
+		return
+	var d = JSON.parse_string(f.get_as_text())
+	if typeof(d) != TYPE_DICTIONARY:
+		return
+	terrain = d
+	_hstep = float(d.get("step", 2))
+	_heights = PackedFloat32Array(d.get("heights", []))
+
+
+func _floor_fallback(x: float) -> float:
 	var y: float
 	if x < 1250.0:
 		y = 830.0
