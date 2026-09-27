@@ -55,11 +55,13 @@ func load_game() -> void:
 	missions_done = data.get("missions_done", [])
 	bestiary = data.get("bestiary", {})
 	unlocked_weapons = data.get("unlocked_weapons", [])
+	owned = data.get("owned", [])
 	var d: Dictionary = data.get("daily", {})
 	if not d.is_empty():
 		daily = d
 	_retro_unlock_boss_species()
-	if not unlocked.has(selected_species):
+	check_stat_unlocks()
+	if not DB.SPECIES.has(selected_species) or not unlocked.has(selected_species):
 		selected_species = "dourado"
 
 
@@ -69,6 +71,7 @@ func save_game() -> void:
 		"selected_species": selected_species, "settings": settings, "records": records,
 		"seen_tutorial": seen_tutorial, "stats": stats, "missions_done": missions_done,
 		"bestiary": bestiary, "unlocked_weapons": unlocked_weapons, "daily": daily,
+		"owned": owned,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -100,7 +103,7 @@ func buy_upgrade(id: String) -> bool:
 
 func buy_species(id: String) -> bool:
 	var price := int(DB.SPECIES[id].price)
-	if unlocked.has(id) or pearls < price or DB.SPECIES[id].has("boss"):
+	if unlocked.has(id) or pearls < price or not species_buyable(id):
 		return false
 	pearls -= price
 	unlocked.append(id)
@@ -171,9 +174,14 @@ func _retro_unlock_boss_species() -> void:
 			unlocked.append(sp)
 
 
+signal species_unlocked(id: String)
+
+
 func bump(key: String, amount := 1) -> void:
 	stats[key] = stat(key) + amount
 	_check_missions(key)
+	for sp in check_stat_unlocks():
+		species_unlocked.emit(sp)
 
 
 func set_max(key: String, value: float) -> void:
@@ -197,7 +205,47 @@ func _check_missions(key: String) -> void:
 
 
 func weapon_unlocked(id: String) -> bool:
-	return not DB.LOCKED_WEAPONS.has(id) or unlocked_weapons.has(id)
+	return DB.item_unlocked(id)
+
+
+## Characters bought with pearls ("pack" ones need their expansion first).
+func species_buyable(id: String) -> bool:
+	var u: Dictionary = DB.SPECIES[id].unlock
+	if u.type == "price":
+		return true
+	if u.type == "pack":
+		return owns(u.pack)
+	return false
+
+
+## Progress of a character earned by playing: [current, target], or [] if n/a.
+func species_progress(id: String) -> Array:
+	var u: Dictionary = DB.SPECIES[id].unlock
+	if u.type != "stat":
+		return []
+	return [mini(int(stat(u.stat)), int(u.target)), int(u.target)]
+
+
+## Characters earned by playing unlock themselves when their goal is reached.
+## Returns the ids unlocked by this check.
+func check_stat_unlocks() -> Array:
+	var out := []
+	for sp in DB.SPECIES:
+		var u: Dictionary = DB.SPECIES[sp].unlock
+		if u.type == "stat" and not unlocked.has(sp) and stat(u.stat) >= float(u.target):
+			unlocked.append(sp)
+			out.append(sp)
+	if not out.is_empty():
+		save_game()
+	return out
+
+
+## Shop purchases (relics, modes, expansions...).
+var owned: Array = []
+
+
+func owns(id: String) -> bool:
+	return owned.has(id)
 
 
 # ---------------------------------------------------------------- bestiary

@@ -25,6 +25,7 @@ import fx  # noqa: E402
 import ui  # noqa: E402
 import props  # noqa: E402
 import fx2  # noqa: E402
+import items  # noqa: E402
 import terrain  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
@@ -56,16 +57,23 @@ def save(img: Image.Image, rel: str):
 
 
 def main():
-    only = set(sys.argv[1:])
+    only = set(a for a in sys.argv[1:] if not a.startswith("--"))
     meta = {"player": {}, "sheets": {}, "icons": {}}
 
     def want(group):
         return not only or group in only
 
     if want("player"):
-        for species in player.SPECIES:
+        import mobs
+        only_sp = [a.split("=", 1)[1] for a in sys.argv if a.startswith("--species=")]
+        for species in list(player.SPECIES) + list(mobs.CRITTERS):
+            if only_sp and species not in only_sp[0].split(","):
+                continue
             for stage in range(len(player.STAGE_LEN)):
-                img, m = player.render_atlas(species, stage)
+                if species in mobs.CRITTERS:
+                    img, m = mobs.render_critter_atlas(species, stage)
+                else:
+                    img, m = player.render_atlas(species, stage)
                 img = tidy.bridge_player_atlas(img, m["frame_w"], m["frame_h"], list(m["layers"]))
                 save(img, f"player/{species}_{stage}.png")
                 meta["player"][f"{species}_{stage}"] = m
@@ -73,8 +81,9 @@ def main():
 
     for name, (sw, act) in ANIM.items():
         FRAME_COUNT[name] = sw + act
+    FRAME_COUNT.update(items.FX_FRAMES)
     groups = [("creatures", {**critters.ALL, **fishes.ALL}, 6), ("env", {**env.ALL, **props.ALL}, 1),
-              ("fx", {**fx.ALL, **fx2.ALL}, 1), ("ui", ui.ALL, 1)]
+              ("fx", {**fx.ALL, **fx2.ALL, **items.FX}, 1), ("ui", ui.ALL, 1)]
     for gname, table, default_frames in groups:
         if not want(gname):
             continue

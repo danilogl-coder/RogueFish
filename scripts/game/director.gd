@@ -62,6 +62,7 @@ func _enter(p: String) -> void:
 			game.darkness.extra = 0.0
 			game.darkness.tint_target = Color(0.01, 0.02, 0.07)
 			game.hud.banner("CICLO %d" % cycle, "Explore, coma e cresça", Color("5ee0ff"))
+			game.mods.cycle_start()
 			Sfx.play_music("game")
 		"wave":
 			phase_len = DB.WAVE_TIME
@@ -235,7 +236,7 @@ func _spawn_eco(id: String, count: int, anywhere: bool) -> void:
 			break
 	pos.y = clampf(pos.y, 20.0, DB.floor_at(pos.x) - 8.0)
 	for i in count:
-		var alpha: bool = randf() < 0.035 * cycle and def.faction in ["pred", "herb"] and id != "orca"
+		var alpha: bool = randf() < 0.035 * cycle * game.mods.elite_mult() and def.faction in ["pred", "herb"] and id != "orca"
 		game.spawn_creature(id, pos + Vector2(randf_range(-20, 20), randf_range(-12, 12)), {"elite": alpha})
 	if id == "orca" and not anywhere:
 		game.hud.toast("Um MEGAPREDADOR entrou nas águas...", Color("ff5c4c"))
@@ -249,7 +250,7 @@ func _spawn_wave(delta: float) -> void:
 	_wave_t = lerpf(1.6, 0.55, k) / (1.0 + 0.2 * (cycle - 1))
 	var table: Dictionary = DB.WAVES[mini(cycle - 1, DB.WAVES.size() - 1)]
 	var id := _weighted(table)
-	var group := randi_range(2, 4) + int(k * 3.0) + (cycle - 1)
+	var group := int((randi_range(2, 4) + int(k * 3.0) + (cycle - 1)) * game.mods.wave_mult())
 	if id == "shark" or id == "angler":
 		group = 1
 	var p: Vector2 = game.player.position
@@ -262,7 +263,7 @@ func _spawn_wave(delta: float) -> void:
 	if id == "crab":
 		base.y = DB.floor_at(base.x) - 6
 	for i in group:
-		var elite := randf() < 0.03 * cycle
+		var elite: bool = randf() < 0.03 * cycle * game.mods.elite_mult()
 		game.spawn_creature(id, base + Vector2(randf_range(-24, 24), randf_range(-16, 16)), {"wave": true, "elite": elite})
 
 

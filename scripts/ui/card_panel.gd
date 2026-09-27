@@ -19,6 +19,8 @@ var _attr_row: HBoxContainer
 var _points_label: Label
 var _ready_t := 0.35
 var _done := false
+var _banish_btn: Button
+var _banish_mode := false
 
 
 func open(p_mode: String, p_extra := {}) -> void:
@@ -51,6 +53,12 @@ func open(p_mode: String, p_extra := {}) -> void:
 	_reroll_btn = UIKit.button("", "", 0, "reroll")
 	_reroll_btn.pressed.connect(_reroll)
 	bottom.add_child(_reroll_btn)
+	if game.banishes > 0 and mode == "level":
+		_banish_btn = UIKit.button("BANIR %d" % game.banishes, "", 0, "skull")
+		_banish_btn.pressed.connect(func():
+			_banish_mode = not _banish_mode
+			_banish_btn.text = ("TOQUE NA CARTA" if _banish_mode else "BANIR %d" % game.banishes))
+		bottom.add_child(_banish_btn)
 	match mode:
 		"level":
 			_title.text = "SUBIU DE NÍVEL!"
@@ -84,6 +92,8 @@ func _build_offers() -> void:
 		if extra.get("evolution", false):
 			for e in _available_evolutions():
 				offers.append(e)
+			for f in available_fusions(game.player):
+				offers.append(f)
 		var rest := _level_pool().filter(func(o): return o.kind != "evolution" or offers.is_empty())
 		offers.append_array(_pick_weighted(rest, 3 - offers.size()))
 		for o in offers:
@@ -102,14 +112,15 @@ func _level_pool() -> Array:
 	var pool := []
 	for id in DB.WEAPONS:
 		var w: Dictionary = DB.WEAPONS[id]
-		if not Profile.weapon_unlocked(id) and not p.weapons.has(id):
-			continue
+		var fused: bool = w.get("fusion", false)
 		if p.weapons.has(id):
 			var wn: Weapon = p.weapons[id]
-			if wn.evo == "" and wn.level < DB.MAX_LEVEL:
-				pool.append(_offer("weapon_up", id, w.name, w.desc[wn.level], w.icon, "common", w.tag, wn.level, 10.0))
+			if wn.evo == "" and wn.level < DB.weapon_max(id):
+				pool.append(_offer("weapon_up", id, w.name, DB.weapon_desc(id, wn.level), w.icon, "epic" if fused else "common", w.tag, wn.level, 12.0 if fused else 10.0))
+		elif fused or not DB.item_unlocked(id):
+			continue
 		elif p.weapons.size() < DB.MAX_WEAPONS:
-			pool.append(_offer("weapon_new", id, w.name, w.desc[0], w.icon, "rare", w.tag, 0, 6.0))
+			pool.append(_offer("weapon_new", id, w.name, DB.weapon_desc(id, 0), w.icon, "rare", w.tag, 0, 6.0))
 	for id in DB.PASSIVES:
 		var pd: Dictionary = DB.PASSIVES[id]
 		var lvl: int = p.passives.get(id, 0)
@@ -119,6 +130,9 @@ func _level_pool() -> Array:
 			pool.append(_offer("passive_new", id, pd.name, pd.desc, pd.icon, "common", pd.tag, 0, 5.0))
 	for e in _available_evolutions():
 		pool.append(e)
+	for f in available_fusions(p):
+		pool.append(f)
+	pool = pool.filter(func(o): return not game.banished.has(o.id))
 	# favour items that grow existing synergies
 	for o in pool:
 		if o.tag != "":
@@ -134,6 +148,24 @@ func _available_evolutions() -> Array:
 		var from: String = e.from
 		if p.weapons.has(from) and p.weapons[from].evo == "" and p.weapons[from].level >= DB.MAX_LEVEL and p.passives.has(DB.WEAPONS[from].pair):
 			out.append(_offer("evolution", evo, e.name, e.desc, e.icon, "legend", DB.WEAPONS[from].tag, 5, 60.0))
+	return out
+
+
+## Two specific weapons at max level (not evolved) can fuse.
+static func available_fusions(p) -> Array:
+	var out := []
+	for fid in DB.FUSIONS:
+		var f: Dictionary = DB.FUSIONS[fid]
+		var ok := true
+		for wid in f.from:
+			if not p.weapons.has(wid) or p.weapons[wid].evo != "" or p.weapons[wid].level < DB.MAX_LEVEL:
+				ok = false
+		if ok and not p.weapons.has(fid):
+			var a: String = DB.WEAPONS[f.from[0]].name
+			var b: String = DB.WEAPONS[f.from[1]].name
+			var o := {"kind": "fusion", "id": fid, "title": f.name, "desc": "%s + %s\n%s" % [a, b, f.desc], "icon": f.icon,
+				"rarity": "legend", "tag": f.tag, "level": 0, "weight": 80.0, "from": f.from}
+			out.append(o)
 	return out
 
 
@@ -235,6 +267,8 @@ func _make_card(o: Dictionary, w: float) -> Button:
 			head = "NV %d > %d" % [o.level, o.level + 1]
 		"evolution":
 			head = "EVOLUÇÃO"
+		"fusion":
+			head = "FUSÃO!"
 		"mutation":
 			head = "MUTAÇÃO"
 		_:
@@ -282,6 +316,20 @@ func _make_card(o: Dictionary, w: float) -> Button:
 func _choose(i: int) -> void:
 	if _done or _ready_t > 0.0:
 		return
+	if _banish_mode and game.banishes > 0 and offers[i].kind not in ["heal", "pearls"]:
+		# Âncora do Banimento: the item leaves this run's pool, a new card takes its place
+		game.banishes -= 1
+		game.banished[offers[i].id] = true
+		_banish_mode = false
+		_banish_btn.text = "BANIR %d" % game.banishes
+		_banish_btn.disabled = game.banishes <= 0
+		var ids := offers.map(func(o): return o.id)
+		var pool := _level_pool().filter(func(o): return not ids.has(o.id))
+		var pick := _pick_weighted(pool, 1)
+		offers[i] = pick[0] if not pick.is_empty() else _filler(i)
+		Sfx.play("hurt", -6.0)
+		_show_cards()
+		return
 	_done = true
 	var o: Dictionary = offers[i]
 	CardPanel.apply_offer(game, o)
@@ -305,6 +353,8 @@ static func apply_offer(g, o: Dictionary) -> void:
 			p.add_passive(o.id)
 		"evolution":
 			p.evolve_weapon(o.id)
+		"fusion":
+			p.fuse_weapons(o.id)
 		"mutation":
 			p.add_mutation(o.id)
 		"heal":

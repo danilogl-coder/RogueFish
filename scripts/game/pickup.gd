@@ -151,7 +151,7 @@ func _collect() -> void:
 			Sfx.play("pearl", -3.0)
 			game.float_text(position + Vector2(0, -8), "+%d" % value, Color("f0f4f8"))
 		"food":
-			game.player.heal(value)
+			game.player.heal(value * game.mods.food_mult())
 			Sfx.play("gulp")
 		"magnet":
 			Sfx.play("pearl")

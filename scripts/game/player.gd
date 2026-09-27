@@ -30,6 +30,7 @@ var is_hidden := false
 var swallowed := false     ## inside the Titanacon
 var container               ## Stomach while swallowed (keeps you inside the moving titan)
 var infest: Infestation     ## fish-louse colony living inside you
+var traits: Traits          ## this character's special effect
 var stealth := 1.0
 var revives := 0
 var hit_log: Array = []  # recent hits (debug / analytics)
@@ -64,6 +65,8 @@ func setup(p_species: String) -> void:
 	visual = PlayerVisual.new()
 	add_child(visual)
 	revives = Profile.upgrade_level("revive")
+	traits = Traits.new().setup(self)
+	add_child(traits)
 	infest = Infestation.new()
 	infest.game = game
 	infest.player = self
@@ -245,7 +248,7 @@ func recalc() -> void:
 			s.damage_mult += 0.06
 			s.regen += 0.4
 			s.xp_mult += 0.08
-	dash_max = 2 + (1 if mutations.get("tail", "") == "tail_fork" else 0) + (1 if mutations.get("fins", "") == "fins_wing" else 0)
+	dash_max = 2 + (1 if mutations.get("tail", "") == "tail_fork" else 0) + (1 if mutations.get("fins", "") == "fins_wing" else 0) + (traits.dash_bonus() if traits else 0)
 	# temporary buffs
 	if buffs.has("vent"):
 		s.damage_mult *= 1.3
@@ -255,6 +258,11 @@ func recalc() -> void:
 		s.bite_cd *= 0.8
 	if infest:
 		infest.modify(s)
+	if traits:
+		traits.modify(s)
+		traits.flags(flags)
+	if game and game.mods:
+		game.mods.stats(s)
 	s.cooldown_mult = maxf(s.cooldown_mult, 0.35)
 	s.crit_chance = minf(s.crit_chance, 0.9)
 	st = s
@@ -307,7 +315,8 @@ func _physics_process(delta: float) -> void:
 	if absf(input_dir.x) > 0.15 and _lunge_t <= 0.0:
 		facing = signf(input_dir.x)
 	# visuals
-	visual.scale.x = facing
+	var puff := 1.25 if buffs.has("inflado") else 1.0
+	visual.scale = Vector2(facing * puff, puff)
 	var tilt := clampf(vel.y / maxf(st.speed, 1.0), -1.0, 1.0) * 0.32
 	visual.rotation = lerpf(visual.rotation, tilt * facing, 1.0 - pow(0.001, delta))
 	var frame := 0
@@ -324,6 +333,7 @@ func _physics_process(delta: float) -> void:
 	visual.pulse_glows(_t)
 	_regen(delta)
 	_hide_logic(delta)
+	traits.tick(delta)
 	_mutation_effects(delta)
 	# swim trail bubbles
 	_trail_t -= delta
@@ -353,7 +363,7 @@ func add_buff(buff_name: String, seconds: float) -> void:
 func _regen(delta: float) -> void:
 	var r: float = st.regen
 	if is_hidden and not swallowed:
-		r += 2.0
+		r += 2.0 * (3.0 if species == "moreia" else 1.0)
 	if r <= 0.0 or hp >= st.max_hp:
 		return
 	_regen_acc += r * delta
@@ -457,6 +467,7 @@ func try_bite() -> void:
 				hits.append(c)
 	var landed := 0
 	var swallowed := false
+	var bite_k := traits.bite_mult()
 	for c in hits:
 		if c.dead:
 			continue
@@ -467,13 +478,14 @@ func try_bite() -> void:
 			swallowed = true
 			continue
 		var crit: bool = randf() < st.crit_chance + st.bite_crit
-		var dmg: float = st.bite_damage * st.damage_mult * (st.crit_mult if crit else 1.0)
+		var dmg: float = st.bite_damage * st.damage_mult * (st.crit_mult if crit else 1.0) * bite_k
 		var info := {"crit": crit, "source": "bite", "knockback": dir * 170.0}
 		if flags.get("bleed", false):
 			info.bleed = st.bite_damage * 0.25
 		c.take_damage(dmg, info)
 		if flags.get("eel_chain", false):
 			_chain_from(c, 2, dmg * 0.45)
+	traits.after_bite(hits, st.bite_damage * st.damage_mult * bite_k, mouth, reach)
 	for p in game.world.pois:
 		if is_instance_valid(p) and p.kind == "chest" and p.position.distance_to(mouth) < reach + 16.0:
 			p.bite()
@@ -483,8 +495,8 @@ func try_bite() -> void:
 		if is_instance_valid(cc) and cc.position.distance_to(mouth) < reach + cc.radius:
 			var got: int = cc.bite(1 + stage / 2)
 			if got > 0:
-				heal(1.5 * got * (1.6 if _diet_type == "scavenge" else 1.0))
-				game.add_xp_f(0.8 * got)
+				heal(1.5 * got * (1.6 if _diet_type == "scavenge" else 1.0) * traits.carcass_mult())
+				game.add_xp_f(0.8 * got * traits.carcass_xp_mult())
 				eat_diet("scavenge", 2.0 * got)
 				Profile.bump("carcass", got)
 				landed += 1
@@ -540,8 +552,13 @@ func bite_cooldown_ratio() -> float:
 func take_damage(amount: float, source) -> void:
 	if not alive or _invuln > 0.0:
 		return
+	amount = traits.incoming(amount, source)
+	if amount <= 0.0:
+		_invuln = 0.3
+		return
 	var dmg := maxf(1.0, amount - st.armor)
 	hp -= dmg
+	traits.after_hurt()
 	if hit_log.size() > 12:
 		hit_log.pop_front()
 	hit_log.append("%s:%d" % [(source.id if source.id != "" else "boss_part") if source is Creature else "proj", int(dmg)])
@@ -613,6 +630,7 @@ func revive() -> void:
 
 func on_kill(c: Creature, info: Dictionary) -> void:
 	eat_diet("meat", 1.0 + c.tier)
+	traits.on_kill(c)
 	if c.id == "shrimp" and infest and infest.active():
 		infest.clean(2)  # cleaner shrimp: eating them rids you of parasites
 	if st.kill_heal > 0.0 and c.faction != "herb":
@@ -643,6 +661,28 @@ func evolve_weapon(evo_id: String) -> void:
 		weapons[from].evolve(evo_id)
 		Sfx.play_stinger("fusion", -2.0)
 		game.fx("fx/explosion", position, 14.0, 2.0, Color("ffbf45"))
+	inventory_changed.emit()
+
+
+## Fuses two maxed weapons into one that keeps levelling up to 10.
+func fuse_weapons(fid: String) -> void:
+	var f: Dictionary = DB.FUSIONS[fid]
+	for wid in f.from:
+		if weapons.has(wid):
+			weapons[wid].queue_free()
+			weapons.erase(wid)
+	var w := Weapon.new()
+	w.id = fid
+	w.player = self
+	w.game = game
+	add_child(w)
+	weapons[fid] = w
+	Profile.bump("fusions")
+	Sfx.play_stinger("fusion")
+	game.fx("fx/explosion", position, 14.0, 2.4, Color("ff8ae0"))
+	game.hud.banner("FUSÃO!", f.name, Color("ff8ae0"))
+	game.shake(6.0)
+	recalc()
 	inventory_changed.emit()
 
 
@@ -731,6 +771,7 @@ func try_dash() -> void:
 	var dir := input_dir.normalized() if input_dir.length() > 0.2 else Vector2(facing, 0)
 	vel = dir * st.speed * 3.4
 	grant_invuln(0.25)
+	traits.on_dash()
 	Sfx.play("dash", -2.0)
 	game.burst(position, [0, 1, 1], 8, 60.0, 0.6)
 

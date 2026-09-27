@@ -43,6 +43,22 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--open="):
 			_open_debug(a.substr(7))
+		if a.begins_with("--give="):
+			await get_tree().process_frame
+			for wid in a.substr(7).split(","):
+				if DB.WEAPONS.has(wid):
+					game.player.add_weapon(wid)
+		if a == "--maxw":
+			await get_tree().process_frame
+			await get_tree().process_frame
+			for wid in game.player.weapons.keys():
+				while game.player.weapons.has(wid) and game.player.weapons[wid].level < DB.MAX_LEVEL:
+					game.player.add_weapon(wid)
+		if a == "--fuse":
+			await get_tree().create_timer(0.2).timeout
+			for f in CardPanel.available_fusions(game.player):
+				game.player.fuse_weapons(f.id)
+				print("[autotest] fused ", f.id)
 		if a.begins_with("--spawn="):
 			await get_tree().process_frame
 			var bits := a.substr(8).split(":")

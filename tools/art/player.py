@@ -153,9 +153,45 @@ def angler_extras(fish):
     fish.extras.append(lure_detail())
 
 
+def lantern_extras(fish):
+    import fishes
+    fish.extras.append(fishes.photophores(0.78, 0.1))
+
+
+def band_back(ramp, v_max=0.34, shift=0):
+    import fishes
+    return fishes.band_back(ramp, v_max, shift)
+
+
+def sardine_pattern(fish, f):
+    band_back("neon", 0.34)(fish, f)
+
+
+def golden_pattern(fish, f):
+    band_back("volt", 0.36, 1)(fish, f)
+
+
+def barracuda_pattern(fish, f):
+    import fishes
+    fishes.chain(fishes.band_back("sharkgrey", 0.34), fishes.bars("sharkgrey", 0.09, 0.4, 0.52, 0.1, 0.7, shift=-1))(fish, f)
+
+
+def puffer_pattern(fish, f):
+    spots(fish, f, "brown", cell=0.16, rad=(0.03, 0.05), zone=f["v"] < 0.55, seed=5, shift=-1)
+
+
+def moray_pattern(fish, f):
+    spots(fish, f, "volt", cell=0.06, rad=(0.01, 0.015), seed=17, zone=f["v"] < 0.7, density=0.6, shift=0)
+
+
+def orca_pattern(fish, f):
+    import fishes
+    fishes.orca_pattern(fish, f)
+
+
 # species with parts that are not mutations (built into the head)
 SPECIES_EXTRAS = {"tubarao": shark_extras, "titanacon": titan_extras, "kraken": kraken_extras,
-                  "leviata": leviathan_extras, "pescadora": angler_extras}
+                  "leviata": leviathan_extras, "pescadora": angler_extras, "lanterna": lantern_extras}
 BUILTIN_LURE = {"pescadora"}
 
 SPECIES = {
@@ -202,6 +238,46 @@ SPECIES = {
                       belly_v=0.64, pattern=titan_pattern,
                       mouth=dict(v=0.62, corner_t=0.66, corner_v=0.64, sag=0.04, open=1.0, teeth="triangle",
                                  teeth_n=4, teeth_len=0.05, tongue=True)),
+    # ---- fish mobs (Marés Profundas)
+    "sardinha": dict(H=0.36, peak=0.62, q=1.15, front_e=0.68, body="silver", belly="white", fin="silver",
+                     tail="fork", tail_len=0.44, eye=0.13, eye_ramp="iris_white", dorsal=("tri", 0.42, 0.58, 0.5),
+                     anal=("tri", 0.2, 0.3, 0.25), pelvic=0.1, pectoral=(0.18, 0.08), pattern=sardine_pattern,
+                     mouth=dict(v=0.52, corner_t=0.84, corner_v=0.56, open=0.7)),
+    "lanterna": dict(H=0.44, peak=0.62, q=1.0, front_e=0.55, body="abyss", belly="ink", fin="abyss",
+                     tail="fork", tail_len=0.42, eye=0.16, eye_ramp="glow", dorsal=("tri", 0.4, 0.58, 0.45),
+                     anal=("soft", 0.18, 0.32, 0.25), pelvic=0.0, pectoral=(0.16, 0.08), gloss=False, countershade=0.1,
+                     mouth=dict(v=0.55, corner_t=0.8, corner_v=0.6, open=0.8, teeth="needle", teeth_n=3, teeth_len=0.05)),
+    "piranha": dict(H=0.66, peak=0.58, q=0.9, front_e=0.5, body="steel", belly="red", fin="steel",
+                    tail="fork", tail_len=0.36, eye=0.1, eye_ramp="iris_red", dorsal=("tri", 0.44, 0.62, 0.4),
+                    anal=("soft", 0.18, 0.34, 0.3), pectoral=(0.18, 0.09), pelvic=0.0, belly_v=0.56,
+                    mouth=dict(v=0.64, corner_t=0.76, corner_v=0.66, open=0.95, under=0.07, chin=0.28,
+                               teeth="triangle", teeth_n=3, teeth_len=0.09, closed_teeth=True, jaw_ramp="red")),
+    "barracuda": dict(H=0.24, peak=0.6, q=1.0, front_e=0.95, body="silver", belly="white", fin="sharkgrey",
+                      tail="fork", tail_len=0.28, eye=0.07, eye_ramp="iris_white", dorsal=("tri", 0.2, 0.3, 0.9),
+                      dorsal2=("tri", 0.52, 0.62, 0.7), anal=("tri", 0.16, 0.26, 0.6), pectoral=(0.12, 0.06),
+                      pelvic=0.0, gill_t=0.74, belly_v=0.58, backshade=0.15, pattern=barracuda_pattern,
+                      mouth=dict(v=0.5, corner_t=0.78, corner_v=0.56, open=0.7, under=0.06, chin=0.24,
+                                 teeth="fang", teeth_n=5, teeth_len=0.05, closed_teeth=True)),
+    "baiacu": dict(H=0.78, peak=0.5, q=0.7, front_e=0.45, body="sandy", belly="cream", fin="orange",
+                   tail="round", tail_len=0.3, eye=0.14, eye_ramp="iris_green", dorsal=("round", 0.3, 0.44, 0.22),
+                   anal=("round", 0.2, 0.32, 0.18), pectoral=(0.2, 0.14), pelvic=0.0, pattern=puffer_pattern,
+                   mouth=dict(v=0.62, corner_t=0.9, corner_v=0.62, open=0.75, teeth="peg", teeth_n=2,
+                              teeth_len=0.06, closed_teeth=True, tongue=False)),
+    "moreia": dict(H=0.22, peak=0.72, q=0.55, front_e=0.62, ped=0.55, top_ratio=0.5, body="eel",
+                   belly="lime", fin="eel", tail="point", tail_len=0.24, eye=0.05, eye_ramp="volt", eye_t=0.9,
+                   dorsal=("long", 0.06, 0.8, 0.42), anal=("long", 0.04, 0.48, 0.35), pectoral=None, pelvic=0.0,
+                   belly_v=0.7, wag=2.4, gill=False, pattern=moray_pattern, countershade=0.15,
+                   mouth=dict(v=0.55, corner_t=0.82, corner_v=0.6, open=0.9, teeth="fang", teeth_n=4,
+                              teeth_len=0.045, tongue=False)),
+    "dourado_raro": dict(H=0.4, peak=0.6, q=1.1, front_e=0.7, body="gold", belly="cream", fin="volt",
+                         tail="veil", tail_len=0.5, eye=0.12, eye_ramp="iris_white", dorsal=("tri", 0.42, 0.62, 0.6),
+                         anal=("soft", 0.18, 0.3, 0.3), pelvic=0.12, pectoral=(0.2, 0.1), pattern=golden_pattern,
+                         mouth=dict(v=0.52, corner_t=0.84, corner_v=0.56, open=0.7)),
+    "orca": dict(H=0.36, peak=0.56, q=1.0, front_e=0.62, body="orca", belly="white", fin="orca", tail="fluke",
+                 tail_len=0.28, eye=0.035, eye_ramp="iris_dark", dorsal=("orca", 0.45, 0.6, 0.95), anal=None,
+                 pectoral=(0.2, 0.1), pelvic=0.0, belly_v=0.62, gill=False, pattern=orca_pattern, eye_t=0.87,
+                 eye_v=0.46, wag=0.6, mouth=dict(v=0.64, corner_t=0.84, corner_v=0.62, sag=0.03, open=0.6,
+                                                   teeth="cone", teeth_n=5, teeth_len=0.03)),
 }
 
 
@@ -281,8 +357,34 @@ def canvas_size(L):
     return w + (w % 2), h + (h % 2)
 
 
-def make_fish(species, L, w, h, head="", skin=""):
-    spec = dict(SPECIES[species])
+def _grow_fin(fin, k):
+    if not fin or not isinstance(fin, tuple) or len(fin) < 4:
+        return fin
+    return fin[:3] + (fin[3] * k,) + fin[4:]
+
+
+def stage_features(spec, stage):
+    """Growth changes the look, not only the size: taller fins (adult),
+    longer tail (veteran), battle scars (veteran) and bioluminescent marks
+    along the flank (leviathan stage)."""
+    if stage >= 2:
+        spec["dorsal"] = _grow_fin(spec.get("dorsal"), 1.15)
+        spec["anal"] = _grow_fin(spec.get("anal"), 1.1)
+    if stage >= 3:
+        spec["tail_len"] = spec.get("tail_len", 0.4) * 1.1
+    return spec
+
+
+def stage_extras(fish, stage):
+    import fishes
+    if stage >= 3:
+        fish.extras.append(fishes.scars)
+    if stage >= 4:
+        fish.extras.append(fishes.photophores(0.62, 0.09, 0.2, 0.7, "glow"))
+
+
+def make_fish(species, L, w, h, head="", skin="", stage=0):
+    spec = stage_features(dict(SPECIES[species]), stage)
     pat = spec.pop("pattern", None)
     if head == "head_piranha":
         spec["mouth"] = piranha_mouth(spec["mouth"])
@@ -299,6 +401,7 @@ def make_fish(species, L, w, h, head="", skin=""):
     fish = Fish(L, w * 0.5 + L * 0.12, h * 0.52, **spec)
     if species in SPECIES_EXTRAS:
         SPECIES_EXTRAS[species](fish)
+    stage_extras(fish, stage)
     if head == "head_sword":
         fish.extra_shapes.append(bill_shape(length=0.36))
     elif head == "head_lure" and species not in BUILTIN_LURE:
@@ -492,7 +595,7 @@ def render_atlas(species, stage, progress=None):
     lure = []
     for i in range(FP.N_FRAMES):
         st = FP.frame_state(i)
-        base = make_fish(species, L, w, h)
+        base = make_fish(species, L, w, h, stage=stage)
         X, Y = FP.grid(w, h)
         x, y = base.to_fish(X, Y, st)
         f = base._body_fields(x, y, st)
@@ -506,7 +609,7 @@ def render_atlas(species, stage, progress=None):
             rows[name].append(fn(base, w, h, x, y, st, f).to_image())
         for head in HEADS:
             for skin in SKINS:
-                fish = make_fish(species, L, w, h, head, skin)
+                fish = make_fish(species, L, w, h, head, skin, stage)
                 lay = fish.render(w, h, st, parts=("body",))["body"]
                 rows[body_key(head, skin)].append(lay.to_image())
                 if head == "head_lure" and skin == "":
@@ -516,7 +619,7 @@ def render_atlas(species, stage, progress=None):
     for r, name in enumerate(LAYERS):
         for c, im in enumerate(rows[name]):
             sheet.alpha_composite(im, (c * w, r * h))
-    base = make_fish(species, L, w, h)
+    base = make_fish(species, L, w, h, stage=stage)
     meta = dict(
         frame_w=w, frame_h=h, frames=FP.N_FRAMES, swim=FP.SWIM_N, act=FP.BITE_N, layers=LAYERS,
         center=[round(base.cx, 1), round(base.cy, 1)],

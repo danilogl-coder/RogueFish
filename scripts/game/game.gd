@@ -88,11 +88,17 @@ var _chime_chain := 0
 var _chime_t := 0.0
 var _seen_t := 0.0
 var _boss_evade := 0.0
+var mods: RunMods                 ## shop relics / tide / modes active this run
+var banished: Dictionary = {}     ## item ids removed from the card pool this run
+var banishes := 0
 
 
 func _ready() -> void:
 	randomize()
 	process_mode = Node.PROCESS_MODE_PAUSABLE
+	mods = RunMods.new().setup(self)
+	add_child(mods)
+	banishes = 3 if Profile.owns("relic_anchor") else 0
 	_build_layers()
 	world = World.new()
 	world.game = self
@@ -136,6 +142,9 @@ func _ready() -> void:
 	add_child(director)
 
 	rerolls = Profile.upgrade_level("reroll")
+	player.traits.run_start()
+	mods.run_start()
+	Profile.species_unlocked.connect(_on_species_unlocked)
 	xp_next = DB.xp_to_next(level)
 	world.biome_entered.connect(_on_biome_entered)
 	Profile.bump("runs_started")
@@ -179,6 +188,7 @@ func _physics_process(delta: float) -> void:
 		player.input_dir = hud.move_vector()
 		_tick_engagement(delta)
 		_music_intensity()
+		mods.tick(delta)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -210,6 +220,7 @@ func spawn_creature(id: String, pos: Vector2, opts := {}) -> Creature:
 	c.game = self
 	c.position = pos
 	c.configure(id, def, opts)
+	mods.on_spawn(c)
 	layer_creatures.add_child(c)
 	creatures.append(c)
 	return c
@@ -222,6 +233,7 @@ func spawn_boss(id: String, pos: Vector2) -> Creature:
 	b.game = self
 	b.position = pos
 	b.configure_boss(id, def, director.difficulty())
+	mods.on_spawn(b)
 	layer_creatures.add_child(b)
 	creatures.append(b)
 	boss = b
@@ -365,6 +377,7 @@ func roll_damage(base: float) -> Array:
 
 # ------------------------------------------------------------------- events
 func on_creature_killed(c: Creature, info: Dictionary) -> void:
+	mods.on_death(c, info)
 	# --- deaths inside the food web (no rewards, but they feed the cycle)
 	if info.get("eaten", false):
 		burst(c.position, [2, 0], 4, 30.0, 0.4)
@@ -380,6 +393,7 @@ func on_creature_killed(c: Creature, info: Dictionary) -> void:
 	kills += 1
 	kills_changed.emit()
 	Profile.bump("kills")
+	Profile.bump("kill_" + c.id)
 	Profile.bestiary_kill(c.id)
 	_add_combo()
 	if not info.get("swallow", false) and c.tier >= 2 and not c.is_boss and (not c.is_wave or randf() < 0.3):
@@ -508,6 +522,15 @@ func stomach_ratio() -> float:
 	if stomach == null or not is_instance_valid(stomach.boss):
 		return 0.0
 	return stomach.boss.stomach_ratio()
+
+
+func _on_species_unlocked(sp: String) -> void:
+	_announce_species.call_deferred(sp)
+
+
+func _exit_tree() -> void:
+	if Profile.species_unlocked.is_connected(_on_species_unlocked):
+		Profile.species_unlocked.disconnect(_on_species_unlocked)
 
 
 func _announce_species(sp: String) -> void:
@@ -677,9 +700,12 @@ var _finalized := false
 ## Converts the run into pearls/records. Safe to call once.
 func finalize_run(victory: bool) -> Dictionary:
 	var bonus := int(time / 30.0) + level + bosses_killed * 10 + (50 if victory else 0)
+	var mode_mult := 1.0 + mods.pearl_bonus()
+	bonus += int((pearls_run + bonus) * (mode_mult - 1.0))
 	var result := {
 		"won": victory, "time": time, "level": level, "kills": kills, "bosses": bosses_killed,
 		"cycle": director.cycle, "pearls": pearls_run, "bonus": bonus, "stage": player.stage,
+		"mode_mult": mode_mult,
 	}
 	if not _finalized:
 		_finalized = true

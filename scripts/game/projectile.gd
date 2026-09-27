@@ -26,6 +26,16 @@ var spin := 0.0
 var fps := 8.0
 var color := Color.WHITE
 var sprite: Sprite2D
+# archetype extras
+var boomerang := 0.0          ## > 0: flies this far, then returns to owner_node
+var owner_node: Node2D
+var bounces := 0              ## ricochets to the next enemy after a hit
+var chain := 0                ## lightning jumps from each hit
+var pearls := false           ## kills may drop pearls
+var arc_height := 0.0         ## lobbed throw: sprite rises and falls on the way
+var _start := Vector2.ZERO
+var _returning := false
+var _travel := 0.0
 var _hits: Dictionary = {}
 var _t := 0.0
 var _home_target: Creature
@@ -59,6 +69,23 @@ func _physics_process(delta: float) -> void:
 	elif homing > 0.0 and hostile:
 		var want2: Vector2 = (game.player.position - position).normalized() * vel.length()
 		vel = vel.lerp(want2, clampf(homing * delta, 0.0, 1.0))
+	if _t <= delta:
+		_start = position
+	if boomerang > 0.0:
+		_travel += vel.length() * delta
+		if not _returning and _travel >= boomerang:
+			_returning = true
+			_hits.clear()
+		if _returning and owner_node and is_instance_valid(owner_node):
+			var back := owner_node.position - position
+			vel = vel.lerp(back.normalized() * maxf(vel.length(), 220.0), clampf(8.0 * delta, 0.0, 1.0))
+			if back.length() < 12.0:
+				queue_free()
+				return
+	if arc_height > 0.0 and target_point != null:
+		var total := maxf(1.0, _start.distance_to(target_point))
+		var k := clampf(1.0 - position.distance_to(target_point) / total, 0.0, 1.0)
+		sprite.position.y = -sin(k * PI) * arc_height
 	position += vel * delta
 	if rotate_to_vel:
 		rotation = vel.angle()
@@ -71,7 +98,7 @@ func _physics_process(delta: float) -> void:
 			on_arrive.call(position)
 		queue_free()
 		return
-	if position.y > DB.floor_at(position.x) + 4 or position.y < 0 or position.x < -20 or position.x > DB.WORLD_W + 20:
+	if (position.y > DB.floor_at(position.x) + 4 and boomerang <= 0.0) or position.y < 0 or position.x < -20 or position.x > DB.WORLD_W + 20:
 		_finish()
 		return
 	if hostile:
@@ -91,6 +118,20 @@ func _physics_process(delta: float) -> void:
 		_hits[key] = true
 		_hit(c)
 		pierce -= 1
+		if bounces > 0:
+			bounces -= 1
+			var nxt: Creature = null
+			var bd := 150.0 * 150.0
+			for o in game.creatures_in_radius(position, 150.0, false):
+				if o.dead or _hits.has(o.get_instance_id()):
+					continue
+				var d: float = o.position.distance_squared_to(position)
+				if d < bd:
+					bd = d
+					nxt = o
+			if nxt:
+				vel = (nxt.position - position).normalized() * vel.length()
+				life = maxf(life, 0.8)
 		if pierce <= 0:
 			_finish()
 			return
@@ -108,6 +149,10 @@ func _hit(c: Creature) -> void:
 	if bleed > 0.0:
 		info.bleed = bleed
 	c.take_damage(r[0], info)
+	if chain > 0 and not c.dead:
+		game.player._chain_from(c, chain, r[0] * 0.5)
+	if pearls and c.dead and randf() < 0.1:
+		game.spawn_pickup("pearl", c.position, 1)
 	game.fx("fx/hit_spark", position, 24.0)
 	if explode_radius > 0.0:
 		_explode()

@@ -232,86 +232,179 @@ func _close_screen() -> void:
 
 
 # ---------------------------------------------------------------- species
+var _sp_group := ""
+var _sp_view := ""
+var _sp_stage_t := 0.0
+
+
+## Character select: groups on top, a grid of characters, and a detail panel
+## with the animated look (cycling through every growth stage), the trait,
+## the unique item and how to unlock it.
 func _show_species() -> void:
-	var v := _open_screen("ESCOLHA SEU PEIXE", Vector2(600, 0))
-	# 8 species: a horizontal strip you can drag/scroll (defeated bosses join it)
-	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(600, 236)
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	v.add_child(scroll)
-	var row := UIKit.hbox(8)
-	scroll.add_child(row)
-	var sel_index := 0
-	var i := 0
+	if _sp_view == "" or not DB.SPECIES.has(_sp_view):
+		_sp_view = Profile.selected_species
+	if _sp_group == "":
+		_sp_group = DB.SPECIES[_sp_view].group
+	var v := _open_screen("PERSONAGENS  %d/%d" % [Profile.unlocked.filter(func(x): return DB.SPECIES.has(x)).size(), DB.SPECIES.size()], Vector2(612, 0))
+	var body := UIKit.hbox(8)
+	v.add_child(body)
+	# ---- left: tabs + grid
+	var left := UIKit.vbox(4)
+	left.custom_minimum_size = Vector2(300, 0)
+	body.add_child(left)
+	var tabs := UIKit.hbox(3)
+	left.add_child(tabs)
+	for g in Roster.GROUPS:
+		var gid: String = g[0]
+		var tb := UIKit.button(g[1], "GoldButton" if gid == _sp_group else "", 0)
+		tb.add_theme_font_size_override("font_size", 9)
+		tb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tb.pressed.connect(func():
+			_sp_group = gid
+			_show_species())
+		tabs.add_child(tb)
+	var grid := GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	left.add_child(grid)
 	for sp in DB.SPECIES:
-		row.add_child(_species_card(sp))
-		if sp == Profile.selected_species:
-			sel_index = i
-		i += 1
-	var target := maxi(0, sel_index * 158 - 220)
-	(func(): scroll.scroll_horizontal = target).call_deferred()
-	var go := UIKit.button("MERGULHAR!", "GoldButton", 200, "play")
-	go.custom_minimum_size.y = 26
-	go.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	go.pressed.connect(_start_game)
-	v.add_child(go)
+		if DB.SPECIES[sp].group != _sp_group:
+			continue
+		grid.add_child(_species_tile(sp))
+	# ---- right: details
+	body.add_child(_species_details(_sp_view))
 
 
-func _species_card(sp: String) -> Control:
+func _species_tile(sp: String) -> Control:
+	var unlocked := Profile.unlocked.has(sp)
+	var b := Button.new()
+	b.focus_mode = Control.FOCUS_NONE
+	b.custom_minimum_size = Vector2(56, 52)
+	b.theme_type_variation = "Card_legend" if sp == Profile.selected_species else ("Card_rare" if sp == _sp_view else "Card_common")
+	var prev := FishPreview.new().setup(sp, 2, {}, 1.0).fit(Vector2(52, 38), 2.0)
+	prev.animate = sp == _sp_view
+	prev.position = Vector2(2, 2)
+	if not unlocked:
+		prev.modulate = Color(0.08, 0.1, 0.18)
+	b.add_child(prev)
+	if not unlocked:
+		var lk := UIKit.icon_rect("lock", 12)
+		lk.position = Vector2(40, 36)
+		b.add_child(lk)
+	elif sp == Profile.selected_species:
+		var ck := UIKit.icon_rect("check", 12)
+		ck.position = Vector2(40, 36)
+		b.add_child(ck)
+	b.pressed.connect(func():
+		_sp_view = sp
+		Sfx.play("click", -6.0)
+		_show_species())
+	return b
+
+
+func _species_details(sp: String) -> Control:
 	var d: Dictionary = DB.SPECIES[sp]
 	var unlocked := Profile.unlocked.has(sp)
-	var selected := Profile.selected_species == sp
 	var p := PanelContainer.new()
-	p.theme_type_variation = "Card_legend" if selected else ("Card_rare" if unlocked else "Card_common")
-	p.custom_minimum_size = Vector2(150, 0)
-	var v := UIKit.vbox(2)
+	p.theme_type_variation = "Card_legend" if unlocked else "Card_common"
+	p.custom_minimum_size = Vector2(290, 0)
+	var v := UIKit.vbox(3)
 	p.add_child(v)
-	v.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD if selected else UIKit.WHITE, HORIZONTAL_ALIGNMENT_CENTER))
-	var prev := FishPreview.new().setup(sp, 1, {}, 1.5)
-	prev.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if not unlocked:
-		prev.modulate = Color(0.1, 0.12, 0.2)
-	v.add_child(prev)
-	v.add_child(UIKit.wrap_label(d.get("short", d.desc), 8, Color("b8c6d8"), 136))
+	var head := UIKit.hbox(6)
+	v.add_child(head)
+	head.add_child(UIKit.label(d.name.to_upper(), 8, UIKit.GOLD))
+	var stage_lbl := UIKit.label("", 8, UIKit.DIM)
+	stage_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	head.add_child(stage_lbl)
+	# animated look, cycling through the five growth stages
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(270, 70)
+	v.add_child(holder)
+	var shown := [-1]
+	var refresh := func():
+		var st := int(Time.get_ticks_msec() / 1600) % DB.STAGE_NAMES.size()
+		if st == shown[0]:
+			return
+		shown[0] = st
+		for c in holder.get_children():
+			c.queue_free()
+		var pv := FishPreview.new().setup(sp, st, {}, 1.0).fit(Vector2(270, 70), 3.0)
+		if not unlocked:
+			pv.modulate = Color(0.1, 0.12, 0.22)
+		holder.add_child(pv)
+		stage_lbl.text = DB.STAGE_NAMES[st].to_upper()
+	refresh.call()
+	var timer := Timer.new()
+	timer.wait_time = 0.2
+	timer.autostart = true
+	timer.timeout.connect(refresh)
+	holder.add_child.call_deferred(timer)
+	v.add_child(UIKit.wrap_label(d.short, 8, Color("c8d4e4"), 280))
+	# trait
+	var tr := UIKit.hbox(4)
+	tr.add_child(UIKit.icon_rect("dna", 12))
+	tr.add_child(UIKit.label(d.trait.name.to_upper(), 8, UIKit.GREEN))
+	v.add_child(tr)
+	v.add_child(UIKit.wrap_label(d.trait.desc, 8, Color("b8c6d8"), 280))
+	# unique item
+	var w: Dictionary = DB.WEAPONS[d.weapon]
+	var ir := UIKit.hbox(4)
+	ir.add_child(UIKit.icon_rect(w.icon, 16))
+	ir.add_child(UIKit.label("ITEM: " + w.name.to_upper(), 8, UIKit.CYAN))
+	v.add_child(ir)
+	v.add_child(UIKit.wrap_label(DB.weapon_desc(d.weapon, 0) + (" (entra nas cartas de todas as partidas)" if not Arsenal.BASE_ITEMS.has(d.weapon) else ""), 8, Color("b8c6d8"), 280))
+	# stats
 	var s: Dictionary = d.stats
-	for stat in [["VIDA", s.max_hp / 180.0, UIKit.RED], ["VELOC.", s.speed / 140.0, UIKit.CYAN], ["MORDIDA", s.bite_damage / 24.0, UIKit.GOLD]]:
-		var h := UIKit.hbox(4)
-		var l := UIKit.label(stat[0], 8, UIKit.DIM)
-		l.custom_minimum_size.x = 60
-		h.add_child(l)
+	var stats := UIKit.hbox(8)
+	v.add_child(stats)
+	for stat in [["VIDA", s.max_hp / 180.0, UIKit.RED], ["VELOC", s.speed / 140.0, UIKit.CYAN], ["MORD", s.bite_damage / 24.0, UIKit.GOLD], ["ARMAD", s.armor / 3.0, UIKit.PURPLE]]:
+		var col := UIKit.vbox(1)
+		col.add_child(UIKit.label(stat[0], 8, UIKit.DIM))
 		var bar := Control.new()
-		bar.custom_minimum_size = Vector2(70, 6)
-		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		bar.custom_minimum_size = Vector2(60, 5)
 		var k: float = clampf(stat[1], 0.0, 1.0)
 		var c: Color = stat[2]
 		bar.draw.connect(func():
-			bar.draw_rect(Rect2(0, 0, 70, 6), Color(0.02, 0.05, 0.1))
-			bar.draw_rect(Rect2(1, 1, 68 * k, 4), c))
-		h.add_child(bar)
-		v.add_child(h)
-	var wrow := UIKit.hbox(4)
-	wrow.add_child(UIKit.icon_rect(DB.WEAPONS[d.weapon].icon, 16))
-	wrow.add_child(UIKit.label(DB.WEAPONS[d.weapon].name, 8, UIKit.WHITE))
-	v.add_child(wrow)
+			bar.draw_rect(Rect2(0, 0, 60, 5), Color(0.02, 0.05, 0.1))
+			bar.draw_rect(Rect2(1, 1, 58 * k, 3), c))
+		col.add_child(bar)
+		stats.add_child(col)
+	# unlock / select
+	var u: Dictionary = d.unlock
 	var b: Button
 	if unlocked:
-		b = UIKit.button("SELECIONADO" if selected else "ESCOLHER", "GoldButton" if selected else "")
+		var sel := Profile.selected_species == sp
+		b = UIKit.button("SELECIONADO" if sel else "ESCOLHER", "GoldButton" if sel else "", 0, "check" if sel else "play")
 		b.pressed.connect(func():
 			Profile.selected_species = sp
 			Profile.save_game()
+			Sfx.play("card")
 			_show_species())
-	elif d.has("boss"):
-		b = UIKit.button("DERROTE O CHEFE", "", 0, "lock")
+	elif u.type == "boss":
+		b = UIKit.button("DERROTE: " + DB.BOSSES[u.boss].name.to_upper(), "", 0, "lock")
 		b.disabled = true
-		v.add_child(UIKit.wrap_label(DB.BOSSES[d.boss].name, 8, UIKit.PURPLE, 136))
+	elif u.type == "stat":
+		var pr: Array = Profile.species_progress(sp)
+		b = UIKit.button("%s  %d/%d" % [u.desc.to_upper(), pr[0], pr[1]], "", 0, "target")
+		b.disabled = true
+	elif u.type == "pack" and not Profile.owns(u.pack):
+		b = UIKit.button("REQUER: " + Shop.ITEMS[u.pack].name.to_upper(), "", 0, "lock")
+		b.disabled = true
 	else:
-		b = UIKit.button("%d PÉROLAS" % d.price, "", 0, "lock")
+		b = UIKit.button("%d PÉROLAS" % int(d.price), "GoldButton" if Profile.pearls >= int(d.price) else "", 0, "pearl")
 		b.disabled = Profile.pearls < int(d.price)
 		b.pressed.connect(func():
 			if Profile.buy_species(sp):
-				Sfx.play("evolve")
+				Sfx.play_stinger("fusion")
 				_show_species())
+	b.add_theme_font_size_override("font_size", 9)
 	v.add_child(b)
+	var go := UIKit.button("MERGULHAR!", "GoldButton", 0, "play")
+	go.custom_minimum_size.y = 24
+	go.pressed.connect(_start_game)
+	v.add_child(go)
 	return p
 
 

@@ -58,7 +58,7 @@ func active() -> bool:
 
 ## A louse enters the host (from `from`, world position).
 func add(sex: String, from: Vector2, msg: String) -> void:
-	if full():
+	if full() or (player.traits and player.traits.parasite_immune()):
 		return
 	var was_empty := lice.is_empty()
 	lice.append(_new_louse(sex))
@@ -244,7 +244,8 @@ func modify(s: Dictionary) -> void:
 	var n := lice.size()
 	if n == 0:
 		return
-	s.speed *= 1.0 - minf(0.28, 0.012 * n)
+	if player.traits == null or player.traits.colony_slows():
+		s.speed *= 1.0 - minf(0.28, 0.012 * n)
 	s.xp_mult *= 1.0 - minf(0.5, 0.022 * n)
 
 

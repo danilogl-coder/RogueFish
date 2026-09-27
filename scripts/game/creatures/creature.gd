@@ -26,6 +26,7 @@ var armor_mult := 1.0
 var light_radius := 0.0
 var dmg_mult := 1.0
 # food web
+var variant := ""              ## Modo Mutante colour variant (see Shop.MUTANT_VARIANTS)
 var trophic := ""
 var diet: Array = []
 var energy := 0.7
@@ -317,6 +318,8 @@ func _animate(delta: float) -> void:
 	if sprite:
 		sprite.flip_h = facing < 0.0
 	anim_t += delta
+	if variant == "shadow" and sprite and game.player:
+		sprite.modulate.a = clampf(1.2 - position.distance_to(game.player.position) / 110.0, 0.12, 0.9)
 	var attacking := attack_anim > 0.0
 	if attacking:
 		attack_anim = maxf(0.0, attack_anim - delta)
@@ -382,7 +385,11 @@ func _draw() -> void:
 func take_damage(amount: float, info := {}) -> float:
 	if dead:
 		return 0.0
+	if info.get("source", "") != "" and game and game.player and game.player.traits:
+		amount = game.player.traits.outgoing(self, amount, info)
 	var dmg := amount * armor_mult
+	if info.get("crit", false) and game and game.mods:
+		game.mods.on_crit(self, dmg)
 	if mark_t > 0.0:
 		dmg *= 1.25
 	hp -= dmg
@@ -415,6 +422,23 @@ func take_damage(amount: float, info := {}) -> float:
 	else:
 		on_hurt(info)
 	return dmg
+
+
+## Modo Mutante: recolours the creature and changes how it fights.
+func set_variant(v: String) -> void:
+	var d: Dictionary = Shop.MUTANT_VARIANTS[v]
+	variant = v
+	speed *= float(d.speed)
+	max_hp *= float(d.hp)
+	hp = max_hp
+	contact_damage *= float(d.dmg)
+	xp = int(ceil(xp * 1.5))
+	if v == "armored":
+		armor_mult *= 0.6
+	if sprite:
+		sprite.modulate = d.color
+	if v == "treasure":
+		pearl_chance = 1.0
 
 
 func apply_poison(dps: float, duration: float) -> void:
@@ -501,7 +525,11 @@ func player_visible(range_px: float) -> bool:
 
 ## Should this predator avoid the (now much bigger) player?
 func fears_player() -> bool:
-	if is_wave or is_boss or provoked:
+	if is_boss:
+		return false
+	if game.player.traits and game.player.traits.scares_predators():
+		return true
+	if is_wave or provoked:
 		return false
 	return game.player.stage > tier + 1
 

@@ -328,7 +328,7 @@ func _refresh_inventory() -> void:
 		c.queue_free()
 	for id in p.weapons:
 		var w: Weapon = p.weapons[id]
-		inv_box.add_child(_inv_icon(w.icon_name(), w.level, w.evo != ""))
+		inv_box.add_child(_inv_icon(w.icon_name(), w.level, w.evo != "", false, DB.weapon_max(id)))
 	for id in p.passives:
 		inv_box.add_child(_inv_icon(DB.PASSIVES[id].icon, p.passives[id], false, true))
 	for c in syn_box.get_children():
@@ -347,7 +347,7 @@ func _refresh_inventory() -> void:
 		syn_box.add_child(chip)
 
 
-func _inv_icon(icon: String, level: int, evolved: bool, small := false) -> Control:
+func _inv_icon(icon: String, level: int, evolved: bool, small := false, max_lv := DB.MAX_LEVEL) -> Control:
 	var box := Control.new()
 	var s := 12.0 if small else 14.0
 	box.custom_minimum_size = Vector2(s, s + 3)
@@ -358,9 +358,18 @@ func _inv_icon(icon: String, level: int, evolved: bool, small := false) -> Contr
 	var pips := Control.new()
 	pips.position = Vector2(0, s)
 	pips.custom_minimum_size = Vector2(s, 2)
+	var fused := max_lv > DB.MAX_LEVEL
+	if fused:
+		r.modulate = Color(1.15, 0.95, 1.3)
 	pips.draw.connect(func():
-		for i in DB.MAX_LEVEL:
-			pips.draw_rect(Rect2(i * (s / DB.MAX_LEVEL), 0, maxf(1.0, s / DB.MAX_LEVEL - 1.0), 2), UIKit.GOLD if (evolved or i < level) else Color(1, 1, 1, 0.18)))
+		# fused weapons show 10 pips in two rows of 5 (magenta)
+		var per := DB.MAX_LEVEL
+		for i in max_lv:
+			var row := i / per
+			var c := i % per
+			var on := evolved or i < level
+			var colr := (Color("ff8ae0") if fused else UIKit.GOLD) if on else Color(1, 1, 1, 0.18)
+			pips.draw_rect(Rect2(c * (s / per), row * 3.0, maxf(1.0, s / per - 1.0), 2), colr))
 	box.add_child(pips)
 	return box
 
@@ -406,9 +415,14 @@ func _draw_indicators() -> void:
 			targets.append([p.global_position, Color("ffbf45")])
 	if game.boss and is_instance_valid(game.boss):
 		targets.append([game.boss.global_position, Color("cc7ee0")])
+	var eye := Profile.owns("relic_eye")
 	for c in game.creatures:
-		if is_instance_valid(c) and c.id == "orca" and c.position.distance_to(game.player.position) < 700.0:
+		if not is_instance_valid(c):
+			continue
+		if c.id == "orca" and c.position.distance_to(game.player.position) < 700.0:
 			targets.append([c.global_position, Color("ff5c4c")])
+		elif eye and (c.elite or c.id == "golden") and c.position.distance_to(game.player.position) < 900.0:
+			targets.append([c.global_position, Color("fff060") if c.id == "golden" else Color("ff9a3c")])
 	var arrow := Art.icon("arrow")
 	for t in targets:
 		var sp: Vector2 = xf * t[0]

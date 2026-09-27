@@ -13,8 +13,67 @@ var _heights := PackedFloat32Array()
 var _hstep := 2.0
 
 
+## Every weapon: core ones below + Arsenal items + fusions (built in _ready).
+var WEAPONS: Dictionary = {}
+var FUSIONS: Dictionary = {}
+var ITEM_OWNER: Dictionary = {}          ## weapon id -> character that unlocks it
+
+
 func _ready() -> void:
 	_load_terrain()
+	_build_roster()
+
+
+func _build_roster() -> void:
+	SPECIES = Roster.SPECIES.duplicate(true)
+	for sp in SPECIES:
+		var d: Dictionary = SPECIES[sp]
+		var u: Dictionary = d.unlock
+		d["price"] = int(u.get("price", 0))
+		if u.type == "boss":
+			d["boss"] = u.boss
+		d["desc"] = "%s %s: %s" % [d.short, d.trait.name, d.trait.desc]
+	WEAPONS = CORE_WEAPONS.duplicate(true)
+	for id in Arsenal.WEAPONS:
+		WEAPONS[id] = Arsenal.WEAPONS[id].duplicate(true)
+	for sp in SPECIES:
+		var w: String = SPECIES[sp].weapon
+		if not Arsenal.BASE_ITEMS.has(w):
+			ITEM_OWNER[w] = sp
+	FUSIONS = Arsenal.FUSIONS.duplicate(true)
+	for fid in FUSIONS:
+		var f: Dictionary = FUSIONS[fid]
+		f["fusion"] = true
+		var descs := [f.desc]
+		for lv in range(2, Arsenal.FUSION_MAX + 1):
+			descs.append(Arsenal.fusion_level_desc(lv))
+		f["desc_levels"] = descs
+		WEAPONS[fid] = f
+
+
+## Max level of a weapon (fused weapons go to 10).
+func weapon_max(id: String) -> int:
+	if WEAPONS.get(id, {}).get("fusion", false):
+		return Arsenal.FUSION_MAX
+	return LIMIT_BREAK if Profile.owns("relic_crown") else MAX_LEVEL
+
+
+const LIMIT_BREAK := 7
+
+
+## Level-up text of a weapon (index = current level, 0 = new).
+func weapon_desc(id: String, level: int) -> String:
+	var w: Dictionary = WEAPONS[id]
+	var arr: Array = w.get("desc_levels", w.get("desc", [""])) if w.get("fusion", false) else w.desc
+	if not w.get("fusion", false) and level >= arr.size():
+		return "LIMITE QUEBRADO: +15% dano, -5% recarga"
+	return str(arr[clampi(level, 0, arr.size() - 1)])
+
+
+## Is this item in the level-up pool? Items come with their character.
+func item_unlocked(id: String) -> bool:
+	var owner: String = ITEM_OWNER.get(id, "")
+	return owner == "" or Profile.unlocked.has(owner)
 
 # Biomes from left to right (Deeeep.io-like): each has its own floor depth,
 # light, decor, food sources and animals.
@@ -65,49 +124,9 @@ const ATTRIBUTES := {
 }
 const ATTRIBUTE_MAX := 10
 
-const SPECIES := {
-	"dourado": {
-		"name": "Peixe-Dourado", "short": "Equilibrado e resiliente.", "desc": "Equilibrado e resiliente. Começa com Bolhas.",
-		"weapon": "bubble", "price": 0,
-		"stats": {"max_hp": 100.0, "speed": 118.0, "bite_damage": 12.0, "armor": 0.0},
-	},
-	"neon": {
-		"name": "Tetra Neon", "short": "Rápido, porém frágil.", "desc": "Rápido e elétrico, porém frágil. Começa com Pulso.",
-		"weapon": "pulse", "price": 350,
-		"stats": {"max_hp": 80.0, "speed": 138.0, "bite_damage": 10.0, "armor": 0.0, "cooldown_mult": 0.92},
-	},
-	"garoupa": {
-		"name": "Garoupa", "short": "Tanque de mordida brutal.", "desc": "Tanque lento com mordida brutal. Começa com Espinhos.",
-		"weapon": "spines", "price": 600,
-		"stats": {"max_hp": 135.0, "speed": 102.0, "bite_damage": 18.0, "armor": 2.0},
-	},
-	# ---- unlocked by defeating each boss (price is ignored, "boss" is the requirement)
-	"tubarao": {
-		"name": "Tubarão-Rei", "short": "Veloz, de mordida larga.", "desc": "Predador veloz de mordida larga. Começa com Peixes-Piloto.",
-		"weapon": "pilot", "price": 0, "boss": "shark_king",
-		"stats": {"max_hp": 125.0, "speed": 130.0, "bite_damage": 20.0, "armor": 1.0, "bite_reach": 1.15},
-	},
-	"kraken": {
-		"name": "Kraken Jovem", "short": "Braços longos e tinta.", "desc": "Braços longos e nuvens de tinta. Começa com Tinta.",
-		"weapon": "ink", "price": 0, "boss": "kraken",
-		"stats": {"max_hp": 120.0, "speed": 114.0, "bite_damage": 15.0, "armor": 1.0, "cooldown_mult": 0.9, "bite_reach": 1.25},
-	},
-	"pescadora": {
-		"name": "Rainha Abissal", "short": "Isca que ilumina o abismo.", "desc": "Sua isca ilumina o abismo e atrai presas. Começa com Sonar.",
-		"weapon": "sonar", "price": 0, "boss": "angler_queen",
-		"stats": {"max_hp": 115.0, "speed": 110.0, "bite_damage": 17.0, "armor": 1.0, "light": 140.0, "crit_chance": 0.12, "magnet": 60.0},
-	},
-	"leviata": {
-		"name": "Leviatã", "short": "Serpente elétrica e dura.", "desc": "Serpente elétrica e resistente. Começa com Pulso Elétrico.",
-		"weapon": "pulse", "price": 0, "boss": "leviathan",
-		"stats": {"max_hp": 145.0, "speed": 126.0, "bite_damage": 16.0, "armor": 2.0},
-	},
-	"titanacon": {
-		"name": "Titanacon", "short": "Titã blindado e lento.", "desc": "Um titã blindado de boca colossal. Lento, mas quase indestrutível. Começa com Redemoinho.",
-		"weapon": "whirl", "price": 0, "boss": "titanacon",
-		"stats": {"max_hp": 175.0, "speed": 98.0, "bite_damage": 23.0, "armor": 3.0, "bite_reach": 1.35},
-	},
-}
+## Playable characters live in scripts/data/roster.gd (see Roster). Built in
+## _ready() with "price"/"boss" shortcuts derived from each "unlock".
+var SPECIES: Dictionary = {}
 
 # faction: herb | pred | hazard | gold
 # trophic: detritivore < herbivore < carnivore < predator < mega  (food chain rank)
@@ -255,7 +274,7 @@ const WAVE_TIME := 50.0
 
 # ------------------------------------------------------------------ weapons
 # Per-level tables: index 0 = level 1.
-const WEAPONS := {
+const CORE_WEAPONS := {
 	"bubble": {
 		"name": "Bolhas", "icon": "w_bubble", "tag": "current", "evo": "torpedo", "pair": "gills",
 		"desc": ["Dispara bolhas no inimigo mais próximo.", "+1 bolha", "+40% dano", "Atravessa +1 inimigo", "+1 bolha, +30% dano"],
@@ -350,8 +369,6 @@ const META := {
 	"choice": {"name": "Visão Ampla", "icon": "eye", "desc": "4 cartas por nível", "max": 1, "cost": [650]},
 }
 
-# Weapons that must be unlocked by missions before they show up in runs.
-const LOCKED_WEAPONS := {"pilot": "boss_shark", "whirl": "boss_kraken", "sonar": "reach_abyss"}
 
 # Missions (achievements): stat key reaches target -> pearls (+ unlock).
 const MISSIONS := [
@@ -360,11 +377,11 @@ const MISSIONS := [
 	{"id": "kills_5000", "name": "Flagelo dos Mares", "desc": "Derrote 5000 criaturas", "stat": "kills", "target": 5000, "pearls": 300},
 	{"id": "stage_2", "name": "Crescendo", "desc": "Chegue ao estágio Adulto", "stat": "max_stage", "target": 2, "pearls": 40},
 	{"id": "stage_4", "name": "Leviatã", "desc": "Chegue ao estágio Leviatã", "stat": "max_stage", "target": 4, "pearls": 120},
-	{"id": "boss_shark", "name": "Rei Deposto", "desc": "Derrote Mandíbula", "stat": "boss_shark_king", "target": 1, "pearls": 60, "unlock": "pilot"},
-	{"id": "boss_kraken", "name": "Mar Sem Tentáculos", "desc": "Derrote o Kraken", "stat": "boss_kraken", "target": 1, "pearls": 100, "unlock": "whirl"},
+	{"id": "boss_shark", "name": "Rei Deposto", "desc": "Derrote Mandíbula", "stat": "boss_shark_king", "target": 1, "pearls": 60},
+	{"id": "boss_kraken", "name": "Mar Sem Tentáculos", "desc": "Derrote o Kraken", "stat": "boss_kraken", "target": 1, "pearls": 100},
 	{"id": "boss_angler", "name": "Luz no Abismo", "desc": "Derrote a Rainha Abissal", "stat": "boss_angler_queen", "target": 1, "pearls": 150},
 	{"id": "boss_levi", "name": "Senhor do Oceano", "desc": "Derrote o Leviatã Elétrico", "stat": "boss_leviathan", "target": 1, "pearls": 250},
-	{"id": "reach_abyss", "name": "Mergulho Profundo", "desc": "Alcance a Fossa Abissal", "stat": "reach_abyss", "target": 1, "pearls": 30, "unlock": "sonar"},
+	{"id": "reach_abyss", "name": "Mergulho Profundo", "desc": "Alcance a Fossa Abissal", "stat": "reach_abyss", "target": 1, "pearls": 30},
 	{"id": "plankton_300", "name": "Filtrador", "desc": "Coma 300 plânctons", "stat": "plankton", "target": 300, "pearls": 50},
 	{"id": "kelp_50", "name": "Pastador", "desc": "Morda o kelp 50 vezes", "stat": "kelp", "target": 50, "pearls": 40},
 	{"id": "carcass_40", "name": "Necrófago", "desc": "Coma 40 pedaços de carcaça", "stat": "carcass", "target": 40, "pearls": 50},
@@ -409,10 +426,19 @@ func stage_for_level(level: int) -> int:
 
 func weapon_value(id: String, key: String, level: int, fallback = 0.0):
 	var w: Dictionary = WEAPONS.get(id, {})
+	if w.get("fusion", false):
+		return Arsenal.fusion_value(w, key, level, fallback)
 	if not w.has(key):
 		return fallback
-	var arr: Array = w[key]
-	return arr[clampi(level - 1, 0, arr.size() - 1)]
+	var val = w[key]
+	if val is Array:
+		var out = val[clampi(level - 1, 0, val.size() - 1)]
+		var extra: int = level - val.size()
+		if extra > 0 and (key == "damage" or key == "cooldown"):
+			# limit break levels (Coroa de Coral)
+			out = float(out) * (1.0 + 0.15 * extra if key == "damage" else pow(0.95, extra))
+		return out
+	return val
 
 
 func item_tag(id: String) -> String:
