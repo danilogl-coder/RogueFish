@@ -144,6 +144,11 @@ func incoming(amount: float, source) -> float:
 
 ## Called after damage was applied (hp already reduced).
 func after_hurt() -> void:
+	if sp == "lula_vampira" and _cd <= 0.0 and player.alive:
+		_cd = 6.0
+		player.add_buff("trevas", 1.5)
+		game.burst(player.position, [5, 5, 7], 14, 60.0, 0.8)
+		game.float_text(player.position + Vector2(0, -16), "CAPA DE TREVAS", Color("b070ff"), 8)
 	if sp == "pepino" and player.hp < player.st.max_hp * 0.3 and player.hp > 0.0 and not player.has_meta("gut_cd"):
 		player.set_meta("gut_cd", true)
 		get_tree().create_timer(60.0, false).timeout.connect(func(): player.remove_meta("gut_cd"))
@@ -234,6 +239,10 @@ func after_bite(hits: Array, dmg: float, mouth: Vector2, reach: float) -> void:
 				extra += 1
 				game.zap(mouth, c.position, Color("ff8a9a"))
 				c.take_damage(dmg * 0.6, {"source": "bite", "knockback": (c.position - mouth).normalized() * 120.0})
+		"vibora":
+			var landed := hits.filter(func(c): return is_instance_valid(c)).size()
+			if landed > 0:
+				player.heal(dmg * 0.15 * landed, false)
 		"titanacon":
 			for c in hits:
 				if is_instance_valid(c) and not c.dead and not c.is_boss and c.hp < c.max_hp * 0.2:

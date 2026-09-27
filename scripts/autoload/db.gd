@@ -70,6 +70,12 @@ func weapon_desc(id: String, level: int) -> String:
 	return str(arr[clampi(level, 0, arr.size() - 1)])
 
 
+## Creatures from expansions only exist once their pack was bought.
+func creature_available(id: String) -> bool:
+	var pk: String = CREATURES.get(id, {}).get("pack", "")
+	return pk == "" or Profile.owns(pk)
+
+
 ## Is this item in the level-up pool? Items come with their character.
 func item_unlocked(id: String) -> bool:
 	var owner: String = ITEM_OWNER.get(id, "")
@@ -190,6 +196,15 @@ const CREATURES := {
 		"xp": 6, "faction": "herb", "script": "louse", "depth": [0.25, 0.95], "pearl": 0.1,
 		"trophic": "carnivore", "diet": [], "metab": 0.0, "biomes": ["reef", "kelp", "slope", "abyss"],
 		"desc": "Fêmea com bolsa de ovos. Procura um hospedeiro com machos para fundar uma colônia."},
+	# ---- "Criaturas Luminosas" expansion (only spawn when the pack is owned)
+	"viperfish": {"name": "Peixe-Víbora", "sheet": "viperfish", "tier": 2, "hp": 45, "speed": 72, "radius": 8, "dmg": 12,
+		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.55, 0.95], "pearl": 0.06, "light": 30.0,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.009, "biomes": ["abyss", "slope"], "pack": "pack_glow",
+		"desc": "Presas tão longas que não cabem na boca. Caça no escuro."},
+	"vampire_squid": {"name": "Lula-Vampira", "sheet": "vampire_squid", "tier": 2, "hp": 40, "speed": 52, "radius": 8, "dmg": 8,
+		"xp": 6, "faction": "pred", "script": "squid", "depth": [0.6, 0.97], "pearl": 0.06, "light": 26.0,
+		"trophic": "carnivore", "diet": ["prey"], "metab": 0.008, "biomes": ["abyss"], "pack": "pack_glow",
+		"desc": "Vira a capa do avesso e solta muco brilhante para fugir."},
 	"barracuda": {"name": "Barracuda", "sheet": "barracuda", "tier": 2, "hp": 55, "speed": 70, "radius": 8, "dmg": 13,
 		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04,
 		"trophic": "carnivore", "diet": ["prey"], "metab": 0.01, "biomes": ["reef", "slope"],
@@ -252,13 +267,13 @@ const BOSS_ORDER := ["shark_king", "kraken", "angler_queen", "leviathan", "titan
 # target; breeding (well-fed animals) and starvation drive the rest.
 const POPULATION := [
 	{"sea_cucumber": 8, "isopod": 5, "shrimp": 18, "sardine": 24, "lanternfish": 14, "snail": 5, "urchin": 6, "puffer": 4,
-		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2, "bobbit": 3, "louse": 9, "louse_f": 2},
+		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2, "bobbit": 3, "louse": 9, "louse_f": 2, "viperfish": 2, "vampire_squid": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 18, "sardine": 24, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1, "bobbit": 3, "louse": 10, "louse_f": 2},
+		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1, "bobbit": 3, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1, "bobbit": 4, "louse": 10, "louse_f": 2},
+		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1, "bobbit": 4, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 6,
-		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1, "bobbit": 4, "louse": 12, "louse_f": 3},
+		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1, "bobbit": 4, "louse": 12, "louse_f": 3, "viperfish": 3, "vampire_squid": 3},
 ]
 
 # Waves: weighted spawn table per cycle

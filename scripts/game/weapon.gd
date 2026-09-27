@@ -741,11 +741,15 @@ func _k_tentacle(r: float, n: int) -> void:
 func _k_vortex() -> void:
 	var targets: Array = game.nearest_n(player.position, 8, 220.0)
 	targets.shuffle()
+	var at_player: bool = DB.WEAPONS[id].get("at_player", false)
 	for i in _amount():
 		var pos: Vector2 = targets[i].position if i < targets.size() else player.position + Vector2.from_angle(randf() * TAU) * 70.0
+		if at_player:
+			pos = player.position + Vector2(player.facing * 44.0, 0).rotated(i * 0.8)
 		var a: AreaEffect = AreaEffect.new().setup_whirl(pos, float(_w("radius", 40.0)) * _area(), float(_w("duration", 4.0)) * player.st.duration_mult, float(_w("damage", 9.0)), float(_w("pull", 70.0)))
-		a.poison = float(_w("damage", 9.0))
-		a.sprite.modulate = Color(0.55, 0.35, 0.9)
+		a.poison = 0.0 if at_player else float(_w("damage", 9.0))
+		a.slow = float(_w("slow", 0.0))
+		a.sprite.modulate = Color(str(DB.WEAPONS[id].get("tint", "8c59e6")))
 		a.source = id
 		game.spawn_area(a)
 	Sfx.play("whirl", -6.0)

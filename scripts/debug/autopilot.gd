@@ -22,6 +22,10 @@ var idle := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--own="):
+			for oid in a.substr(6).split(","):
+				if not Profile.owned.has(oid):
+					Profile.owned.append(oid)
 		if a == "--god":
 			god = true
 		elif a.begins_with("--shots="):

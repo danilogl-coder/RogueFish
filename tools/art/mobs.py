@@ -38,6 +38,7 @@ CRITTERS = {
     "lontra": ("otter", 38.0),
     "minhoca": ("bobbit_swim", 40.0),
     "piolho": ("louse_f", 22.0),
+    "lula_vampira": ("vampire_squid", 30.0),
 }
 SIZE_K = 1.1           # critters read a bit smaller than fish of the same length
 

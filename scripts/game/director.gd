@@ -156,7 +156,7 @@ func _maintain_population(delta: float) -> void:
 	# from breeding (well-fed animals) balanced by predation and starvation.
 	for id in pop:
 		var target: int = int(pop[id])
-		if id == "moray":
+		if id == "moray" or not DB.creature_available(id):
 			continue
 		var have: int = int(counts.get(id, 0))
 		var floor_n := maxi(1, int(ceil(target * 0.5))) if phase_t > 3.0 or cycle > 1 else target

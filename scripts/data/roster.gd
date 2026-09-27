@@ -150,6 +150,19 @@ const SPECIES := {
 		"trait": {"name": "Megapredador", "desc": "+25% de dano contra inimigos grandes; predadores fogem."},
 		"stats": {"max_hp": 160.0, "speed": 124.0, "bite_damage": 22.0, "armor": 2.0},
 	},
+	# ------------------------------------------------ expansion characters
+	"vibora": {
+		"name": "Peixe-Víbora", "group": "especiais", "short": "Caçador das trevas.",
+		"weapon": "hypno_lure", "unlock": {"type": "pack", "pack": "pack_glow", "price": 400},
+		"trait": {"name": "Presas de Agulha", "desc": "Mordidas curam 15% do dano causado."},
+		"stats": {"max_hp": 95.0, "speed": 126.0, "bite_damage": 17.0, "armor": 0.0, "light": 120.0},
+	},
+	"lula_vampira": {
+		"name": "Lula-Vampira", "group": "especiais", "short": "Some na própria capa.",
+		"weapon": "star_mucus", "unlock": {"type": "pack", "pack": "pack_glow", "price": 450},
+		"trait": {"name": "Capa de Trevas", "desc": "Ao ser atingida, some nas trevas por 1,5s e os inimigos te perdem (recarga 6s)."},
+		"stats": {"max_hp": 100.0, "speed": 118.0, "bite_damage": 12.0, "armor": 1.0, "light": 95.0},
+	},
 	# ------------------------------------------------------- defeated bosses
 	"tubarao": {
 		"name": "Tubarão-Rei", "group": "chefes", "short": "Veloz, de mordida larga.",

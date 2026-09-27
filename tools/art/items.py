@@ -513,7 +513,26 @@ def i_louse_swarm():
     return img
 
 
+def i_hypno_lure():
+    c = ic()
+    c.curve([(2, 14), (4, 8), (9, 5)], F("abyss", 3, "st", outline=True), 1.2)
+    c.circle(11, 5, 3.4, F("glow", 3, "h", alpha=150, outline=False))
+    c.circle(11, 5, 2.0, F("glow", 5, "b"))
+    for r in (5.5,):
+        c.paint_fn(lambda x, y, r=r: abs(math.hypot(x - 11, y - 5) - r) < 0.5 and x < 11, F("cyan", 4, "ring", outline=False))
+    return c.render()
+
+
+def i_star_mucus():
+    c = ic()
+    for x, y, r in ((5, 6, 2.6), (11, 5, 2.0), (8, 11, 2.8), (13, 12, 1.6)):
+        c.circle(x, y, r, F("glow", 3, "o%d" % x, alpha=210))
+        c.circle(x - 0.4, y - 0.4, r * 0.45, F("white", 5, "c%d" % x, outline=False))
+    return c.render()
+
+
 WEAPON_ICONS = {
+    "w_hypno_lure": i_hypno_lure, "w_star_mucus": i_star_mucus,
     "w_tail_whip": i_tail_whip, "w_coral_shard": i_coral_shard, "w_bubble_ring": i_bubble_ring,
     "w_volt_lance": i_volt_lance, "w_silver_school": i_silver_school, "w_photophore": i_photophore,
     "w_tetrodo": i_tetrodo, "w_silver_arrow": i_silver_arrow, "w_serrated": i_serrated,
@@ -534,7 +553,7 @@ FUSION_PAIRS = {
     "f_armored_boomerang": ("w_sucker", "w_shell_bounce"), "f_slime_marsh": ("w_mucus", "w_sticky_guts"),
     "f_abyss_plague": ("w_scavengers", "w_louse_swarm"), "f_deadly_ambush": ("w_moray_strike", "w_scissor_jaws"),
     "f_golden_fangs": ("w_gold_rain", "w_serrated"), "f_venom_garden": ("w_tetrodo", "w_tentacles"),
-    "f_tide_ring": ("w_bubble_ring", "w_silver_arrow"),
+    "f_tide_ring": ("w_bubble_ring", "w_silver_arrow"), "f_star_abyss": ("w_hypno_lure", "w_star_mucus"),
 }
 
 

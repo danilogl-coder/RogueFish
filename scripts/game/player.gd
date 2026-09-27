@@ -374,8 +374,8 @@ func _regen(delta: float) -> void:
 
 
 func _hide_logic(delta: float) -> void:
-	if swallowed:
-		is_hidden = true  # the ocean outside can't see you inside the titan
+	if swallowed or buffs.has("trevas"):
+		is_hidden = true  # inside the titan / wrapped in the vampire squid's cloak
 		return
 	var inside: bool = game.world.hideout_at(position) != null
 	var danger: bool = game.director.phase != "explore"

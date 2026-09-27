@@ -789,3 +789,63 @@ def louse_f():
 
 
 ALL.update({"bobbit": bobbit, "louse": louse, "louse_f": louse_f})
+
+
+
+# ------------------------------------------------------- vampire squid
+VAMP = ramp("#7a1e3a")
+
+
+def vampire_squid():
+    """Lula-Vampira: a dark red mantle with ear-like fins, huge blue eyes and a
+    webbed cloak of arms tipped in white. The action frames flip the cloak
+    over the body (its real defensive 'pineapple' posture)."""
+    frames = []
+    for i in range(6):
+        w, h = 38, 24
+        X, Y = grid(w, h)
+        lay = Layer(w, h)
+        cx, cy = 20.0, 12.0
+        pulse = [0.0, 0.6, 1.0, 0.6, 0.0, 0.0][i]
+        inverted = i >= 4
+        # cloak: webbed arms trailing behind (left) or wrapped over (action)
+        if not inverted:
+            for k in range(4):
+                a = math.pi + (k - 1.5) * (0.28 + pulse * 0.08)
+                pts = curve_pts((cx - 2, cy), (cx - 7 + math.cos(a) * 2, cy + math.sin(a) * 5),
+                                (cx - 13 - pulse * 1.5, cy + math.sin(a) * (7 + pulse * 2)))
+                m, hg = capsule_field(tube(pts, 2.4, 1.0), X, Y)
+                shaded(lay, m, hg, VAMP, gain=1.1, shift=-1)
+                tx, ty = pts[-1]
+                lay.paint(np.hypot(X - tx, Y - ty) < 0.9, PAL["white"], 5, outline=False)
+            web = poly_mask(X, Y, [(cx - 3, cy - 3), (cx - 12 - pulse, cy - 6 - pulse), (cx - 14 - pulse, cy),
+                                   (cx - 12 - pulse, cy + 6 + pulse), (cx - 3, cy + 3)])
+            lay.paint(web & (lay.mat < 0), VAMP, 2, outline=True)
+        # mantle
+        mantle = ((X - cx - 3) / 8.5) ** 2 + ((Y - cy) / 5.2) ** 2 <= 1.0
+        shaded(lay, mantle, pro.dome_height(mantle), VAMP, gain=1.4)
+        # ear fins
+        for s_ in (-1, 1):
+            fin = ((X - cx - 8) / 2.6) ** 2 + ((Y - cy - s_ * 5.2) / 1.6) ** 2 <= 1.0
+            lay.paint(fin, VAMP, 3)
+        if inverted:
+            cloak = ((X - cx - 1) / 10.5) ** 2 + ((Y - cy) / 7.2) ** 2 <= 1.0
+            lay.paint(cloak & (X < cx + 4), VAMP, 1)
+            for k in range(5):
+                sy = cy - 6 + k * 3
+                d = seg_dist(X, Y, cx - 8, sy, cx - 2, sy)
+                lay.paint(d < 0.5, PAL["white"], 4, outline=False)
+        # big blue eye
+        ex, ey = cx + 5.5, cy - 0.5
+        lay.paint(np.hypot(X - ex, Y - ey) < 2.3, ramp("#3a8cff"), 4)
+        lay.paint(np.hypot(X - ex - 0.4, Y - ey) < 1.1, PAL["black"], 0)
+        dot(lay, X, Y, ex - 0.8, ey - 1.0, PAL["white"], 6)
+        # photophores
+        for k in range(3):
+            dot(lay, X, Y, cx + 1 + k * 2.2, cy + 3.2, PAL["glow"], 6)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+ALL.update({"vampire_squid": vampire_squid})

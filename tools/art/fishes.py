@@ -481,7 +481,17 @@ def parasite():
                                              teeth_n=3, teeth_len=0.08, tongue=False))
 
 
-ALL = {
+def viperfish():
+    """Peixe-Víbora: slim abyssal hunter, needle fangs that never fit in the
+    mouth, a photophore line along the belly and a glowing eye."""
+    return sheet(24, H=0.26, peak=0.64, q=0.9, front_e=0.6, body="abyss", belly="ink", fin="abyss", tail="fork",
+                 tail_len=0.3, eye=0.09, eye_ramp="glow", dorsal=("tri", 0.66, 0.72, 0.5), anal=("tri", 0.14, 0.24, 0.4),
+                 pectoral=(0.14, 0.06), pelvic=0.0, gloss=False, countershade=0.1, extras=(photophores(0.82, 0.07),),
+                 mouth=dict(v=0.5, corner_t=0.72, corner_v=0.56, open=1.0, under=0.08, chin=0.3, teeth="needle",
+                            teeth_n=3, teeth_len=0.2, closed_teeth=True, tongue=False))
+
+
+ALL = {"viperfish": viperfish, 
     "sardine": sardine, "golden": golden, "pilot": pilot, "lanternfish": lanternfish, "piranha": piranha,
     "puffer": puffer, "puffer_big": puffer_big, "barracuda": barracuda, "shark": shark, "angler": angler,
     "orca": orca, "moray": moray, "boss_shark": boss_shark, "boss_angler": boss_angler,
