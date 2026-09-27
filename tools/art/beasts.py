@@ -522,14 +522,18 @@ def get_plan(species):
 # ------------------------------------------------------------ atlas
 def render_atlas(species, stage):
     import player as PL
-    plan = get_plan(species)
-    k = plan.k_for(stage)
+    import beasts6
+    plan, anat, glassy = beasts6.plan_for(species, stage)
+    # pixel density comes from the real life stage, anatomy from the plan
+    k = PL.STAGE_LEN[stage] * 1.1 / plan.length
     cw, ch = plan.canvas
     rows = {name: [] for name in PL.LAYERS}
     lure = []
 
     def img(ctx, part):
         lay = ctx.L[part]
+        if glassy:
+            beasts6.vitrify(species, lay, glassy)
         lay.clean(1)
         return lay.to_image()
 
@@ -538,22 +542,22 @@ def render_atlas(species, stage):
         # tails
         for t, row in (("", "tail"), ("tail_fork", "tail_fork"), ("tail_sting", "tail_sting"), ("tail_eel", "tail_eel")):
             c = Ctx(cw, ch, k)
-            plan.draw(c, stage, st, tail=t, what=("rear",))
+            plan.draw(c, anat, st, tail=t, what=("rear",))
             rows[row].append(img(c, "rear"))
         # limbs / fins
         for f, rb, rf in (("", "fins_back", "fins_front"), ("fins_spiky", "fins_spiky_back", "fins_spiky_front"),
                           ("fins_wing", "fins_wing_back", "fins_wing_front"), ("fins_volt", "fins_volt_back", "fins_volt_front")):
             c = Ctx(cw, ch, k)
-            plan.draw(c, stage, st, fins=f, what=("back", "front"))
+            plan.draw(c, anat, st, fins=f, what=("back", "front"))
             rows[rb].append(img(c, "back"))
             rows[rf].append(img(c, "front"))
         # bodies
         for hd in PL.HEADS:
             for sk in PL.SKINS:
                 c = Ctx(cw, ch, k)
-                plan.draw(c, stage, st, head=hd, skin=sk, what=("body",))
+                plan.draw(c, anat, st, head=hd, skin=sk, what=("body",))
                 rows[PL.body_key(hd, sk)].append(img(c, "body"))
-        lp = plan.lure_pos(stage, st)
+        lp = plan.lure_pos(anat, st)
         lure.append([round(lp[0] * k, 1), round(lp[1] * k, 1)])
     w, h = rows["body"][0].size
     sheet = Image.new("RGBA", (w * N_FRAMES, h * len(PL.LAYERS)))

@@ -279,7 +279,7 @@ SPECIES = {
                               teeth_len=0.06, closed_teeth=True, tongue=False)),
     "moreia": dict(H=0.22, peak=0.72, q=0.55, front_e=0.62, ped=0.55, top_ratio=0.5, body="eel",
                    belly="lime", fin="eel", tail="point", tail_len=0.24, eye=0.05, eye_ramp="volt", eye_t=0.9,
-                   dorsal=("long", 0.06, 0.8, 0.42), anal=("long", 0.04, 0.48, 0.35), pectoral=None, pelvic=0.0,
+                   dorsal=("long", 0.06, 0.8, 0.24), anal=("long", 0.04, 0.48, 0.2), pectoral=None, pelvic=0.0,
                    belly_v=0.7, wag=2.4, gill=False, pattern=moray_pattern, countershade=0.15,
                    mouth=dict(v=0.55, corner_t=0.82, corner_v=0.6, open=0.9, teeth="fang", teeth_n=4,
                               teeth_len=0.045, tongue=False)),
@@ -398,11 +398,14 @@ def stage_extras(fish, stage):
 
 
 def make_fish(species, L, w, h, head="", skin="", stage=0):
-    spec = stage_features(dict(SPECIES[species]), stage)
+    import lifecycle
+    if stage == 0 and species not in lifecycle.LIVE_BORN:
+        L = L * 1.25          # larvae are long and slender: same area, longer body
+    spec, life_pats, life_extras, life_shapes, alpha = lifecycle.transform(species, stage, SPECIES[species])
     pat = spec.pop("pattern", None)
     if head == "head_piranha":
         spec["mouth"] = piranha_mouth(spec["mouth"])
-    patterns = [pat] if pat else []
+    patterns = ([pat] if pat else []) + life_pats
     if skin == "skin_armor":
         patterns.append(skin_armor)
     elif skin == "skin_toxic":
@@ -415,7 +418,9 @@ def make_fish(species, L, w, h, head="", skin="", stage=0):
     fish = Fish(L, w * 0.5 + L * 0.12, h * 0.52, **spec)
     if species in SPECIES_EXTRAS:
         SPECIES_EXTRAS[species](fish)
-    stage_extras(fish, stage)
+    fish.extras.extend(life_extras)
+    fish.extra_shapes.extend(life_shapes)
+    fish.alpha_map = alpha
     if head == "head_sword":
         fish.extra_shapes.append(bill_shape(length=0.36))
     elif head == "head_lure" and species not in BUILTIN_LURE:
@@ -602,6 +607,16 @@ TAIL_PAINTERS = {"tail_fork": tail_fork, "tail_sting": tail_sting, "tail_eel": t
 
 
 # ------------------------------------------------------------------ atlas
+def see_through(lay, fish):
+    """Larval tissue is translucent (the outline stays solid)."""
+    for name, a in getattr(fish, "alpha_map", {}).items():
+        if name in FP.PAL:
+            r = FP.PAL[name]
+            for i, rr in enumerate(lay.ramps):
+                if rr is r:
+                    lay.alpha[lay.mat == i] = a
+
+
 def render_atlas(species, stage, progress=None):
     L = STAGE_LEN[stage]
     w, h = canvas_size(L)
@@ -625,6 +640,7 @@ def render_atlas(species, stage, progress=None):
             for skin in SKINS:
                 fish = make_fish(species, L, w, h, head, skin, stage)
                 lay = fish.render(w, h, st, parts=("body",))["body"]
+                see_through(lay, fish)
                 rows[body_key(head, skin)].append(lay.to_image())
                 if head == "head_lure" and skin == "":
                     lx, ly = lure_screen(fish, st)
