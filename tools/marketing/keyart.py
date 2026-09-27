@@ -71,9 +71,9 @@ def cast_scene(w, h, focus_x, seed=3, bed=None):
 
 def hero(w, h, k, with_logo, name, px, py, mx, my, logo_xy=None, tag=True, logo_w=None):
     im = cast_scene(w, h, px)
-    meg = flip(sheet_frame("creatures/megalodon", 7))
+    meg = flip(sheet_frame("creatures/megalodon", 2))
     paste(im, meg, mx, my)
-    fish = trim(player_frame("dourado", 4, 7, ["tail", "fins_back", "body+head_piranha", "fins_front"]))
+    fish = trim(player_frame("dourado", 4, 2))
     glow(im, px + 6, py, fish.width * 0.75)
     paste(im, fish, px, py)
     bubbles(im, 8, 11, (int(px + fish.width * 0.3), int(py - 30), int(px + fish.width * 0.6), int(py - 6)))
