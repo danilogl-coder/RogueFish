@@ -40,12 +40,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
-
       - name: Android build tools
         run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager "platform-tools" "build-tools;35.0.0"
+          SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin | sort -V | tail -1)/sdkmanager"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platform-tools" "build-tools;35.0.0"
 
       - name: Godot + Android templates
         run: |
