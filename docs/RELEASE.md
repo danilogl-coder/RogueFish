@@ -137,6 +137,10 @@ O preset **Android APK** (sem Gradle) gera um APK instalável direto, sem passar
 godot --headless --export-release "Android APK" builds/RogueFish.apk
 ```
 
+O workflow **Android test APK** faz isso sozinho a cada push que muda o jogo e publica o arquivo na release
+*test-apk*. Para baixar direto no celular:
+`https://github.com/danilogl-coder/RogueFish/releases/download/test-apk/RogueFish.apk`
+
 No celular, abra o arquivo e permita *Instalar apps desconhecidos* para o app que abriu o APK (navegador ou
 gerenciador de arquivos). Esse APK é só para teste: ele é assinado com a chave de debug, então o Android não deixa
 atualizar por cima dele com a versão da Play Store. Desinstale o de teste antes.
