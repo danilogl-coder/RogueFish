@@ -529,6 +529,8 @@ func _k_lash() -> void:
 		fx.position = player.position + d * reach * 0.55
 		fx.rotation = d.angle()
 		fx.scale = Vector2.ONE * (reach / 34.0)
+		if DB.WEAPONS[id].has("tint"):
+			fx.modulate = Color(str(DB.WEAPONS[id].tint))
 		game.layer_fx.add_child(fx)
 		for c in game.creatures_in_radius(player.position, reach):
 			if c.dead:
@@ -729,10 +731,13 @@ func _k_lob() -> void:
 ## tentacle: stinging lines to the nearest enemies -------------------------
 func _k_tentacle(r: float, n: int) -> void:
 	var targets: Array = game.nearest_n(player.position, n, r)
+	var leech: float = float(_w("leech", 0.0))
 	for t in targets:
 		var fx: TentacleFx = TentacleFx.new().setup(player, t, _color())
 		game.layer_fx.add_child(fx)
 		_damage(t, float(_w("damage", 6.0)))
+		if leech > 0.0:
+			player.heal(leech, false)
 	if not targets.is_empty():
 		Sfx.play("zap", -12.0)
 

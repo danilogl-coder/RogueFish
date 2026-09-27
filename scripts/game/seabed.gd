@@ -22,6 +22,8 @@ func _draw() -> void:
 	for i in chunks.size():
 		var c: Dictionary = chunks[i]
 		var x := float(c.x)
+		if x >= DB.WORLD_W:
+			continue
 		if front:
 			draw_texture(Art.tex("terrain/front_%02d" % i), Vector2(x, float(c.fy)))
 		else:

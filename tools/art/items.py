@@ -571,7 +571,29 @@ def i_ancient_jaws():
     return img
 
 
+def i_thermal_claw():
+    c = ic()
+    c.poly([(2, 10), (11, 11), (14, 14), (4, 14)], A("cream", 3, "lo"))
+    c.poly([(2, 9), (10, 3), (14, 4), (9, 9)], A("cream", 4, "up"))
+    img = c.render()
+    for x, y in ((12, 1), (14, 2), (13, 0)):
+        img.putpixel((x, y), col("orange", 5))
+    for y in range(6, 12, 2):
+        img.putpixel((5, y), col("sand", 3))
+    return img
+
+
+def i_red_plume():
+    c = ic()
+    c.rect(6, 9, 4, 7, A("white", 3, "t"))
+    for k in range(5):
+        a = -math.pi / 2 + (k - 2) * 0.45
+        c.line(8, 9, 8 + math.cos(a) * 7, 9 + math.sin(a) * 7, F("red", 4, "p%d" % k), 1.4)
+    return c.render()
+
+
 WEAPON_ICONS = {
+    "w_thermal_claw": i_thermal_claw, "w_red_plume": i_red_plume,
     "w_ancient_jaws": i_ancient_jaws,
     "w_hypno_lure": i_hypno_lure, "w_star_mucus": i_star_mucus,
     "w_tail_whip": i_tail_whip, "w_coral_shard": i_coral_shard, "w_bubble_ring": i_bubble_ring,
@@ -596,6 +618,7 @@ FUSION_PAIRS = {
     "f_golden_fangs": ("w_gold_rain", "w_serrated"), "f_venom_garden": ("w_tetrodo", "w_tentacles"),
     "f_tide_ring": ("w_bubble_ring", "w_silver_arrow"), "f_star_abyss": ("w_hypno_lure", "w_star_mucus"),
     "f_fang_storm": ("w_ancient_jaws", "w_serrated"),
+    "f_volcanic_heart": ("w_thermal_claw", "w_red_plume"),
 }
 
 

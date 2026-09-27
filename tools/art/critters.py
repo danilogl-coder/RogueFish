@@ -849,3 +849,94 @@ def vampire_squid():
 
 
 ALL.update({"vampire_squid": vampire_squid})
+
+
+
+# ------------------------------------------------ hydrothermal expansion
+YETI = ramp("#e8e0d4", dark=0.35)
+YETI_HAIR = ramp("#d8c8a8", dark=0.3)
+PLUME = ramp("#e03040")
+TUBE = ramp("#e8e4dc", dark=0.32)
+
+
+def yeti_crab():
+    """Caranguejo-Yeti (Kiwa): pale crab with long hairy claws where it farms
+    bacteria near the vents. 4 walk + 2 snap frames."""
+    frames = []
+    for i in range(6):
+        w, h = 38, 24
+        X, Y = grid(w, h)
+        atk = i >= 4
+        step = i % 2
+        cx, cy = 19.0, 13.5
+        lay = Layer(w, h)
+        for k in range(3):
+            for sgn in (-1, 1):
+                bx = cx + sgn * (3.0 + k * 1.6)
+                lift = 1.2 if (k + step + (sgn > 0)) % 2 else 0.0
+                knee = (bx + sgn * (4.5 + k * 0.8), cy - 1.8 - lift)
+                foot = (bx + sgn * (7.0 + k * 1.2), cy + 7.5 - lift)
+                m, hg = capsule_field(tube([(bx, cy + 1.5), knee, foot], 1.0, 0.5), X, Y)
+                shaded(lay, m, hg, YETI, shift=-1)
+        for sgn in (-1, 1):
+            ax, ay = cx + sgn * 9.0, cy - (8.0 if atk else 5.5)
+            m, hg = capsule_field(tube([(cx + sgn * 4.5, cy - 1), (cx + sgn * 7.0, ay + 3.5), (ax, ay + 1.0)], 1.6, 1.4), X, Y)
+            shaded(lay, m, hg, YETI)
+            # hair: setae hanging from the arms (bacteria gardens)
+            for k in range(6):
+                hx = cx + sgn * (5.0 + k * 0.8)
+                hy = cy - 1.5 + (ay + 1 - (cy - 1)) * (k / 6.0)
+                d = seg_dist(X, Y, hx, hy, hx + sgn * 0.3, hy + 3.2 + (k % 2))
+                lay.paint(d < 0.45, YETI_HAIR, 3 + (k % 2), outline=False)
+            palm = (((X - ax) / 3.4) ** 2 + ((Y - ay) / 2.7) ** 2 <= 1.0)
+            shaded(lay, palm, pro.dome_height(palm), YETI, gain=1.3)
+            gap = 1.0 if (atk and i == 4) else 0.1
+            fx = ax + sgn * 2.2
+            lay.paint(poly_mask(X, Y, [(fx - sgn * 1.0, ay - 0.2), (fx + sgn * 3.2, ay - 1.6), (fx + sgn * 0.6, ay + 1.4)]), YETI, 3)
+            lay.paint(poly_mask(X, Y, [(fx - sgn * 1.0, ay - 2.0), (fx + sgn * 3.0, ay - 2.8 - gap * 2.0), (fx + sgn * 0.4, ay - 0.9)]), YETI, 5)
+        shell = (((X - cx) / 7.6) ** 2 + ((Y - cy) / 5.6) ** 2 <= 1.0) & (Y < cy + 3.6)
+        shaded(lay, shell, pro.dome_height(shell), YETI, gain=1.4)
+        fuzz = shell & (((np.floor(X) * 3 + np.floor(Y) * 5) % 7) == 0)
+        lay.shift(fuzz, -1, lo=2)
+        for sgn in (-1, 1):
+            dot(lay, X, Y, cx + sgn * 2.2, cy - 4.2, PAL["black"], 0)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+def tube_worm():
+    """Verme-Tubo Gigante (Riftia): a white tube planted in the rock with a red
+    plume that sways (frames 0-3) and snaps back inside (4-5)."""
+    frames = []
+    for i in range(6):
+        w, h = 20, 34
+        X, Y = grid(w, h)
+        lay = Layer(w, h)
+        cx = 10.0
+        top = 12.0
+        tube_m = (np.abs(X - cx) < 2.6) & (Y > top) & (Y < h - 0.5)
+        hg = np.clip(1.0 - np.abs(X - cx) / 2.6, 0, 1) ** 0.5
+        shaded(lay, tube_m, hg, TUBE, gain=1.2)
+        rings = tube_m & ((np.floor(Y) % 4) == 0)
+        lay.shift(rings, -1, lo=2)
+        lip = (np.abs(X - cx) < 3.2) & (np.abs(Y - top) < 1.1)
+        lay.paint(lip, TUBE, 5)
+        if i < 4:
+            sway = [-1.5, -0.5, 1.5, 0.5][i]
+            for k in range(7):
+                a = -math.pi / 2 + (k - 3) * 0.28
+                ln = 9.0 - abs(k - 3) * 1.1
+                px, py = cx + math.cos(a) * ln + sway * (1 - abs(k - 3) / 4), top - 1 + math.sin(a) * ln
+                d = seg_dist(X, Y, cx + (k - 3) * 0.6, top, px, py)
+                lay.paint(d < 1.1, PLUME, 4 if k % 2 else 3)
+                lay.paint(np.hypot(X - px, Y - py) < 1.2, PLUME, 5)
+        else:
+            nub = ((X - cx) / 2.4) ** 2 + ((Y - top + 1.0) / 1.4) ** 2 <= 1.0
+            lay.paint(nub, PLUME, 2)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return sheet(frames)
+
+
+ALL.update({"yeti_crab": yeti_crab, "tube_worm": tube_worm})

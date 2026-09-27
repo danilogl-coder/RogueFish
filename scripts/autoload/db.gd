@@ -2,7 +2,10 @@ extends Node
 ## Static game data: species, creatures, bosses, weapons, passives, mutations,
 ## synergies, meta upgrades. Everything balance-related lives here.
 
-const WORLD_W := 4800.0
+const BASE_WORLD_W := 4800.0
+## World width of this run: the "Fontes Hidrotermais" expansion opens
+## 1200 more metres to the east (see refresh_world()).
+var WORLD_W := 4800.0
 const WORLD_H := 1560.0
 const FLOOR_Y := 948.0      # reference floor (kelp forest); use floor_at(x) for the real one
 const SURFACE_Y := 14.0
@@ -88,7 +91,12 @@ const BIOMES := [
 	{"id": "kelp", "name": "Floresta de Kelp", "x0": 1450.0, "x1": 3150.0, "tint": Color(0.86, 1.05, 0.9)},
 	{"id": "slope", "name": "Talude Continental", "x0": 3150.0, "x1": 3750.0, "tint": Color(0.78, 0.88, 1.0)},
 	{"id": "abyss", "name": "Fossa Abissal", "x0": 3750.0, "x1": 4800.0, "tint": Color(0.5, 0.45, 0.7)},
+	{"id": "vents", "name": "Fontes Hidrotermais", "x0": 4800.0, "x1": 6000.0, "tint": Color(0.78, 0.52, 0.48)},
 ]
+
+
+func refresh_world() -> void:
+	WORLD_W = 6000.0 if Profile.owns("pack_vents") else BASE_WORLD_W
 
 const STAGE_NAMES := ["Alevino", "Juvenil", "Adulto", "Veterano", "Leviatã"]
 const STAGE_LEVELS := [1, 6, 12, 19, 27]
@@ -146,7 +154,7 @@ const CREATURES := {
 		"desc": "Recicla os detritos do fundo e devolve nutrientes ao mar."},
 	"isopod": {"name": "Isópode Gigante", "sheet": "isopod", "tier": 1, "hp": 30, "speed": 26, "radius": 7, "dmg": 5,
 		"xp": 3, "faction": "herb", "script": "detritivore", "depth": [1.0, 1.0], "pearl": 0.02,
-		"trophic": "detritivore", "diet": ["carcass", "detritus"], "metab": 0.008, "biomes": ["abyss", "slope"],
+		"trophic": "detritivore", "diet": ["carcass", "detritus"], "metab": 0.008, "biomes": ["abyss", "slope", "vents"],
 		"desc": "Necrófago do abismo. Farejam carcaças de longe."},
 	"shrimp": {"name": "Camarão", "sheet": "shrimp", "tier": 0, "hp": 6, "speed": 55, "radius": 5, "dmg": 0,
 		"xp": 1, "faction": "herb", "script": "shrimp", "depth": [0.55, 0.97], "pearl": 0.004,
@@ -205,6 +213,15 @@ const CREATURES := {
 		"xp": 6, "faction": "pred", "script": "squid", "depth": [0.6, 0.97], "pearl": 0.06, "light": 26.0,
 		"trophic": "carnivore", "diet": ["prey"], "metab": 0.008, "biomes": ["abyss"], "pack": "pack_glow",
 		"desc": "Vira a capa do avesso e solta muco brilhante para fugir."},
+	# ---- "Fontes Hidrotermais" expansion
+	"yeti_crab": {"name": "Caranguejo-Yeti", "sheet": "yeti_crab", "tier": 1, "hp": 34, "speed": 34, "radius": 8, "dmg": 6,
+		"xp": 4, "faction": "pred", "script": "crab", "depth": [1.0, 1.0], "pearl": 0.04,
+		"trophic": "carnivore", "diet": ["carcass", "detritus"], "metab": 0.007, "biomes": ["vents"], "pack": "pack_vents",
+		"desc": "Cultiva bactérias nos pelos das garras, perto das fontes quentes."},
+	"tube_worm": {"name": "Verme-Tubo Gigante", "sheet": "tube_worm", "tier": 0, "hp": 14, "speed": 0, "radius": 6, "dmg": 0,
+		"xp": 3, "faction": "herb", "script": "tubeworm", "depth": [1.0, 1.0], "pearl": 0.03,
+		"trophic": "herbivore", "diet": [], "metab": 0.0, "biomes": ["vents"], "pack": "pack_vents",
+		"desc": "Sem boca nem estômago: vive das bactérias que carrega dentro do corpo."},
 	"barracuda": {"name": "Barracuda", "sheet": "barracuda", "tier": 2, "hp": 55, "speed": 70, "radius": 8, "dmg": 13,
 		"xp": 7, "faction": "pred", "script": "barracuda", "depth": [0.1, 0.8], "pearl": 0.04,
 		"trophic": "carnivore", "diet": ["prey"], "metab": 0.01, "biomes": ["reef", "slope"],
@@ -276,13 +293,13 @@ func boss_order() -> Array:
 # target; breeding (well-fed animals) and starvation drive the rest.
 const POPULATION := [
 	{"sea_cucumber": 8, "isopod": 5, "shrimp": 18, "sardine": 24, "lanternfish": 14, "snail": 5, "urchin": 6, "puffer": 4,
-		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2, "bobbit": 3, "louse": 9, "louse_f": 2, "viperfish": 2, "vampire_squid": 2},
+		"turtle": 2, "piranha": 6, "crab": 5, "jellyfish": 6, "otter": 2, "moray": 2, "angler": 2, "bobbit": 3, "louse": 9, "louse_f": 2, "viperfish": 2, "vampire_squid": 2, "yeti_crab": 5, "tube_worm": 9},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 18, "sardine": 24, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1, "bobbit": 3, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2},
+		"turtle": 3, "piranha": 9, "crab": 6, "jellyfish": 7, "otter": 2, "moray": 3, "angler": 3, "squid": 3, "barracuda": 3, "orca": 1, "bobbit": 3, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2, "yeti_crab": 6, "tube_worm": 9},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 5,
-		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1, "bobbit": 4, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2},
+		"turtle": 3, "piranha": 10, "crab": 6, "jellyfish": 8, "otter": 2, "moray": 3, "angler": 4, "squid": 4, "barracuda": 4, "shark": 2, "orca": 1, "bobbit": 4, "louse": 10, "louse_f": 2, "viperfish": 3, "vampire_squid": 2, "yeti_crab": 6, "tube_worm": 9},
 	{"sea_cucumber": 8, "isopod": 6, "shrimp": 16, "sardine": 26, "lanternfish": 16, "snail": 5, "urchin": 6, "puffer": 6,
-		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1, "bobbit": 4, "louse": 12, "louse_f": 3, "viperfish": 3, "vampire_squid": 3},
+		"turtle": 3, "piranha": 12, "crab": 7, "jellyfish": 9, "otter": 2, "moray": 3, "angler": 4, "squid": 5, "barracuda": 5, "shark": 3, "orca": 1, "bobbit": 4, "louse": 12, "louse_f": 3, "viperfish": 3, "vampire_squid": 3, "yeti_crab": 6, "tube_worm": 10},
 ]
 
 # Waves: weighted spawn table per cycle

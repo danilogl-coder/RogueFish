@@ -45,6 +45,8 @@ func modify(s: Dictionary) -> void:
 		"dourado_raro":
 			s.pearl_mult += 0.4
 			s.luck += 0.2
+		"caranguejo_yeti":
+			s.regen += 1.0
 		"tubarao":
 			s.damage_mult *= 1.0 + 0.03 * _blood
 		"megalodonte":
@@ -86,6 +88,10 @@ func tick(delta: float) -> void:
 		"caramujo":
 			if _still >= 1.0:
 				player.add_buff("concha", 0.3)
+		"caranguejo_yeti":
+			# the vents feed its bacteria garden: extra regeneration there
+			if player.position.x > DB.BASE_WORLD_W and player.hp < player.st.max_hp:
+				player.heal(2.0 * delta, false)
 		"minhoca":
 			if _still >= 1.5 and not _primed:
 				_primed = true
@@ -202,6 +208,10 @@ func outgoing(c: Creature, amount: float, info: Dictionary) -> float:
 
 
 func on_kill(_c: Creature) -> void:
+	if sp == "verme_tubo":
+		_bites += 1
+		if _bites % 8 == 0:
+			player.heal(player.st.max_hp * 0.08)
 	if sp == "tubarao":
 		_blood = mini(_blood + 1, 10)
 		_blood_t = 4.0
@@ -282,6 +292,10 @@ func on_dash() -> void:
 
 func parasite_immune() -> bool:
 	return sp == "camarao"
+
+
+func heat_immune() -> bool:
+	return sp in ["caranguejo_yeti", "verme_tubo"]
 
 
 func colony_slows() -> bool:

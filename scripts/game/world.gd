@@ -148,7 +148,8 @@ func _add_hideout(kind: String, x: float) -> void:
 func _build_hideouts() -> void:
 	# hideouts and eel rocks sit on flat shelves carved into the terrain
 	for x in _sites("cave", [260.0, 1050.0, 3452.0, 4050.0, 4620.0]):
-		_add_hideout("cave", x)
+		if x < DB.WORLD_W - 40.0:
+			_add_hideout("cave", x)
 	for x in _sites("thicket", [700.0, 1700.0, 2150.0, 2600.0, 3000.0]):
 		_add_hideout("thicket", x)
 	for ex in _sites("eel_rock", [520.0, 830.0, 1310.0]):
@@ -198,6 +199,7 @@ func _build_decor() -> void:
 		"kelp": ["seagrass", "seagrass", "seagrass", "coral_brain", "anemone"],
 		"slope": ["seagrass", "anemone", "coral_fan"],
 		"abyss": ["glow_mushroom", "tube_worms", "glow_mushroom", "anemone"],
+		"vents": ["tube_worms", "tube_worms", "glow_mushroom"],
 	}
 	var x := 20.0
 	while x < DB.WORLD_W - 20:
@@ -230,7 +232,16 @@ func _build_abyss() -> void:
 	# hydrothermal vents: chemosynthesis feeds the dark food web
 	for vx in _sites("vent", [3930.0, 4480.0, 4740.0]):
 		var x: float = vx
+		if x >= DB.WORLD_W - 20.0:
+			continue
 		var s := _floor_sprite("env/black_smoker", x, -26)
+		if x > DB.BASE_WORLD_W:
+			# the hydrothermal field's chimneys erupt
+			var ch := Chimney.new()
+			ch.game = game
+			ch.position = Vector2(x, floor_at(x) - float(Art.sheet_info("env/black_smoker").h) + 4.0)
+			add_child(ch)
+			s.modulate = Color(1.1, 0.9, 0.85)
 		vents.append(Vector2(x, floor_at(x) - 60))
 		lights.append({"node": s, "radius": 70.0, "power": 0.85})
 		for k in 3:

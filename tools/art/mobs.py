@@ -39,6 +39,8 @@ CRITTERS = {
     "minhoca": ("bobbit_swim", 40.0),
     "piolho": ("louse_f", 22.0),
     "lula_vampira": ("vampire_squid", 30.0),
+    "caranguejo_yeti": ("yeti_crab", 30.0),
+    "verme_tubo": ("tube_worm_swim", 40.0),
 }
 SIZE_K = 1.1           # critters read a bit smaller than fish of the same length
 
@@ -116,6 +118,38 @@ def bobbit_swim():
     return critters.sheet(frames)
 
 
+def tube_worm_swim():
+    """The giant tube worm set free: a white ringed tube undulating with its
+    red plume open at the front. 4 swim + 2 frames with the plume snapped."""
+    frames = []
+    for i in range(6):
+        w, h = 48, 22
+        X, Y = critters.grid(w, h)
+        lay = critters.Layer(w, h)
+        ph = i / 4 * math.tau if i < 4 else 0.0
+        pts = [(4 + u * 30, 12 + math.sin(u * 4.8 - ph) * 2.2 * (1 - u * 0.5)) for u in np.linspace(0, 1, 13)]
+        m, hg = critters.capsule_field(critters.tube(pts, 2.4, 3.4), X, Y)
+        critters.shaded(lay, m, hg, critters.TUBE, gain=1.2)
+        lay.shift(m & ((np.floor(X) % 4) == 0), -1, lo=2)
+        hx, hy = pts[-1]
+        lip = np.hypot(X - hx - 1.0, Y - hy) < 3.8
+        lay.paint(lip & ~m, critters.TUBE, 5)
+        if i < 4:
+            for k in range(7):
+                a = (k - 3) * 0.3 + math.sin(ph + k) * 0.08
+                ln = 9.0 - abs(k - 3) * 1.0
+                px, py = hx + 2 + math.cos(a) * ln, hy + math.sin(a) * ln
+                d = seg_dist(X, Y, hx + 1.5, hy + (k - 3) * 0.5, px, py)
+                lay.paint(d < 1.0, critters.PLUME, 4 if k % 2 else 3)
+                lay.paint(np.hypot(X - px, Y - py) < 1.1, critters.PLUME, 5)
+        else:
+            nub = ((X - hx - 2.5) / 1.8) ** 2 + ((Y - hy) / 2.6) ** 2 <= 1.0
+            lay.paint(nub, critters.PLUME, 2)
+        lay.clean(1)
+        frames.append(lay.to_image())
+    return critters.sheet(frames)
+
+
 def _render_frames(species, stage):
     fname, base_len = CRITTERS[species]
     L = max(base_len * 0.85, PL.STAGE_LEN[stage] * SIZE_K)
@@ -123,6 +157,8 @@ def _render_frames(species, stage):
     with scaled(k):
         if fname == "bobbit_swim":
             sheet = bobbit_swim()
+        elif fname == "tube_worm_swim":
+            sheet = tube_worm_swim()
         elif fname == "louse_f":
             sheet = critters._louse(True)
         else:

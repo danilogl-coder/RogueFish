@@ -36,6 +36,7 @@ const CreatureScripts := {
 	"parasite": preload("res://scripts/game/creatures/parasite.gd"),
 	"bobbit": preload("res://scripts/game/creatures/bobbit.gd"),
 	"louse": preload("res://scripts/game/creatures/louse.gd"),
+	"tubeworm": preload("res://scripts/game/creatures/tubeworm.gd"),
 }
 const MAX_CREATURES := 240
 const MAX_PICKUPS := 260
@@ -97,6 +98,12 @@ var banishes := 0
 func _ready() -> void:
 	randomize()
 	process_mode = Node.PROCESS_MODE_PAUSABLE
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--own="):   # debug / screenshots: pretend these were bought
+			for oid in a.substr(6).split(","):
+				if not Profile.owned.has(oid):
+					Profile.owned.append(oid)
+	DB.refresh_world()
 	mods = RunMods.new().setup(self)
 	add_child(mods)
 	banishes = 3 if Profile.owns("relic_anchor") else 0

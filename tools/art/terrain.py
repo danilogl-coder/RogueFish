@@ -28,7 +28,8 @@ from scipy import ndimage
 import pro
 from pro import PAL, ramp
 
-W = 4800
+W = 6000          # 4800 base ocean + 1200 "Fontes Hidrotermais" expansion (locked until bought)
+BASE_W = 4800
 STEP = 2
 CHUNK = 240
 TOP_MARGIN = 34      # room above the highest surface point for baked rocks
@@ -44,9 +45,13 @@ SITES = [
     ("eel_rock", 520, 30), ("eel_rock", 830, 30), ("eel_rock", 1310, 30),
     ("vent", 3930, 20), ("vent", 4480, 20), ("vent", 4740, 20),
     ("whale", 4300, 76),
+    # Fontes Hidrotermais expansion
+    ("vent", 5040, 20), ("vent", 5290, 20), ("vent", 5560, 20), ("vent", 5830, 20),
+    ("cave", 5420, 70),
 ]
 
-BIOMES = [("reef", 0, 1450), ("kelp", 1450, 3150), ("slope", 3150, 3750), ("abyss", 3750, W)]
+BIOMES = [("reef", 0, 1450), ("kelp", 1450, 3150), ("slope", 3150, 3750), ("abyss", 3750, BASE_W),
+          ("vents", BASE_W, W)]
 
 GROUND = {
     # top highlight, topsoil, subsoil, deep ramps + speck colours
@@ -58,6 +63,9 @@ GROUND = {
                   specks=["bone", "sandy"]),
     "abyss": dict(soil=ramp("#4e4668", dark=0.3), sub=ramp("#352f4c", dark=0.32), deep=ramp("#1e1a30", dark=0.4),
                   specks=["glow", "violet"]),
+    # basalt with glowing cracks and sulphur crusts
+    "vents": dict(soil=ramp("#4a3a44", dark=0.3), sub=ramp("#2e2230", dark=0.35), deep=ramp("#1a1218", dark=0.4),
+                  specks=["orange", "volt", "orange"]),
 }
 DEEP = (22, 17, 32)
 
@@ -124,8 +132,13 @@ def build_heights():
     on_slope = x >= 3150
     h = np.where(on_slope, slope, h)
     # abyssal plain: long swells
-    abyss = smoothstep(3800, 3900, x)
+    abyss = smoothstep(3800, 3900, x) * (1.0 - smoothstep(BASE_W - 60, BASE_W + 80, x))
     h += abyss * (8.0 * np.sin(x / 420.0 * math.tau + 2.0) + 4.0 * np.sin(x / 150.0 * math.tau))
+    # hydrothermal field: a volcanic ridge of basalt terraces and spires
+    vents = smoothstep(BASE_W - 40, BASE_W + 160, x)
+    ridge = 1470.0 - 150.0 * smoothstep(BASE_W, BASE_W + 420, x) + 40.0 * smoothstep(5650, 5950, x)
+    ridge += 22.0 * np.sin(x / 260.0 * math.tau + 0.7) + 9.0 * np.abs(np.sin(x / 57.0 * math.tau))
+    h = h * (1.0 - vents) + ridge * vents
     # fine irregularity everywhere except cliffs
     h += 1.6 * value_noise(x, 34.0, 7) + 0.8 * value_noise(x, 13.0, 11)
     # flat shelves for props (vents get a small mesa)
@@ -182,7 +195,7 @@ def ground_colors(xs, rows, top, slope, rng_seed=3):
         c_deep = deep[np.where(d < 70, 3, 2)]
         col = np.where((d < soil_th)[..., None], c_soil, np.where((d < sub_th)[..., None], c_sub, c_deep))
         # sedimentary strata in rock: wavy light/dark line pairs, broken in places
-        if name in ("slope", "abyss"):
+        if name in ("slope", "abyss", "vents"):
             wav = (4.0 * value_noise(xf, 55.0, 23) + xf * 0.08)[None, :]
             k = np.floor(rows + wav).astype(int) % (10 if name == "slope" else 14)
             broken = hash2(xs[None, :] // 7, np.floor(rows + wav) // 10, 29) < 0.3
@@ -190,14 +203,22 @@ def ground_colors(xs, rows, top, slope, rng_seed=3):
             col = np.where((strata_on & (k == 0))[..., None], sub[2][None, None, :] * 0.6 + col * 0.4, col)
             col = np.where((strata_on & (k == 1))[..., None], sub[5][None, None, :] * 0.35 + col * 0.65, col)
         # stones: rock colour with a lit top and dark underside
-        rk = sub if name != "abyss" else deep
+        rk = sub if name not in ("abyss", "vents") else deep
         col = np.where(stone[..., None], rk[3][None, None, :] * np.ones_like(col), col)
         col = np.where(stone_top[..., None], rk[5][None, None, :] * np.ones_like(col), col)
         col = np.where(stone_bot[..., None], rk[1][None, None, :] * np.ones_like(col), col)
         # coloured bits in the topsoil (coral rubble / glowing bacteria)
         bits = (hash2(xs[None, :], rows, 57 + len(name)) < (0.02 if name == "reef" else 0.012)) & (d > 1.5) & (d < soil_th + 3)
         sp = PAL[g["specks"][0]]
-        col = np.where(bits[..., None], sp[5 if name == "abyss" else 4][None, None, :] * np.ones_like(col), col)
+        col = np.where(bits[..., None], sp[5 if name in ("abyss", "vents") else 4][None, None, :] * np.ones_like(col), col)
+        if name == "vents":
+            # glowing magma cracks running through the basalt
+            cr = np.abs(value_noise(xf, 23.0, 61)[None, :] * 6.0 + np.sin(rows / 9.0 + xf[None, :] / 31.0) * 3.0 - (d - 18.0))
+            crack = (cr < 0.7) & (d > 4) & (d < 60) & (hash2(xs[None, :] // 5, rows // 5, 67) < 0.7)
+            glow = PAL["orange"]
+            col = np.where(crack[..., None], glow[5][None, None, :] * np.ones_like(col), col)
+            halo = (cr >= 0.7) & (cr < 1.6) & (d > 4) & (d < 60)
+            col = np.where(halo[..., None], col * 0.6 + glow[3][None, None, :] * 0.4, col)
         img += col * wgt[None, :, None]
     # grains: sparse darker / lighter pixels in the topsoil
     gr = hash2(xs[None, :], rows, 21)
@@ -277,7 +298,7 @@ def build(out_dir, meta_path):
     x = 60
     while x < W - 60:
         b = next(n for n, x0, x1 in BIOMES if x0 <= x < x1)
-        gap = {"reef": (140, 320), "kelp": (160, 360), "slope": (60, 140), "abyss": (120, 260)}[b]
+        gap = {"reef": (140, 320), "kelp": (160, 360), "slope": (60, 140), "abyss": (120, 260), "vents": (70, 160)}[b]
         x += int(rng.integers(*gap))
         if x >= W - 40 or site_mask[min(W - 1, x)]:
             continue
@@ -311,7 +332,8 @@ def build(out_dir, meta_path):
                 continue
             lo, hi = max(0, rx - rw // 2), min(W - 1, rx + rw // 2)
             base = int(top[lo:hi + 1].max()) + int(rh * 0.3)
-            rr = {"reef": PAL["rock"], "kelp": PAL["rock"], "slope": ramp("#6e6886", dark=0.28), "abyss": ramp("#403a5c", dark=0.3)}[b]
+            rr = {"reef": PAL["rock"], "kelp": PAL["rock"], "slope": ramp("#6e6886", dark=0.28), "abyss": ramp("#403a5c", dark=0.3),
+                  "vents": ramp("#3a2c34", dark=0.3)}[b]
             paint_rock(cv, rx, base, rw, rh, np.random.default_rng(rx), rr, top, xs_all)
         rg = cv.a
         rgba[rg, :3] = np.clip(cv.rgb[rg], 0, 255).astype(np.uint8)
@@ -373,13 +395,14 @@ def paint_details(front, cols, ctop, fy0, slope, near_site):
         b = max(weights, key=lambda k: weights[k][i])
         r = rng.random()
         yy = ctop[i] - fy0  # surface row inside the strip
-        dens = {"reef": 0.075, "kelp": 0.06, "slope": 0.03, "abyss": 0.05}[b]
+        dens = {"reef": 0.075, "kelp": 0.06, "slope": 0.03, "abyss": 0.05, "vents": 0.08}[b]
         if r > dens:
             continue
         kind = rng.choice({"reef": ["pebble", "rubble", "rubble", "shell", "tuft"],
                            "kelp": ["pebble", "pebble", "tuft", "tuft", "shell"],
                            "slope": ["pebble", "pebble", "rubble"],
-                           "abyss": ["pebble", "speck", "speck", "mat"]}[b])
+                           "abyss": ["pebble", "speck", "speck", "mat"],
+                           "vents": ["pebble", "speck", "speck", "mat", "speck"]}[b])
         _detail(front, i, yy, kind, b, rng)
 
 
@@ -392,7 +415,8 @@ def _put(front, x, y, c):
 
 def _detail(front, i, yy, kind, biome, rng):
     if kind == "pebble":
-        pr = {"abyss": ramp("#4a4466", dark=0.3), "slope": ramp("#8a82a0", dark=0.3)}.get(biome, ramp("#a0907c", dark=0.3))
+        pr = {"abyss": ramp("#4a4466", dark=0.3), "slope": ramp("#8a82a0", dark=0.3),
+              "vents": ramp("#3e3038", dark=0.3)}.get(biome, ramp("#a0907c", dark=0.3))
         w = int(rng.integers(2, 5))
         for dx in range(w):
             _put(front, i + dx, yy - 1, pr[4 if dx < w - 1 else 3])
@@ -419,7 +443,7 @@ def _detail(front, i, yy, kind, biome, rng):
             for s in range(hgt):
                 _put(front, i + k * 2 + (lean if s > hgt // 2 else 0), yy - 1 - s, gr[5 if s == hgt - 1 else 3])
     elif kind == "speck":
-        g = PAL[rng.choice(["glow", "violet"])]
+        g = PAL[rng.choice(["orange", "volt"] if biome == "vents" else ["glow", "violet"])]
         _put(front, i, yy - 1, g[6])
     elif kind == "mat":
         m = PAL["volt"]

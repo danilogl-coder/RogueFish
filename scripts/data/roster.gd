@@ -163,6 +163,18 @@ const SPECIES := {
 		"trait": {"name": "Capa de Trevas", "desc": "Ao ser atingida, some nas trevas por 1,5s e os inimigos te perdem (recarga 6s)."},
 		"stats": {"max_hp": 100.0, "speed": 118.0, "bite_damage": 12.0, "armor": 1.0, "light": 95.0},
 	},
+	"caranguejo_yeti": {
+		"name": "Caranguejo-Yeti", "group": "invertebrados", "short": "Peludo e resistente ao calor.",
+		"weapon": "thermal_claw", "unlock": {"type": "pack", "pack": "pack_vents", "price": 500},
+		"trait": {"name": "Jardim de Bactérias", "desc": "+1 PV/s (+3 nas Fontes Hidrotermais) e imune às erupções."},
+		"stats": {"max_hp": 130.0, "speed": 100.0, "bite_damage": 14.0, "armor": 3.0},
+	},
+	"verme_tubo": {
+		"name": "Verme-Tubo", "group": "invertebrados", "short": "Pluma vermelha que suga vida.",
+		"weapon": "red_plume", "unlock": {"type": "pack", "pack": "pack_vents", "price": 450},
+		"trait": {"name": "Simbiose", "desc": "A cada 8 abates cura 8% da vida; imune às erupções."},
+		"stats": {"max_hp": 115.0, "speed": 112.0, "bite_damage": 12.0, "armor": 1.0},
+	},
 	# ------------------------------------------------------- defeated bosses
 	"tubarao": {
 		"name": "Tubarão-Rei", "group": "chefes", "short": "Veloz, de mordida larga.",

@@ -208,7 +208,7 @@ func _spawn_x_for(def: Dictionary, near: bool) -> float:
 	var ranges := []
 	var total := 0.0
 	for b in DB.BIOMES:
-		if biomes.has(b.id):
+		if biomes.has(b.id) and b.x0 < DB.WORLD_W:
 			ranges.append(b)
 			total += b.x1 - b.x0
 	var r := randf() * total
