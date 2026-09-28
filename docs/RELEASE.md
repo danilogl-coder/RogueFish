@@ -51,7 +51,7 @@ Também dá para disparar com uma tag, por exemplo `git tag v1.0.0 && git push -
 Sem isso o jogo funciona, mas **esconde os botões de vídeo**, e a loja de pérolas aparece desativada. Os detalhes
 estão em `docs/MONETIZATION.md`.
 
-- **AdMob:**
+- **AdMob:** passo a passo completo, com o script pronto, em **`docs/ADMOB.md`**.
   1. Crie o app no AdMob e um bloco "Premiado" (rewarded).
   2. Instale o plugin `poing-studios/godot-admob-plugin` e cole o script de ponte do MONETIZATION.md.
   3. Configure a mensagem de consentimento (GDPR/LGPD) em **Privacidade e mensagens**.

@@ -50,6 +50,8 @@ builds de debug; em release, sem loja, os botões ficam desativados.
 
 ### AdMob
 
+> Passo a passo atualizado, com consentimento GDPR e script testado, em [`ADMOB.md`](ADMOB.md).
+
 Use o plugin `poing-studios/godot-admob-plugin` (Godot 4). Crie um script autoload depois de `Ads`:
 
 ```gdscript
