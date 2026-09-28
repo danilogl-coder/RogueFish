@@ -93,8 +93,10 @@ Configure também:
 
 ### Google Play Billing
 
-Instale o plugin oficial `godot-sdk-integrations/godot-google-play-billing`. O `Billing` detecta o singleton
-`GodotGooglePlayBilling` sozinho. Na Play Console, crie produtos "no app" com os mesmos IDs:
+Instale o plugin oficial `godot-sdk-integrations/godot-google-play-billing`, **versão 3.x** (Godot 4.2+). O
+`Billing` detecta o singleton `GodotGooglePlayBilling` sozinho. Os pacotes de pérolas só são entregues depois que
+o Google confirma o consumo, então nenhuma compra é paga duas vezes. Passo a passo em
+[`TUTORIAL_PLAYSTORE.md`](TUTORIAL_PLAYSTORE.md), Fase 4.2. Na Play Console, crie produtos "no app" com os mesmos IDs:
 `starter`, `vip`, `pearls_1`, `pearls_2`, `pearls_3` e `pearls_4`.
 
 - `vip` e `starter` não são consumíveis: são *reconhecidos* (acknowledge).

@@ -1,5 +1,8 @@
 # Lançamento na Google Play – passo a passo
 
+> **Tutorial completo e atualizado, fase por fase: [`TUTORIAL_PLAYSTORE.md`](TUTORIAL_PLAYSTORE.md).** Este arquivo
+> fica como referência técnica resumida.
+
 Estado do projeto:
 - a exportação Android está configurada para o formato AAB, com targetSdk 36 (Android 16) e minSdk 24;
 - o AAB é gerado por um workflow do GitHub Actions;

@@ -4,10 +4,10 @@ extends Node
 ##   Billing.buy("pearls_2")      # grants through Billing.grant() when paid
 ##
 ## Backends:
-##  * Google Play: the official "GodotGooglePlayBilling" Android plugin
-##    (godot-sdk-integrations/godot-google-play-billing). When its singleton
-##    exists it is used automatically: product ids here must match the ids
-##    created in the Play Console.
+##  * Google Play: the official "GodotGooglePlayBilling" Android plugin, 3.x
+##    API (godot-sdk-integrations/godot-google-play-billing, Godot 4.2+).
+##    When its singleton exists it is used automatically: product ids here
+##    must match the ids created in the Play Console.
 ##  * any other store can register with `Billing.set_backend(obj)`, obj
 ##    having `buy(product_id: String, on_done: Callable)` that calls
 ##    on_done.call(true) once the purchase is confirmed.
@@ -24,22 +24,34 @@ signal prices_updated
 
 var prices := {}                 ## product id -> localized price from the store
 var _backend: Object = null
-var _play = null                 ## GodotGooglePlayBilling singleton
+var _play: Object = null          ## GodotGooglePlayBilling singleton
 var _pending := ""
+var _consuming := {}             ## purchase token -> product id, until consumed
+
+const PLAY_OK := 0
+const PLAY_CANCELED := 1
+const PLAY_ALREADY_OWNED := 7
+const PLAY_PURCHASED := 1        ## purchase_state
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	if Engine.has_singleton("GodotGooglePlayBilling"):
-		_play = Engine.get_singleton("GodotGooglePlayBilling")
-		_play.connect("connected", _on_play_connected)
-		_play.connect("purchases_updated", _on_play_purchases)
-		_play.connect("purchase_error", func(code, msg): _fail("store", str(msg)))
-		_play.connect("sku_details_query_completed", _on_play_details)
-		_play.connect("query_purchases_response", func(res):
-			if typeof(res) == TYPE_DICTIONARY and int(res.get("status", 1)) == 0:
-				_on_play_purchases(res.get("purchases", [])))
-		_play.startConnection()
+		attach_play(Engine.get_singleton("GodotGooglePlayBilling"))
+
+
+## Hooks up the Google Play Billing plugin (or a stand-in with the same
+## signals and methods, for tests).
+func attach_play(play: Object) -> void:
+	_play = play
+	_play.connect("connected", _on_play_connected)
+	_play.connect("disconnected", func(): get_tree().create_timer(10.0).timeout.connect(Callable(_play, "startConnection")))
+	_play.connect("connect_error", func(_code: int, _msg: String): get_tree().create_timer(30.0).timeout.connect(Callable(_play, "startConnection")))
+	_play.connect("query_product_details_response", _on_play_details)
+	_play.connect("query_purchases_response", _on_play_owned)
+	_play.connect("on_purchase_updated", _on_play_updated)
+	_play.connect("consume_purchase_response", _on_play_consumed)
+	_play.call("startConnection")
 
 
 func set_backend(obj: Object) -> void:
@@ -70,7 +82,9 @@ func buy(id: String) -> void:
 		return
 	_pending = id
 	if _play != null:
-		_play.purchase(id)
+		var r: Dictionary = _play.call("purchase", id, "", "", false)
+		if int(r.get("response_code", PLAY_OK)) != PLAY_OK:
+			_fail(id, String(r.get("debug_message", "")))
 	elif _backend != null:
 		_backend.call("buy", id, func(ok: bool):
 			if ok:
@@ -111,40 +125,78 @@ func _fail(id: String, reason: String) -> void:
 ## reinstall). Non-consumables come back through grant().
 func restore() -> void:
 	if _play != null:
-		_play.queryPurchases("inapp")
+		_play.call("queryPurchases", "inapp", false)
 	elif _backend != null and _backend.has_method("restore"):
 		_backend.call("restore")
 
 
 # ------------------------------------------------------------ Google Play
 func _on_play_connected() -> void:
-	var ids: Array = Offers.PRODUCTS.keys()
-	_play.querySkuDetails(ids, "inapp")
-	_play.queryPurchases("inapp")
+	_play.call("queryProductDetails", PackedStringArray(Offers.PRODUCTS.keys()), "inapp")
+	_play.call("queryPurchases", "inapp", false)
 
 
-func _on_play_details(details: Array) -> void:
-	for d in details:
-		if typeof(d) == TYPE_DICTIONARY and d.has("sku"):
-			prices[String(d.sku)] = String(d.get("price", ""))
+func _on_play_details(res: Dictionary) -> void:
+	if int(res.get("response_code", -1)) != PLAY_OK:
+		return
+	for d in res.get("product_details", []):
+		var offers = d.get("one_time_purchase_offer_details_list")
+		if offers is Array and not offers.is_empty():
+			prices[String(d.get("product_id", ""))] = String(offers[0].get("formatted_price", ""))
 	prices_updated.emit()
 
 
-func _on_play_purchases(list: Array) -> void:
+## Purchases this account already owns (app start, "restore").
+func _on_play_owned(res: Dictionary) -> void:
+	if int(res.get("response_code", -1)) == PLAY_OK:
+		_handle_purchases(res.get("purchases", []))
+
+
+## Result of the purchase screen.
+func _on_play_updated(res: Dictionary) -> void:
+	match int(res.get("response_code", -1)):
+		PLAY_OK:
+			_handle_purchases(res.get("purchases", []))
+		PLAY_CANCELED:
+			_fail(_pending, "cancelada")
+		PLAY_ALREADY_OWNED:
+			_play.call("queryPurchases", "inapp", false)
+		_:
+			_fail(_pending, String(res.get("debug_message", "")))
+
+
+## Non-consumables are granted and acknowledged; consumables (pearl packs)
+## are granted only once Google confirms the consume, so a purchase that is
+## returned again by queryPurchases can never be paid out twice.
+func _handle_purchases(list: Array) -> void:
 	for p in list:
-		if typeof(p) != TYPE_DICTIONARY or int(p.get("purchase_state", 0)) != 1:
-			continue
-		var skus: Array = p.get("skus", [p.get("sku", "")])
-		var token: String = p.get("purchase_token", "")
-		for sku in skus:
-			var id := String(sku)
+		if typeof(p) != TYPE_DICTIONARY or int(p.get("purchase_state", 0)) != PLAY_PURCHASED:
+			continue  # pending (e.g. cash payment): it comes back when paid
+		var token := String(p.get("purchase_token", ""))
+		for pid in p.get("product_ids", []):
+			var id := String(pid)
 			if not Offers.PRODUCTS.has(id):
 				continue
 			if bool(Offers.PRODUCTS[id].consumable):
-				_play.consumePurchase(token)
-			elif not bool(p.get("is_acknowledged", false)):
-				_play.acknowledgePurchase(token)
-			grant(id)
+				if not _consuming.has(token):
+					_consuming[token] = id
+					_play.call("consumePurchase", token)
+			else:
+				if not bool(p.get("is_acknowledged", false)):
+					_play.call("acknowledgePurchase", token)
+				grant(id)
+
+
+func _on_play_consumed(res: Dictionary) -> void:
+	var token := String(res.get("token", ""))
+	var id := String(_consuming.get(token, ""))
+	_consuming.erase(token)
+	if id == "":
+		return
+	if int(res.get("response_code", -1)) == PLAY_OK:
+		grant(id)
+	else:
+		_fail(id, String(res.get("debug_message", "")))
 
 
 # --------------------------------------------------------- debug stand-in
