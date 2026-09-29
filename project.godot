@@ -30,6 +30,10 @@ I18n="*res://scripts/autoload/i18n.gd"
 Ads="*res://scripts/autoload/ads.gd"
 Billing="*res://scripts/autoload/billing.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg")
+
 [display]
 
 window/size/viewport_width=640
