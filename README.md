@@ -27,6 +27,8 @@ Rogue Fish is in **closed testing** on Google Play. Joining takes about 2 minute
 > launch after 12 or more testers stay in the test for 14 days in a row. You are helping a solo indie
 > developer ship their game. Thank you! 💙
 
+Tester page (Portuguese): <https://danilogl-coder.github.io/RogueFish/teste-fechado.html>
+
 Found a bug or have an idea? Post it in the [group](https://groups.google.com/g/rogue-fish) or leave
 private feedback on the game's Play Store page.
 
