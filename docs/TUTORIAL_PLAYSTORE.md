@@ -231,7 +231,9 @@ mas não instalou **não conta**.
    novo com `versionCode` maior.
 2. [ ] Em **Países/regiões**, marque todos (ou pelo menos Brasil e Estados Unidos).
 3. [ ] Em **Testadores**, a forma mais fácil é um **Grupo do Google**:
-   - crie o grupo em <https://groups.google.com> (ex.: `roguefish-testers`);
+   - o grupo já existe: **<https://groups.google.com/g/rogue-fish>** (e-mail `rogue-fish@googlegroups.com`).
+     Em *Configurações do grupo → Quem pode participar*, deixe **Qualquer pessoa pode pedir** ou
+     **Qualquer pessoa pode participar**, e aprove os pedidos em *Mensagens pendentes / Membros pendentes*;
    - na Play Console, cole o e-mail do grupo;
    - quem entrar no grupo vira testador.
 4. [ ] Envie a versão para revisão. A primeira revisão pode levar de 1 a 7 dias.

@@ -1,4 +1,66 @@
-# Rogue Fish
+<p align="center">
+  <img src="docs/marketing/keyart_1920x1080.png" alt="Rogue Fish: Larva to Legend" width="100%">
+</p>
+
+<h1 align="center">Rogue Fish: Larva to Legend</h1>
+
+<p align="center"><b>Start as a tiny larva. Eat, evolve and mutate until you rule the ocean.</b><br>
+A pixel-art survival roguelike for Android. Free, offline, one-thumb controls.</p>
+
+<p align="center">
+  <a href="https://groups.google.com/g/rogue-fish"><b>🐟 Join the closed test and play it first</b></a>
+</p>
+
+---
+
+## 🧪 Become a tester
+
+Rogue Fish is in **closed testing** on Google Play. Joining takes about 2 minutes:
+
+1. **Join the tester group** with the Google account you use on your Android phone:
+   👉 **<https://groups.google.com/g/rogue-fish>** (click *Join group*)
+2. **Accept the test** on Google Play, using the same account:
+   👉 <https://play.google.com/apps/testing/com.roguefish.game>
+3. **Install Rogue Fish** from the Play Store link on that page, and play!
+
+> **Please keep the app installed and stay in the test for at least 14 days.** Google only lets new games
+> launch after 12 or more testers stay in the test for 14 days in a row. You are helping a solo indie
+> developer ship their game. Thank you! 💙
+
+Found a bug or have an idea? Post it in the [group](https://groups.google.com/g/rogue-fish) or leave
+private feedback on the game's Play Store page.
+
+## 🎮 What is it?
+
+<p align="center">
+  <img src="docs/marketing/gif_larva_to_legend_caranguejo.gif" alt="Crab life cycle" width="32%">
+  <img src="docs/marketing/gif_larva_to_legend_dourado.gif" alt="Goldfish life cycle" width="32%">
+  <img src="docs/marketing/gif_larva_to_legend_agua_viva.gif" alt="Jellyfish life cycle" width="32%">
+</p>
+
+- **Larva to Legend**: every animal grows through its *real* life cycle, and every stage is redrawn in
+  pixel art. A crab hatches as a zoea, becomes a megalopa, then walks sideways as a King Crab.
+- **33 playable animals**, each with its own trait, weapon and way to move: squids jet, jellyfish
+  pulse, crabs walk the sea floor, morays slither.
+- **Build your run**: auto-attacking weapons, upgrade cards, synergies, legendary evolutions and
+  **fusions** that level up to 10, in the spirit of *Vampire Survivors*.
+- **Mutations you can see**: piranha jaws, swordfish bill, abyssal lure, electric fins, toxic skin.
+- **A living ocean**: a real food chain, caves to hide in, treasure, parasites that build a colony inside
+  you, and biomes from the coral reef to the abyssal trench.
+- **Colossal bosses**: the Kraken, the Leviathan, the Megalodon and the Titanacon, who can swallow you
+  whole, so you fight from inside its stomach.
+
+<p align="center">
+  <img src="docs/store/screenshots/01.png" alt="Screenshot" width="49%">
+  <img src="docs/store/screenshots/02.png" alt="Screenshot" width="49%">
+</p>
+
+Languages: English and Portuguese (Brazil).
+[Privacy policy](https://danilogl-coder.github.io/RogueFish/privacy.html)
+
+---
+
+## 🛠️ Notas de desenvolvimento (PT-BR)
 
 Roguelike de sobrevivência subaquático para celular (Godot 4.5, renderizador
 Compatibility, paisagem). Você começa como um alevino, come para crescer,
