@@ -24,6 +24,11 @@ func _ready() -> void:
 	):
 		push_error("AdMob native Android plugin is missing from this Gradle build")
 		return
+	# The Google sample ad unit is used only in test exports. It must remain
+	# usable while the publisher account and its consent message are reviewed.
+	if OS.is_debug_build() or OS.has_feature("admob_test_ads"):
+		_start_ads()
+		return
 	var request: ConsentRequestParameters = ConsentRequestParameters.new()
 	request.tag_for_under_age_of_consent = false
 	UserMessagingPlatform.consent_information.update(request, _on_consent_updated, _on_consent_error)
@@ -61,8 +66,20 @@ func _start_if_allowed() -> void:
 	var status: int = UserMessagingPlatform.consent_information.get_consent_status()
 	if status != ConsentInformation.ConsentStatus.NOT_REQUIRED and status != ConsentInformation.ConsentStatus.OBTAINED:
 		return
+	_start_ads()
+
+
+func _start_ads() -> void:
+	if _started:
+		return
 	_started = true
-	MobileAds.initialize()
+	var listener: OnInitializationCompleteListener = OnInitializationCompleteListener.new()
+	listener.on_initialization_complete = _on_ads_initialized
+	MobileAds.initialize(listener)
+
+
+func _on_ads_initialized(_status: InitializationStatus) -> void:
+	print("AdMob SDK initialized")
 	Ads.set_backend(self)
 	_load()
 
@@ -83,6 +100,7 @@ func _load() -> void:
 	callback.on_ad_loaded = func(ad: RewardedAd) -> void:
 		_loading = false
 		_ad = ad
+		print("AdMob rewarded ad loaded")
 	callback.on_ad_failed_to_load = func(error: LoadAdError) -> void:
 		_loading = false
 		push_warning("AdMob rewarded load failed: " + error.message)
@@ -115,6 +133,7 @@ func show_rewarded(_placement: String, on_done: Callable) -> void:
 	ad.full_screen_content_callback = callbacks
 	var listener: OnUserEarnedRewardListener = OnUserEarnedRewardListener.new()
 	listener.on_user_earned_reward = func(_item: RewardedItem) -> void:
+		print("AdMob rewarded ad earned")
 		if _pending_done.is_valid():
 			var done: Callable = _pending_done
 			_pending_done = Callable()
