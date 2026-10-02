@@ -73,7 +73,13 @@ func _start_ads() -> void:
 	if _started:
 		return
 	_started = true
-	MobileAds.initialize()
+	var listener: OnInitializationCompleteListener = OnInitializationCompleteListener.new()
+	listener.on_initialization_complete = _on_ads_initialized
+	MobileAds.initialize(listener)
+
+
+func _on_ads_initialized(_status: InitializationStatus) -> void:
+	print("AdMob SDK initialized")
 	Ads.set_backend(self)
 	_load()
 
