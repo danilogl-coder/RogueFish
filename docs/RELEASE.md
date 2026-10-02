@@ -54,10 +54,10 @@ Também dá para disparar com uma tag, por exemplo `git tag v1.0.0 && git push -
 Sem isso o jogo funciona, mas **esconde os botões de vídeo**, e a loja de pérolas aparece desativada. Os detalhes
 estão em `docs/MONETIZATION.md`.
 
-- **AdMob:** passo a passo completo, com o script pronto, em **`docs/ADMOB.md`**.
-  1. Crie o app no AdMob e um bloco "Premiado" (rewarded).
-  2. Instale o plugin `poing-studios/godot-admob-plugin` e cole o script de ponte do MONETIZATION.md.
-  3. Configure a mensagem de consentimento (GDPR/LGPD) em **Privacidade e mensagens**.
+- **AdMob:** app, bloco premiado, plugin e ponte já configurados. O AAB do teste fechado usa anúncios de teste. Veja **`docs/ADMOB.md`**.
+  1. Teste os anúncios e as recompensas em um Android pelo teste fechado.
+  2. Configure a mensagem de consentimento em **Privacidade e mensagens** quando o painel do AdMob estiver disponível.
+  3. Antes da produção, retire a feature `admob_test_ads` do preset e confira a aprovação da conta e do app.
 - **Billing:**
   1. Instale o plugin `godot-google-play-billing`.
   2. Na Play Console, em **Monetizar → Produtos no app**, crie os produtos `starter`, `vip`, `pearls_1`,

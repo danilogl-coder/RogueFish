@@ -113,8 +113,7 @@ loja de pérolas**. Você pode até lançar assim e ligar os plugins numa atuali
 
 ### 4.1 Anúncios (AdMob)
 
-Siga **`docs/ADMOB.md`** do começo ao fim: conta no AdMob, plugin da Poing Studios, o script de ponte (pronto
-para colar) e o teste com anúncios de teste.
+O plugin da Poing Studios e `scripts/autoload/admob_backend.gd` já estão instalados. O preset Android do teste fechado usa anúncios de teste. Veja os IDs, o teste no celular e as pendências da conta em **`docs/ADMOB.md`**.
 
 ### 4.2 Compras (Google Play Billing)
 

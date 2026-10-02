@@ -37,10 +37,10 @@ func has_real_backend() -> bool:
 
 
 ## Videos can be shown: a real ad SDK is connected, the player is VIP (instant
-## rewards) or this is a debug build (simulated video). Release builds
-## without an SDK hide every video button instead of faking ads.
+## rewards) or this is a desktop debug build (simulated video). Android
+## without an SDK hides every video button instead of faking ads.
 func available() -> bool:
-	return _backend != null or Profile.vip or OS.is_debug_build()
+	return _backend != null or Profile.vip or (OS.get_name() != "Android" and OS.is_debug_build())
 
 
 # ---------------------------------------------------------------- limits
@@ -75,7 +75,11 @@ func cooldown_left(placement: String) -> float:
 
 
 func can_show(placement: String) -> bool:
-	return available() and not _busy and remaining(placement) > 0 and cooldown_left(placement) <= 0.0
+	if not available() or _busy or remaining(placement) <= 0 or cooldown_left(placement) > 0.0:
+		return false
+	if not Profile.vip and _backend != null and _backend.has_method("is_ready"):
+		return bool(_backend.call("is_ready"))
+	return true
 
 
 ## Short text for a button ("VER VÍDEO", "3/5 hoje", "volte em 2:10"...).

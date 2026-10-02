@@ -50,46 +50,7 @@ builds de debug; em release, sem loja, os botões ficam desativados.
 
 ### AdMob
 
-> Passo a passo atualizado, com consentimento GDPR e script testado, em [`ADMOB.md`](ADMOB.md).
-
-Use o plugin `poing-studios/godot-admob-plugin` (Godot 4). Crie um script autoload depois de `Ads`:
-
-```gdscript
-extends Node
-const UNIT := "ca-app-pub-3940256099942544/5224354917"  # ID de TESTE do Google: troque pelo seu
-var _ad: RewardedAd
-
-func _ready() -> void:
-	MobileAds.initialize()
-	Ads.set_backend(self)
-	_load()
-
-func _load() -> void:
-	var cb := RewardedAdLoadCallback.new()
-	cb.on_ad_loaded = func(ad: RewardedAd): _ad = ad
-	RewardedAdLoader.new().load(UNIT, AdRequest.new(), cb)
-
-func show_rewarded(_placement: String, on_done: Callable) -> void:
-	if _ad == null:
-		on_done.call(false)
-		_load()
-		return
-	var earned := [false]
-	var fs := FullScreenContentCallback.new()
-	fs.on_ad_dismissed_full_screen_content = func():
-		on_done.call(earned[0])
-		_ad.destroy()
-		_ad = null
-		_load()
-	_ad.full_screen_content_callback = fs
-	var rw := OnUserEarnedRewardListener.new()
-	rw.on_user_earned_reward = func(_r): earned[0] = true
-	_ad.show(rw)
-```
-
-Configure também:
-- o consentimento GDPR/LGPD (UMP, que já vem no plugin);
-- a classificação etária na Play Console.
+O plugin da Poing Studios e a ponte `scripts/autoload/admob_backend.gd` já estão instalados. O backend inicializa o SDK após a verificação de consentimento, mantém um anúncio premiado carregado e entrega a recompensa apenas pelo callback de prêmio. O guia atual de teste e publicação está em [`ADMOB.md`](ADMOB.md).
 
 ### Google Play Billing
 
