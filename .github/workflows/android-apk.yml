@@ -4,6 +4,8 @@
 #
 # Runs on every push that touches the game, or from the Actions tab.
 # The APK is for sideload testing only; Google Play gets the AAB (android-release.yml).
+# It uses a separate package and Google's sample AdMob IDs, so it can coexist
+# with the Play install without touching that app's save data.
 name: Android test APK
 
 on:
@@ -40,12 +42,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Android build tools
+      - name: Android SDK packages (API 36)
         run: |
           SDKM="$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin | sort -V | tail -1)/sdkmanager"
           echo "ANDROID_HOME=$ANDROID_HOME"
           yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" "platform-tools" "build-tools;35.0.0"
+          "$SDKM" "platform-tools" "platforms;android-36" "build-tools;35.0.0" "build-tools;36.0.0"
 
       - name: Godot + Android templates
         run: |
@@ -56,7 +58,8 @@ jobs:
           sudo mv "Godot_v${V}_linux.x86_64" /usr/local/bin/godot
           T="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
           mkdir -p "$T"
-          unzip -q -j "Godot_v${V}_export_templates.tpz" templates/version.txt templates/android_release.apk -d "$T"
+          unzip -q "Godot_v${V}_export_templates.tpz"
+          mv templates/* "$T/"
           mkdir -p "$HOME/.config/godot"
           cat > "$HOME/.config/godot/editor_settings-${GODOT_VERSION}.tres" <<EOT
           [gd_resource type="EditorSettings" format=3]
@@ -64,6 +67,23 @@ jobs:
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
           EOT
+
+      - name: Test package version and AdMob application ID
+        run: |
+          sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/" export_presets.cfg
+          sed -i "s/^version\/name=.*/version\/name=\"test-${GITHUB_RUN_NUMBER}\"/" export_presets.cfg
+          sed -i "s/^config\/version=.*/config\/version=\"test-${GITHUB_RUN_NUMBER}\"/" project.godot
+          sed -i 's/^general\/android\/app_id=.*/general\/android\/app_id="ca-app-pub-3940256099942544~3347511713"/' project.godot
+
+      - name: Install Gradle build template
+        run: |
+          godot --headless --path . --import || true
+          T="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p android/build
+          unzip -q -o "$T/android_source.zip" -d android/build
+          echo "${GODOT_VERSION}.${GODOT_RELEASE}" > android/.build_version
+          touch android/build/.gdignore
+          sed -i -E 's/(compileSdk\s*:\s*)[0-9]+/\136/' android/build/config.gradle
 
       # Same key on every run, so a new test APK installs over the previous one
       # (and keeps the save).
@@ -84,7 +104,6 @@ jobs:
           GODOT_ANDROID_KEYSTORE_RELEASE_USER: test
           GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: android
         run: |
-          godot --headless --path . --import || true
           mkdir -p builds
           godot --headless --path . --export-release "Android APK" builds/RogueFish.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose builds/RogueFish.apk
