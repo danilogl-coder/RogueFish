@@ -10,6 +10,7 @@ var _loading: bool = false
 var _started: bool = false
 var _showing: bool = false
 var _pending_done: Callable = Callable()
+var _consent_retry_pending: bool = false
 
 
 func _ready() -> void:
@@ -24,6 +25,10 @@ func _ready() -> void:
 	):
 		push_error("AdMob native Android plugin is missing from this Gradle build")
 		return
+	_update_consent()
+
+
+func _update_consent() -> void:
 	var request: ConsentRequestParameters = ConsentRequestParameters.new()
 	request.tag_for_under_age_of_consent = false
 	UserMessagingPlatform.consent_information.update(request, _on_consent_updated, _on_consent_error)
@@ -34,6 +39,8 @@ func _on_consent_updated() -> void:
 		UserMessagingPlatform.load_consent_form(_on_form_loaded, _on_consent_error)
 	else:
 		_start_if_allowed()
+		if not _started:
+			_retry_consent()
 
 
 func _on_form_loaded(form: ConsentForm) -> void:
@@ -42,17 +49,33 @@ func _on_form_loaded(form: ConsentForm) -> void:
 		form.show(_on_form_dismissed)
 	else:
 		_start_if_allowed()
+		if not _started:
+			_retry_consent()
 
 
 func _on_form_dismissed(error: FormError) -> void:
 	if error != null:
 		push_warning("AdMob consent form: " + error.message)
 	_start_if_allowed()
+	if not _started:
+		_retry_consent()
 
 
 func _on_consent_error(error: FormError) -> void:
 	push_warning("AdMob consent: " + error.message)
 	_start_if_allowed()
+	if not _started:
+		_retry_consent()
+
+
+func _retry_consent() -> void:
+	if _consent_retry_pending or _started:
+		return
+	_consent_retry_pending = true
+	await get_tree().create_timer(RETRY_SECONDS, true).timeout
+	_consent_retry_pending = false
+	if is_inside_tree() and not _started:
+		_update_consent()
 
 
 func _start_if_allowed() -> void:

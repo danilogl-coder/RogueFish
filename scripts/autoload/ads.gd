@@ -43,6 +43,12 @@ func available() -> bool:
 	return _backend != null or Profile.vip or (OS.get_name() != "Android" and OS.is_debug_build())
 
 
+## Keep the offer visible on Android while consent or the ad is loading.
+## can_show() still prevents a reward without a ready native ad.
+func supported() -> bool:
+	return OS.get_name() == "Android" or available()
+
+
 # ---------------------------------------------------------------- limits
 func _today() -> String:
 	return Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()))
@@ -84,11 +90,15 @@ func can_show(placement: String) -> bool:
 
 ## Short text for a button ("VER VÍDEO", "3/5 hoje", "volte em 2:10"...).
 func status_text(placement: String) -> String:
+	if not available():
+		return tr("ANÚNCIO INDISPONÍVEL")
 	if remaining(placement) <= 0:
 		return "volte amanhã"
 	var cd := cooldown_left(placement)
 	if cd > 0.0:
 		return tr("em %d:%02d") % [int(cd) / 60, int(cd) % 60]
+	if not Profile.vip and _backend != null and _backend.has_method("is_ready") and not bool(_backend.call("is_ready")):
+		return tr("CARREGANDO ANÚNCIO")
 	return tr("%d/%d hoje") % [remaining(placement), int(Offers.VIDEOS[placement].daily)]
 
 
