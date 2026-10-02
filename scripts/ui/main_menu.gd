@@ -2,6 +2,8 @@ extends Control
 ## Title screen: animated ocean, logo, play / species / meta-upgrade shop /
 ## how to play / options / credits.
 
+const VERSION := "v1.0.0"
+
 var _bg_t := 0.0
 var _fish: Array = []
 var _layers: Array = []
@@ -61,8 +63,8 @@ func _ready() -> void:
 func _refresh_video_btn() -> void:
 	if _video_btn == null:
 		return
-	_video_btn.visible = Ads.supported()
-	_video_hint.visible = Ads.supported()
+	_video_btn.visible = Ads.available()
+	_video_hint.visible = Ads.available()
 	_video_btn.disabled = not Ads.can_show("pearls")
 	_video_btn.text = (tr("VÍDEO +%d") if not Profile.vip else tr("VIP +%d")) % int(Offers.VIDEOS.pearls.reward)
 	_video_hint.text = Ads.status_text("pearls")
@@ -266,7 +268,7 @@ func _build_main() -> void:
 	rec.offset_left = 8
 	rec.offset_top = -16
 	_main.add_child(rec)
-	var ver := UIKit.label("v%s" % String(ProjectSettings.get_setting("application/config/version", "?")), 8, Color(1, 1, 1, 0.5))
+	var ver := UIKit.label(VERSION, 8, Color(1, 1, 1, 0.5))
 	ver.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	ver.offset_left = -60
 	ver.offset_top = -16
@@ -983,15 +985,8 @@ func _show_daily() -> void:
 		_close_screen()
 		_main.visible = true)
 	bh.add_child(b)
-	if Ads.supported():
+	if Ads.can_show("daily_x2"):
 		var b2 := UIKit.button(tr("VÍDEO: +%d (x2)") % (amount * 2), "GoldButton", 150, "play")
-		b2.disabled = not Ads.can_show("daily_x2")
-		var ad_timer := Timer.new()
-		ad_timer.wait_time = 1.0
-		ad_timer.autostart = true
-		ad_timer.process_mode = Node.PROCESS_MODE_ALWAYS
-		b2.add_child(ad_timer)
-		ad_timer.timeout.connect(func(): b2.disabled = not Ads.can_show("daily_x2"))
 		b2.pressed.connect(func():
 			Ads.show_rewarded("daily_x2", func():
 				Profile.claim_daily()

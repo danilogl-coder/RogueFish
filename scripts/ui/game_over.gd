@@ -116,27 +116,17 @@ func show_result(r: Dictionary) -> void:
 	v.add_child(total)
 	# rewarded video: double what this run earned
 	var earned: int = int(r.pearls) + int(r.bonus)
-	if earned > 0 and Ads.supported():
+	if earned > 0 and Ads.remaining("double") > 0:
 		var dbl := UIKit.button(tr("VÍDEO: DOBRAR +%d PÉROLAS") % earned if not Profile.vip else tr("VIP: DOBRAR +%d PÉROLAS") % earned, "GoldButton", 0, "pearl")
-		var doubled := [false]
 		dbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		dbl.disabled = not Ads.can_show("double")
-		var ad_timer := Timer.new()
-		ad_timer.wait_time = 1.0
-		ad_timer.autostart = true
-		ad_timer.process_mode = Node.PROCESS_MODE_ALWAYS
-		dbl.add_child(ad_timer)
-		ad_timer.timeout.connect(func(): dbl.disabled = doubled[0] or not Ads.can_show("double"))
 		dbl.pressed.connect(func():
 			dbl.disabled = true
 			Ads.show_rewarded("double", func():
-				doubled[0] = true
-				ad_timer.stop()
 				Profile.add_pearls(earned)
 				Profile.save_game()
 				Sfx.play("level_up")
 				total_lbl.text = tr("TOTAL: %d   (banco: %d)") % [earned * 2, Profile.pearls]
-				dbl.text = "PÉROLAS DOBRADAS!", func(): dbl.disabled = not Ads.can_show("double")))
+				dbl.text = "PÉROLAS DOBRADAS!", func(): dbl.disabled = false))
 		v.add_child(dbl)
 	if r.time >= float(Profile.records.best_time) - 0.01 and r.time > 30.0:
 		v.add_child(UIKit.label("NOVO RECORDE DE TEMPO!", 8, UIKit.GREEN, HORIZONTAL_ALIGNMENT_CENTER))

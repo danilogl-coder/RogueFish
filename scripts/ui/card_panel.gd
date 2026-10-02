@@ -53,12 +53,6 @@ func open(p_mode: String, p_extra := {}) -> void:
 	_reroll_btn = UIKit.button("", "", 0, "reroll")
 	_reroll_btn.pressed.connect(_reroll)
 	bottom.add_child(_reroll_btn)
-	var ad_timer := Timer.new()
-	ad_timer.wait_time = 1.0
-	ad_timer.autostart = true
-	ad_timer.process_mode = Node.PROCESS_MODE_ALWAYS
-	_reroll_btn.add_child(ad_timer)
-	ad_timer.timeout.connect(_update_reroll)
 	if game.banishes > 0 and mode == "level":
 		_banish_btn = UIKit.button(tr("BANIR %d") % game.banishes, "", 0, "skull")
 		_banish_btn.pressed.connect(func():
@@ -396,11 +390,9 @@ func _update_reroll() -> void:
 	if game.rerolls > 0:
 		_reroll_btn.text = tr("REROLAR (%d)") % game.rerolls
 		_reroll_btn.visible = true
-		_reroll_btn.disabled = _done
 	else:
 		_reroll_btn.text = "VÍDEO: REROLAR" if not Profile.vip else "REROLAR (VIP)"
-		_reroll_btn.visible = Ads.supported()
-		_reroll_btn.disabled = _done or not Ads.can_show("reroll")
+		_reroll_btn.visible = Ads.can_show("reroll")
 
 
 # ------------------------------------------------------------- attributes
